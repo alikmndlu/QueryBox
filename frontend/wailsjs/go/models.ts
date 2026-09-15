@@ -1,0 +1,410 @@
+export namespace models {
+	
+	export class BenchmarkResult {
+	    iterations: number;
+	    minTimeMs: number;
+	    maxTimeMs: number;
+	    avgTimeMs: number;
+	    timingsMs: number[];
+	    rowCount: number;
+	    errorMessage?: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new BenchmarkResult(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.iterations = source["iterations"];
+	        this.minTimeMs = source["minTimeMs"];
+	        this.maxTimeMs = source["maxTimeMs"];
+	        this.avgTimeMs = source["avgTimeMs"];
+	        this.timingsMs = source["timingsMs"];
+	        this.rowCount = source["rowCount"];
+	        this.errorMessage = source["errorMessage"];
+	    }
+	}
+	export class Collection {
+	    id: string;
+	    name: string;
+	    parentId?: string;
+	    sortOrder: number;
+	    // Go type: time
+	    createdAt: any;
+	    // Go type: time
+	    updatedAt: any;
+	    itemCount: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new Collection(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.name = source["name"];
+	        this.parentId = source["parentId"];
+	        this.sortOrder = source["sortOrder"];
+	        this.createdAt = this.convertValues(source["createdAt"], null);
+	        this.updatedAt = this.convertValues(source["updatedAt"], null);
+	        this.itemCount = source["itemCount"];
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class ColumnInfo {
+	    name: string;
+	    dataType: string;
+	    isNullable: boolean;
+	    isPrimaryKey: boolean;
+	
+	    static createFrom(source: any = {}) {
+	        return new ColumnInfo(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.name = source["name"];
+	        this.dataType = source["dataType"];
+	        this.isNullable = source["isNullable"];
+	        this.isPrimaryKey = source["isPrimaryKey"];
+	    }
+	}
+	export class ConnectionProfile {
+	    id: string;
+	    name: string;
+	    driver: string;
+	    host: string;
+	    port: number;
+	    database: string;
+	    username: string;
+	    password: string;
+	    sslMode: string;
+	    readOnly: boolean;
+	    // Go type: time
+	    createdAt: any;
+	    // Go type: time
+	    updatedAt: any;
+	
+	    static createFrom(source: any = {}) {
+	        return new ConnectionProfile(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.name = source["name"];
+	        this.driver = source["driver"];
+	        this.host = source["host"];
+	        this.port = source["port"];
+	        this.database = source["database"];
+	        this.username = source["username"];
+	        this.password = source["password"];
+	        this.sslMode = source["sslMode"];
+	        this.readOnly = source["readOnly"];
+	        this.createdAt = this.convertValues(source["createdAt"], null);
+	        this.updatedAt = this.convertValues(source["updatedAt"], null);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class ExecutionLog {
+	    id: string;
+	    profileId: string;
+	    profileName: string;
+	    sqlContent: string;
+	    executionTimeMs: number;
+	    rowCount: number;
+	    status: string;
+	    errorMessage?: string;
+	    // Go type: time
+	    executedAt: any;
+	
+	    static createFrom(source: any = {}) {
+	        return new ExecutionLog(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.profileId = source["profileId"];
+	        this.profileName = source["profileName"];
+	        this.sqlContent = source["sqlContent"];
+	        this.executionTimeMs = source["executionTimeMs"];
+	        this.rowCount = source["rowCount"];
+	        this.status = source["status"];
+	        this.errorMessage = source["errorMessage"];
+	        this.executedAt = this.convertValues(source["executedAt"], null);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class Query {
+	    id: string;
+	    title: string;
+	    sqlContent: string;
+	    description: string;
+	    collectionId?: string;
+	    dialect: string;
+	    isFavorite: boolean;
+	    // Go type: time
+	    createdAt: any;
+	    // Go type: time
+	    updatedAt: any;
+	    // Go type: time
+	    lastUsedAt: any;
+	    tags: string[];
+	
+	    static createFrom(source: any = {}) {
+	        return new Query(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.title = source["title"];
+	        this.sqlContent = source["sqlContent"];
+	        this.description = source["description"];
+	        this.collectionId = source["collectionId"];
+	        this.dialect = source["dialect"];
+	        this.isFavorite = source["isFavorite"];
+	        this.createdAt = this.convertValues(source["createdAt"], null);
+	        this.updatedAt = this.convertValues(source["updatedAt"], null);
+	        this.lastUsedAt = this.convertValues(source["lastUsedAt"], null);
+	        this.tags = source["tags"];
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class QueryResult {
+	    columns: string[];
+	    rows: any[][];
+	    rowCount: number;
+	    executionTimeMs: number;
+	    error?: string;
+	    plan?: string;
+	    isDestructive?: boolean;
+	
+	    static createFrom(source: any = {}) {
+	        return new QueryResult(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.columns = source["columns"];
+	        this.rows = source["rows"];
+	        this.rowCount = source["rowCount"];
+	        this.executionTimeMs = source["executionTimeMs"];
+	        this.error = source["error"];
+	        this.plan = source["plan"];
+	        this.isDestructive = source["isDestructive"];
+	    }
+	}
+	export class QueryVersion {
+	    id: string;
+	    queryId: string;
+	    sqlContent: string;
+	    // Go type: time
+	    createdAt: any;
+	
+	    static createFrom(source: any = {}) {
+	        return new QueryVersion(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.queryId = source["queryId"];
+	        this.sqlContent = source["sqlContent"];
+	        this.createdAt = this.convertValues(source["createdAt"], null);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class SearchFilter {
+	    searchText: string;
+	    collectionId?: string;
+	    tagId?: string;
+	    dialect: string;
+	    favoriteOnly: boolean;
+	    quickFilter: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new SearchFilter(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.searchText = source["searchText"];
+	        this.collectionId = source["collectionId"];
+	        this.tagId = source["tagId"];
+	        this.dialect = source["dialect"];
+	        this.favoriteOnly = source["favoriteOnly"];
+	        this.quickFilter = source["quickFilter"];
+	    }
+	}
+	export class Settings {
+	    theme: string;
+	    density: string;
+	    fontSize: number;
+	    tabSize: number;
+	    wordWrap: string;
+	    formatOnPaste: boolean;
+	    formatOnSave: boolean;
+	    showMinimap: boolean;
+	    lineNumbers: string;
+	    defaultDialect: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new Settings(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.theme = source["theme"];
+	        this.density = source["density"];
+	        this.fontSize = source["fontSize"];
+	        this.tabSize = source["tabSize"];
+	        this.wordWrap = source["wordWrap"];
+	        this.formatOnPaste = source["formatOnPaste"];
+	        this.formatOnSave = source["formatOnSave"];
+	        this.showMinimap = source["showMinimap"];
+	        this.lineNumbers = source["lineNumbers"];
+	        this.defaultDialect = source["defaultDialect"];
+	    }
+	}
+	export class TableInfo {
+	    schema: string;
+	    name: string;
+	    type: string;
+	    columns: ColumnInfo[];
+	
+	    static createFrom(source: any = {}) {
+	        return new TableInfo(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.schema = source["schema"];
+	        this.name = source["name"];
+	        this.type = source["type"];
+	        this.columns = this.convertValues(source["columns"], ColumnInfo);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class Tag {
+	    id: string;
+	    name: string;
+	    usageCount: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new Tag(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.name = source["name"];
+	        this.usageCount = source["usageCount"];
+	    }
+	}
+
+}
+

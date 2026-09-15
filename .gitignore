@@ -1,0 +1,33 @@
+# Build and Distribution outputs
+build/bin/
+dist/
+frontend/dist/
+*.exe
+
+# Dependencies
+node_modules/
+frontend/node_modules/
+
+# Local databases and temporary files
+querybox.db
+querybox.db-wal
+querybox.db-shm
+*.db
+*.sqlite
+*.sqlite3
+
+# Operating System Files
+.DS_Store
+Thumbs.db
+*.log
+*.tmp
+
+# IDEs and Editors
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Environment Variables
+.env
+.env.local

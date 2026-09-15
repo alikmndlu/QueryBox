@@ -1,0 +1,475 @@
+import React, { useState, useEffect } from 'react';
+import {
+  Star,
+  Sparkles,
+  Copy,
+  Save,
+  MoreHorizontal,
+  Trash2,
+  Edit3,
+  Sidebar,
+  Check,
+  Play,
+  Activity,
+  Code2,
+  Timer,
+} from 'lucide-react';
+import { useQueryStore } from '../../store/useQueryStore';
+import { useConnectionStore } from '../../store/useConnectionStore';
+import { useUIStore } from '../../store/useUIStore';
+import { useTabStore } from '../../store/useTabStore';
+import { SQLEditor } from '../editor/SQLEditor';
+import { TabBar } from './TabBar';
+import { ParameterBar } from '../editor/ParameterBar';
+import { SnippetMenu } from '../editor/SnippetMenu';
+import { DataGridPanel } from '../datagrid/DataGridPanel';
+import { substituteParameters } from '../../lib/paramExtractor';
+import { SQLDialect } from '../../types';
+import { Button } from '../ui/button';
+import { QueryBoxLogo } from '../ui/QueryBoxLogo';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '../ui/alert-dialog';
+
+export const CenterPanel: React.FC = () => {
+  const {
+    activeQuery,
+    draftTitle,
+    draftSQL,
+    draftDialect,
+    updateDraft,
+    saveActiveQuery,
+    formatActiveQuery,
+    toggleFavorite,
+    duplicateQuery,
+    deleteQuery,
+    createNewQuery,
+    saveStatus,
+  } = useQueryStore();
+
+  const {
+    profiles,
+    activeProfileId,
+    setActiveProfileId,
+    executeQuery,
+    explainQuery,
+    runBenchmark,
+    queryLimit,
+    setQueryLimit,
+    isExecuting,
+    isBenchmarking,
+    setConnectionModalOpen,
+  } = useConnectionStore();
+
+  const {
+    toggleLeftSidebar,
+    toggleRightSidebar,
+    showToast,
+    setCopyAsCodeModalOpen,
+  } = useUIStore();
+
+  const { tabIds } = useTabStore();
+
+  const [copied, setCopied] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
+  const [showDeleteAlert, setShowDeleteAlert] = useState(false);
+  const [paramValues, setParamValues] = useState<Record<string, string>>({});
+
+  const handleExecute = () => {
+    const finalSQL = substituteParameters(draftSQL, paramValues);
+    executeQuery(finalSQL, queryLimit);
+  };
+
+  const handleExplain = () => {
+    const finalSQL = substituteParameters(draftSQL, paramValues);
+    explainQuery(finalSQL);
+  };
+
+  const handleBenchmark = () => {
+    const finalSQL = substituteParameters(draftSQL, paramValues);
+    runBenchmark(finalSQL, 5);
+  };
+
+  // Keyboard shortcut listener for Ctrl+Enter when not in Monaco
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+        e.preventDefault();
+        handleExecute();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [draftSQL, paramValues, activeProfileId]);
+
+  if (!activeQuery) {
+    return (
+      <div className="flex-1 h-full bg-[#080b11] flex flex-col min-w-0 overflow-hidden select-none">
+        {tabIds.length > 0 && <TabBar />}
+        <div className="flex-1 flex flex-col items-center justify-center p-8 text-center">
+          <QueryBoxLogo size={56} showText={false} className="mb-4" />
+          <h2 className="text-xl font-bold text-white tracking-tight">QueryBox</h2>
+          <p className="text-xs text-slate-400 max-w-md mt-2 leading-relaxed">
+            Your personal offline SQL query library. Select an existing query or create a new query to start editing, organizing, and formatting.
+          </p>
+          <Button
+            onClick={() => createNewQuery()}
+            variant="default"
+            size="default"
+            className="mt-5"
+          >
+            Create New Query (⌘N)
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(draftSQL);
+    setCopied(true);
+    showToast('SQL copied to clipboard');
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const lineCount = draftSQL ? draftSQL.split('\n').length : 0;
+  const charCount = draftSQL ? draftSQL.length : 0;
+
+  return (
+    <div className="flex-1 h-full bg-[#080b11] flex flex-col min-w-0 overflow-hidden">
+      {/* Multi-Tab Workspace Bar */}
+      <TabBar />
+
+      {/* Top Main Toolbar */}
+      <div className="h-12 px-3.5 border-b border-[#1b2333] bg-[#0c101a] flex items-center justify-between gap-3 shrink-0 select-none">
+        {/* Left Side: Sidebar Toggle & Query Title */}
+        <div className="flex items-center gap-2.5 min-w-0 flex-1">
+          <Button
+            onClick={toggleLeftSidebar}
+            variant="ghost"
+            size="iconSm"
+            title="Toggle Left Sidebar (Cmd+B)"
+          >
+            <Sidebar className="w-4 h-4" />
+          </Button>
+
+          <button
+            onClick={() => toggleFavorite(activeQuery.id)}
+            className={`p-1 hover:scale-110 transition-transform ${
+              activeQuery.isFavorite ? 'text-amber-400' : 'text-slate-500 hover:text-amber-400'
+            }`}
+            title="Toggle Favorite"
+          >
+            <Star className={`w-4 h-4 ${activeQuery.isFavorite ? 'fill-amber-400' : ''}`} />
+          </button>
+
+          <input
+            type="text"
+            value={draftTitle}
+            onChange={(e) => updateDraft({ title: e.target.value })}
+            placeholder="Query Title..."
+            className="h-8 px-2 rounded-md bg-transparent hover:bg-[#111622] focus:bg-[#111622] border border-transparent focus:border-indigo-500/50 text-xs font-semibold text-slate-100 focus:outline-none min-w-0 flex-1 truncate transition-colors"
+          />
+        </div>
+
+        {/* Right Side: Action Toolbar */}
+        <div className="flex items-center gap-2 shrink-0">
+          {/* Cluster 1: Database & Execution */}
+          <div className="flex items-center bg-[#101625]/80 border border-[#1b253b] p-0.5 rounded-lg gap-1">
+            <select
+              value={activeProfileId || ''}
+              onChange={(e) => {
+                if (e.target.value === '__manage__') {
+                  setConnectionModalOpen(true);
+                } else {
+                  setActiveProfileId(e.target.value || null);
+                }
+              }}
+              className="h-7 px-2 rounded-md bg-[#0c111d] border border-[#1d273d] text-[11px] font-medium text-slate-300 focus:outline-none cursor-pointer max-w-[140px] truncate"
+              title="Target Database Connection"
+            >
+              <option value="" disabled>No Connection</option>
+              {profiles.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name} ({p.driver})
+                </option>
+              ))}
+              <option value="__manage__">+ Manage Connections...</option>
+            </select>
+
+            {/* Limit Selector */}
+            <select
+              value={queryLimit}
+              onChange={(e) => setQueryLimit(Number(e.target.value))}
+              className="h-7 px-1.5 rounded-md bg-[#0c111d] border border-[#1d273d] text-[11px] font-mono text-slate-400 hover:text-slate-200 focus:outline-none cursor-pointer"
+              title="Result Rows Limit"
+            >
+              <option value={50}>50</option>
+              <option value={100}>100</option>
+              <option value={250}>250</option>
+              <option value={500}>500</option>
+              <option value={1000}>1,000</option>
+              <option value={5000}>5,000</option>
+            </select>
+
+            {/* Run Button */}
+            <Button
+              onClick={handleExecute}
+              disabled={isExecuting}
+              variant="default"
+              size="sm"
+              className="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold shadow-md shadow-emerald-950/40 gap-1.5 text-xs h-7 px-2.5 transition-all"
+              title="Run Query (Ctrl+Enter)"
+            >
+              <Play className={`w-3 h-3 fill-white ${isExecuting ? 'animate-spin' : ''}`} />
+              <span>{isExecuting ? 'Running...' : 'Run'}</span>
+            </Button>
+
+            {/* Explain Button */}
+            <Button
+              onClick={handleExplain}
+              disabled={isExecuting || isBenchmarking}
+              variant="ghost"
+              size="sm"
+              className="h-7 text-xs gap-1 px-2 text-slate-300 hover:text-amber-300 hover:bg-[#161f33]"
+              title="Analyze Execution Plan (EXPLAIN)"
+            >
+              <Activity className="w-3.5 h-3.5 text-amber-400" />
+              <span className="hidden xl:inline">Explain</span>
+            </Button>
+
+            {/* Benchmark Button */}
+            <Button
+              onClick={handleBenchmark}
+              disabled={isExecuting || isBenchmarking}
+              variant="ghost"
+              size="sm"
+              className="h-7 text-xs gap-1 px-2 text-slate-300 hover:text-violet-300 hover:bg-[#161f33]"
+              title="Benchmark Query Performance (5 iterations)"
+            >
+              <Timer className={`w-3.5 h-3.5 text-violet-400 ${isBenchmarking ? 'animate-spin' : ''}`} />
+              <span className="hidden xl:inline">{isBenchmarking ? '...' : 'Benchmark'}</span>
+            </Button>
+          </div>
+
+          {/* Cluster 2: Dialect & Formatting */}
+          <div className="flex items-center bg-[#101625]/80 border border-[#1b253b] p-0.5 rounded-lg gap-1">
+            <select
+              value={draftDialect}
+              onChange={(e) => updateDraft({ dialect: e.target.value as SQLDialect })}
+              className="h-7 px-2 rounded-md bg-[#0c111d] border border-[#1d273d] text-[11px] font-mono font-medium text-indigo-300 focus:outline-none uppercase cursor-pointer"
+            >
+              <option value="postgresql">PostgreSQL</option>
+              <option value="mysql">MySQL</option>
+              <option value="sqlite">SQLite</option>
+              <option value="sqlserver">SQL Server</option>
+            </select>
+
+            <Button
+              onClick={formatActiveQuery}
+              variant="ghost"
+              size="sm"
+              className="h-7 text-xs px-2 text-slate-300 hover:text-indigo-300 hover:bg-[#161f33]"
+              title="Format SQL (Cmd+Shift+F)"
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              <span className="hidden lg:inline">Format</span>
+            </Button>
+
+            <SnippetMenu />
+          </div>
+
+          {/* Cluster 3: Export & Save */}
+          <div className="flex items-center bg-[#101625]/80 border border-[#1b253b] p-0.5 rounded-lg gap-1">
+            <Button
+              onClick={() => setCopyAsCodeModalOpen(true)}
+              variant="ghost"
+              size="sm"
+              className="h-7 text-xs gap-1 px-2 text-slate-300 hover:text-slate-100 hover:bg-[#161f33]"
+              title="Copy as Code (Go, TS, Python, Rust, PHP)"
+            >
+              <Code2 className="w-3.5 h-3.5 text-indigo-400" />
+              <span className="hidden lg:inline">Export</span>
+            </Button>
+
+            <Button
+              onClick={handleCopy}
+              variant="ghost"
+              size="sm"
+              className="h-7 text-xs px-2 text-slate-300 hover:text-slate-100 hover:bg-[#161f33]"
+              title="Copy SQL (Cmd+Shift+C)"
+            >
+              {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+              <span className="hidden sm:inline">{copied ? 'Copied' : 'Copy'}</span>
+            </Button>
+
+            <Button
+              onClick={saveActiveQuery}
+              disabled={saveStatus === 'saved'}
+              variant={saveStatus === 'dirty' ? 'default' : 'secondary'}
+              size="sm"
+              className={`h-7 text-xs px-2.5 transition-all ${
+                saveStatus === 'dirty'
+                  ? 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-md shadow-indigo-950/40'
+                  : 'bg-[#0c111d] text-slate-400 border border-[#1d273d]'
+              }`}
+              title="Save Query (Cmd+S)"
+            >
+              <Save className="w-3.5 h-3.5" />
+              <span>{saveStatus === 'saving' ? 'Saving...' : saveStatus === 'dirty' ? 'Save' : 'Saved'}</span>
+            </Button>
+          </div>
+
+          {/* Toggle Metadata Sidebar */}
+          <Button
+            onClick={toggleRightSidebar}
+            variant="ghost"
+            size="iconSm"
+            title="Toggle Query Info Sidebar"
+          >
+            <Sidebar className="w-4 h-4 rotate-180" />
+          </Button>
+
+          {/* More Actions Dropdown */}
+          <div className="relative">
+            <Button
+              onClick={() => setShowMenu(!showMenu)}
+              variant="ghost"
+              size="iconSm"
+            >
+              <MoreHorizontal className="w-4 h-4" />
+            </Button>
+
+            {showMenu && (
+              <div
+                onMouseLeave={() => setShowMenu(false)}
+                className="absolute right-0 mt-1 w-44 py-1 rounded-lg bg-[#111622] border border-[#1b2333] shadow-2xl z-50 text-xs text-slate-300 space-y-0.5 animate-in fade-in-50 zoom-in-95 duration-100"
+              >
+                <button
+                  onClick={() => {
+                    duplicateQuery(activeQuery.id);
+                    setShowMenu(false);
+                  }}
+                  className="w-full px-3 py-1.5 hover:bg-[#161c2b] flex items-center gap-2 text-left"
+                >
+                  <Edit3 className="w-3.5 h-3.5 text-indigo-400" />
+                  <span>Duplicate Query</span>
+                </button>
+                <button
+                  onClick={() => {
+                    setCopyAsCodeModalOpen(true);
+                    setShowMenu(false);
+                  }}
+                  className="w-full px-3 py-1.5 hover:bg-[#161c2b] flex items-center gap-2 text-left"
+                >
+                  <Code2 className="w-3.5 h-3.5 text-indigo-400" />
+                  <span>Export as Code</span>
+                </button>
+                <button
+                  onClick={() => {
+                    setShowMenu(false);
+                    setShowDeleteAlert(true);
+                  }}
+                  className="w-full px-3 py-1.5 hover:bg-rose-500/10 text-rose-400 hover:text-rose-300 flex items-center gap-2 text-left"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>Delete Query</span>
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Dynamic Parameter / Variable Bar */}
+      <ParameterBar
+        sql={draftSQL}
+        paramValues={paramValues}
+        onChangeParam={(k, v) => setParamValues((prev) => ({ ...prev, [k]: v }))}
+        onClearParams={() => setParamValues({})}
+      />
+
+      {/* Editor Main Content */}
+      <div className="flex-1 relative overflow-hidden bg-[#090d16]">
+        <SQLEditor
+          value={draftSQL}
+          onChange={(val) => updateDraft({ sqlContent: val })}
+          onSave={saveActiveQuery}
+          onFormat={formatActiveQuery}
+          onExecute={handleExecute}
+        />
+      </div>
+
+      {/* Data Grid Results & Explain Panel */}
+      <DataGridPanel />
+
+      {/* Bottom Status Bar */}
+      <div className="h-6.5 px-4 bg-[#0c101a] border-t border-[#1b2333] flex items-center justify-between text-[11px] font-mono text-slate-400 select-none shrink-0">
+        <div className="flex items-center gap-3">
+          <span
+            className={`flex items-center gap-1.5 ${
+              saveStatus === 'dirty'
+                ? 'text-amber-400 font-semibold'
+                : saveStatus === 'saving'
+                ? 'text-indigo-400'
+                : 'text-emerald-400'
+            }`}
+          >
+            <span
+              className={`w-1.5 h-1.5 rounded-full ${
+                saveStatus === 'dirty'
+                  ? 'bg-amber-400 animate-pulse'
+                  : saveStatus === 'saving'
+                  ? 'bg-indigo-400 animate-ping'
+                  : 'bg-emerald-400'
+              }`}
+            />
+            {saveStatus === 'dirty' ? 'Unsaved' : saveStatus === 'saving' ? 'Saving...' : 'Saved'}
+          </span>
+          <span className="text-slate-600">|</span>
+          <span>{lineCount} lines</span>
+          <span>{charCount} chars</span>
+        </div>
+
+        <div className="flex items-center gap-3 text-slate-500">
+          <span className="text-emerald-400 font-semibold">Ctrl+Enter Run</span>
+          <span>⌘S Save</span>
+          <span>⌘⇧F Format</span>
+          <span>⌘⇧C Copy</span>
+        </div>
+      </div>
+
+      {/* shadcn AlertDialog for Delete Query in CenterPanel */}
+      <AlertDialog open={showDeleteAlert} onOpenChange={setShowDeleteAlert}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Query?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to permanently delete <span className="font-semibold text-slate-200">"{activeQuery?.title}"</span>?
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              variant="destructive"
+              onClick={() => {
+                deleteQuery(activeQuery.id);
+                setShowDeleteAlert(false);
+              }}
+            >
+              Delete Query
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
+  );
+};

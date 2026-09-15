@@ -1,0 +1,85 @@
+name: Release QueryBox
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build (${{ matrix.platform }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            platform: windows-amd64
+            archive_name: QueryBox-windows-amd64.zip
+          - os: ubuntu-22.04
+            platform: linux-amd64
+            archive_name: QueryBox-linux-amd64.tar.gz
+          - os: macos-latest
+            platform: darwin-universal
+            archive_name: QueryBox-macos-universal.zip
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'
+          cache: true
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install Linux Build Dependencies
+        if: matrix.os == 'ubuntu-22.04'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.0-dev
+
+      - name: Install Wails CLI
+        run: go install github.com/wailsapp/wails/v2/cmd/wails@latest
+
+      - name: Install Frontend Dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Build Binary with Wails
+        run: wails build
+
+      - name: Package Windows Binary
+        if: matrix.os == 'windows-latest'
+        shell: pwsh
+        run: |
+          Compress-Archive -Path build/bin/QueryBox.exe -DestinationPath ${{ matrix.archive_name }}
+
+      - name: Package Linux Binary
+        if: matrix.os == 'ubuntu-22.04'
+        run: |
+          tar -czvf ${{ matrix.archive_name }} -C build/bin QueryBox
+
+      - name: Package macOS Application
+        if: matrix.os == 'macos-latest'
+        run: |
+          ditto -c -k --sequesterRsrc --keepParent build/bin/QueryBox.app ${{ matrix.archive_name }}
+
+      - name: Upload Release Asset
+        uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: ${{ matrix.archive_name }}
+          generate_release_notes: true
+          draft: false
+          prerelease: false
