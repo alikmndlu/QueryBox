@@ -13,6 +13,7 @@ import {
   Activity,
   Code2,
   Timer,
+  AlertTriangle,
 } from 'lucide-react';
 import { useQueryStore } from '../../store/useQueryStore';
 import { useConnectionStore } from '../../store/useConnectionStore';
@@ -24,6 +25,7 @@ import { ParameterBar } from '../editor/ParameterBar';
 import { SnippetMenu } from '../editor/SnippetMenu';
 import { DataGridPanel } from '../datagrid/DataGridPanel';
 import { substituteParameters } from '../../lib/paramExtractor';
+import { checkQueryMutation, QueryMutationCheck } from '../../lib/queryClassifier';
 import { SQLDialect } from '../../types';
 import { Button } from '../ui/button';
 import { QueryBoxLogo } from '../ui/QueryBoxLogo';
@@ -81,11 +83,21 @@ export const CenterPanel: React.FC = () => {
   const [showMenu, setShowMenu] = useState(false);
   const [showDeleteAlert, setShowDeleteAlert] = useState(false);
   const [paramValues, setParamValues] = useState<Record<string, string>>({});
+  const [pendingMutation, setPendingMutation] = useState<{ sql: string; info: QueryMutationCheck } | null>(null);
 
-  const handleExecute = () => {
+  const executeWithMutationGuard = (force: boolean = false) => {
     const finalSQL = substituteParameters(draftSQL, paramValues);
+    if (!force) {
+      const check = checkQueryMutation(finalSQL);
+      if (check.isMutating) {
+        setPendingMutation({ sql: finalSQL, info: check });
+        return;
+      }
+    }
     executeQuery(finalSQL, queryLimit);
   };
+
+  const handleExecute = () => executeWithMutationGuard(false);
 
   const handleExplain = () => {
     const finalSQL = substituteParameters(draftSQL, paramValues);
@@ -474,6 +486,58 @@ export const CenterPanel: React.FC = () => {
               }}
             >
               Delete Query
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Confirmation Dialog for Destructive / Mutating Queries (DELETE, UPDATE, DROP, etc.) */}
+      <AlertDialog open={!!pendingMutation} onOpenChange={(open) => !open && setPendingMutation(null)}>
+        <AlertDialogContent className="bg-[#0f1422] border-[#222e47] max-w-lg select-none text-slate-200">
+          <AlertDialogHeader>
+            <div className="flex items-center gap-2.5 mb-1">
+              <div className={`p-2 rounded-lg ${pendingMutation?.info.severity === 'danger' ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30' : 'bg-amber-500/20 text-amber-400 border border-amber-500/30'}`}>
+                <AlertTriangle className="w-5 h-5 animate-pulse" />
+              </div>
+              <div>
+                <AlertDialogTitle className="text-sm font-bold text-white">
+                  {pendingMutation?.info.warningTitle || 'Confirm Database Mutation'}
+                </AlertDialogTitle>
+                <div className="text-[11px] font-mono text-slate-400 mt-0.5">
+                  Target: <span className="text-indigo-300 font-semibold">{profiles.find(p => p.id === activeProfileId)?.name || 'Default Connection'}</span>
+                </div>
+              </div>
+            </div>
+            <AlertDialogDescription className="text-xs text-slate-300 leading-relaxed pt-2">
+              {pendingMutation?.info.warningMessage}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+
+          {/* SQL Preview Box */}
+          <div className="my-2 p-3 rounded-lg bg-[#080b12] border border-[#1b253b] font-mono text-[11px] text-slate-300 max-h-32 overflow-y-auto whitespace-pre-wrap select-text">
+            {pendingMutation?.sql}
+          </div>
+
+          <AlertDialogFooter className="gap-2">
+            <AlertDialogCancel className="bg-[#141b2b] border-[#222e47] text-slate-300 hover:bg-[#1a2338] text-xs h-8">
+              Cancel (Esc)
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (pendingMutation) {
+                  const sqlToRun = pendingMutation.sql;
+                  setPendingMutation(null);
+                  executeQuery(sqlToRun, queryLimit);
+                }
+              }}
+              className={`text-white text-xs h-8 font-semibold shadow-md ${
+                pendingMutation?.info.severity === 'danger'
+                  ? 'bg-rose-600 hover:bg-rose-500 shadow-rose-950/50'
+                  : 'bg-amber-600 hover:bg-amber-500 shadow-amber-950/50'
+              }`}
+            >
+              <Play className="w-3.5 h-3.5 mr-1 fill-white" />
+              <span>Execute {pendingMutation?.info.operationType}</span>
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
