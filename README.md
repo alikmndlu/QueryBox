@@ -2,85 +2,142 @@
 
 # 📦 QueryBox
 
-### Fast, Local-First SQL Query Manager & Developer Workstation
+### High-Performance, Local-First SQL Query Manager & Developer Workbench
 
-[![Release](https://img.shields.io/github/v/release/your-username/QueryBox?color=6366f1&style=flat-square)](https://github.com/your-username/QueryBox/releases)
-[![License: MIT](https://img.shields.io/badge/License-MIT-emerald.svg?style=flat-square)](LICENSE)
-[![Go Version](https://img.shields.io/badge/Go-1.23+-00ADD8?style=flat-square&logo=go)](https://golang.org)
-[![Wails v2](https://img.shields.io/badge/Wails-v2.15-df0000?style=flat-square)](https://wails.io)
-[![React 19](https://img.shields.io/badge/React-19-61DAFB?style=flat-square&logo=react)](https://react.dev)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.7-3178C6?style=flat-square&logo=typescript)](https://www.typescriptlang.org)
-[![Tailwind CSS](https://img.shields.io/badge/TailwindCSS-4.0-38B2AC?style=flat-square&logo=tailwind-css)](https://tailwindcss.com)
+[![GitHub Release](https://img.shields.io/github/v/release/alikmndlu/QueryBox?color=6366f1&style=for-the-badge&logo=github)](https://github.com/alikmndlu/QueryBox/releases)
+[![License: MIT](https://img.shields.io/badge/License-MIT-10b981?style=for-the-badge)](LICENSE)
+[![Go Version](https://img.shields.io/badge/Go-1.23+-00ADD8?style=for-the-badge&logo=go)](https://golang.org)
+[![Wails v2](https://img.shields.io/badge/Wails-v2.15-df0000?style=for-the-badge)](https://wails.io)
+[![React 19](https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react)](https://react.dev)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.7-3178C6?style=for-the-badge&logo=typescript)](https://www.typescriptlang.org)
+[![Tailwind CSS](https://img.shields.io/badge/TailwindCSS-4.0-38B2AC?style=for-the-badge&logo=tailwind-css)](https://tailwindcss.com)
 
 <p align="center">
-  <b>English</b> | <a href="#-توضیحات-به-زبان-فارسی-persian"><b>فارسی</b></a>
+  <a href="#-key-features"><b>Key Features</b></a> •
+  <a href="#-downloads--installation"><b>Downloads</b></a> •
+  <a href="#-supported-databases"><b>Databases</b></a> •
+  <a href="#-keyboard-shortcuts"><b>Shortcuts</b></a> •
+  <a href="#-architecture"><b>Architecture</b></a> •
+  <a href="#-راهنمای-کامل-به-زبان-فارسی-persian-documentation"><b>توضیحات فارسی</b></a>
 </p>
 
 <p align="center">
-  A modern, privacy-focused desktop SQL query library and database workbench.<br />
-  Organize, edit, benchmark, and execute queries across <b>PostgreSQL</b>, <b>MySQL</b>, <b>SQLite</b>, and <b>SQL Server</b> with zero cloud dependencies.
+  A lightning-fast, privacy-centric desktop SQL query library and workbench.<br />
+  Manage, benchmark, visualize, and execute queries across <b>PostgreSQL</b>, <b>MySQL</b>, <b>SQLite</b>, and <b>SQL Server</b> with zero cloud dependencies.
 </p>
 
 </div>
 
 ---
 
-## 🌟 Highlights
+## ⚡ Why QueryBox?
 
-- 🔒 **100% Local-First & Private**: Zero telemetry, no cloud accounts, and no tracking. All queries, version histories, and connections are stored safely on your machine in an encrypted SQLite database.
-- ⚡ **Pure-Go Database Drivers**: Native connectivity with **zero CGo dependencies** for **PostgreSQL**, **MySQL**, **SQLite**, and **SQL Server (T-SQL)**.
-- 📐 **Database Schema Explorer & DDL Generator**: Introspect live tables, views, columns, and data types, and generate dialect-specific `CREATE TABLE` DDL with one click.
-- 📊 **Interactive Data Grid & Column Profiler**: Fast virtualized grid with in-memory filtering, column sorting, visibility toggles, CSV/JSON/TSV exports, and deep statistical profiling (null counts, uniqueness, mini frequency histograms, and numeric aggregates).
-- 📈 **Instant SVG Visualizer**: Convert query results into responsive Bar, Line, or Donut charts with zero heavy external charting libraries.
-- 🧠 **Monaco Editor with Intelligent IntelliSense**: Context-aware SQL auto-complete pulling live table and column names directly from active connections, syntax highlighting, bracket matching, and multi-dialect SQL beautification.
-- 🧩 **Dynamic Parameter Substitution**: Auto-detects `:param` and `{{param}}` template variables with a live parameter bar above the editor.
-- 🗂️ **Multi-Tab Workspace & Visual Diff**: Open multiple queries in tabs and visually inspect snapshot revisions side-by-side with Monaco's diff engine.
-- 💻 **Export as Code**: Generate production-ready code snippets in **Go** (`database/sql`), **TypeScript** (`pg`/`mysql2`), **Python** (`psycopg2`), **Rust** (`sqlx`), and **PHP** (`PDO`).
-- 🌿 **Git / Directory Synchronization**: Bidirectional sync between your local QueryBox library and any folder as `.sql` files with clean YAML frontmatter.
-- ⏱️ **Query Benchmarking & EXPLAIN Analyzer**: Run multi-iteration benchmarks (calculating min, max, avg latencies) and analyze execution plans.
-- ⌨️ **Command Palette & Keyboard Cheat Sheet**: Raycast-style command palette (`Ctrl + K`) and an interactive keyboard shortcut reference (`Ctrl + /`).
+Most modern database tools are either bloated Electron monsters consuming gigabytes of RAM, or cloud-tethered dashboards that compromise your proprietary schemas and query history.
+
+**QueryBox** takes a different approach:
+- **Native Efficiency**: Built on [Wails v2](https://wails.io) and pure Go, launching in under a second with a ~30MB memory footprint.
+- **Privacy by Design**: 100% local-first. All connections, queries, revisions, and execution logs reside exclusively on your machine in an encrypted SQLite database.
+- **Safety First**: Intelligent query analyzer guards you against accidental production mishaps (intercepting destructive `DELETE`, `UPDATE`, `DROP`, and `TRUNCATE` commands with mandatory confirmations and missing `WHERE` clause warnings).
+- **All-in-One Developer Ergonomics**: From Monaco IntelliSense and column pinning to instant statistical data profiling, zero-dependency SVG charts, and in-app self-updating.
 
 ---
 
-## 🖥️ Platform Support
+## 🌟 Key Features
 
-QueryBox compiles into a single, highly-optimized native executable for:
-- 🪟 **Windows**: 10, 11 (64-bit)
-- 🍎 **macOS**: Apple Silicon (M1/M2/M3/M4) & Intel (Universal Binary)
-- 🐧 **Linux**: Ubuntu, Debian, Fedora, Arch (via GTK3 / WebKit2GTK)
+### 1. 🛡️ Intelligent Mutation Safety Guard
+- **Accidental Execution Prevention**: Automatically analyzes queries before execution. Whenever a mutating statement (`UPDATE`, `DELETE`, `DROP`, `TRUNCATE`, `ALTER`) is detected, QueryBox halts and presents an explicit confirmation modal.
+- **Missing `WHERE` Warning**: Specifically flags destructive `DELETE` and `UPDATE` statements running without a `WHERE` clause to safeguard against accidental bulk data loss.
+- **Safe Read-Only Toggle**: Enforce a strict read-only session with a single click.
+
+### 2. 📌 Virtualized Data Grid & Column Pinning
+- **High-Performance Virtual Scrolling**: Smooth 60fps rendering capable of scrolling tens of thousands of rows without browser lag.
+- **Column Pinning**: Pin critical identifier columns (like `id`, `uuid`, `username`, `email`) to the left of the grid so they remain permanently visible while scrolling horizontally through wide datasets.
+- **Dynamic Sorting & Filtering**: Instant client-side text filtering and multi-column sorting.
+- **Instant Data Export**: One-click export to **CSV**, **JSON**, and **TSV** formats.
+
+### 3. 📊 Deep Column Profiler & Statistical Breakdown
+- **One-Click Distribution**: Inspect data distribution across any result column without writing extra `COUNT(DISTINCT ...)` queries.
+- **Metrics Breakdown**: Displays null percentages, unique record ratios, min/max/average numerical metrics, and top frequent values with visual mini-histograms.
+
+### 4. 📈 Zero-Dependency SVG Data Visualizer
+- **Instant Chart Generation**: Turn any query output into a presentation-ready **Bar Chart**, **Line Chart**, or **Donut Chart** with zero external chart library overhead.
+- **Interactive Legend & Tooltips**: Fully responsive SVG visualization with hover values, dimension selection, and metric aggregation.
+
+### 5. 🧠 Monaco Editor with Live Schema IntelliSense
+- **Contextual Autocompletion**: Live autocompletion feeds table names, view names, column names, and data types directly from your active database connection.
+- **Multi-Dialect SQL Formatter**: Format SQL cleanly with `Ctrl + Shift + F` tailored for PostgreSQL, MySQL, SQLite, and T-SQL.
+- **Syntax Highlighting & Bracket Matching**: Full-featured IDE experience with multi-cursor support, minimap, and fold controls.
+
+### 6. 🧩 Dynamic Parameter Substitution (`:param` & `{{param}}`)
+- Automatically detects parameters using `:param_name` or `{{param_name}}` syntax.
+- Dynamically renders parameter input fields in an interactive bar directly above the editor.
+- Safely interpolates inputs into execution without altering your base template.
+
+### 7. 📐 Live Database Schema Explorer & DDL Generator
+- Connect and explore your database structure in a tree-view panel (Databases ➔ Schemas ➔ Tables & Views ➔ Columns).
+- Inspect column data types, nullable states, default values, and primary keys.
+- Generate dialect-accurate `CREATE TABLE` DDL statements with a single click.
+
+### 8. 🔄 In-App Self-Updater
+- **Direct GitHub Releases Integration**: Automatically checks for updates or lets you check on demand from Settings.
+- **Changelog Viewer & Progress Bar**: Preview release notes, download the update with a real-time progress bar, and atomically replace the binary with zero manual extraction required.
+
+### 9. 🗂️ Multi-Tab Workspace & Side-by-Side Version Diff
+- Work on multiple queries simultaneously using persistent tabs.
+- Every save automatically records an immutable snapshot version.
+- Compare any two historical versions side-by-side with Monaco's integrated diff engine.
+
+### 10. 💻 "Copy as Code" Generator
+- Export your tested SQL query as idiomatic, production-ready code with parameter placeholders for:
+  - **Go**: `database/sql` with context
+  - **TypeScript / Node.js**: `pg` and `mysql2/promise`
+  - **Python**: `psycopg2` and `pymysql`
+  - **Rust**: `sqlx` async queries
+  - **PHP**: `PDO` prepared statements
+
+### 11. 🌿 Git / Directory Synchronization
+- Bidirectional synchronization between your QueryBox collection and any local folder or Git repository.
+- Queries are saved as human-readable `.sql` files with clean YAML frontmatter metadata (title, tags, connection target, timestamps).
+
+### 12. ⏱️ Query Benchmarking & EXPLAIN Visualizer
+- Benchmark query latency over multiple iterations (calculating minimum, maximum, and average execution times).
+- Visualizer for `EXPLAIN` and `EXPLAIN ANALYZE` execution plans to pinpoint expensive sequential scans.
+
+### 13. 🖥️ Native System Tray & Custom 3D Branding
+- Native system tray integration across Windows, macOS, and Linux.
+- Quick-access tray menu: `Show QueryBox`, `New Query`, `Settings`, and `Quit`.
+- High-resolution custom 3D isometric QueryBox icon embedded directly into the Windows Taskbar, macOS Dock, and Linux application launchers.
 
 ---
 
-## 🚀 Quick Start & Installation
+## 🖥️ Downloads & Installation
 
-### 1. Pre-built Binaries (Recommended)
-Download the latest pre-compiled release for your operating system from the **[Releases Page](https://github.com/your-username/QueryBox/releases)**.
+### Pre-Compiled Packages
 
-### 2. Build from Source
+Download the latest release for your platform from the **[GitHub Releases Page](https://github.com/alikmndlu/QueryBox/releases)**:
 
-#### Prerequisites
-- [Go](https://go.dev/dl/) `1.23` or later
-- [Node.js](https://nodejs.org/) `20` or later & npm
-- [Wails CLI v2](https://wails.io/docs/gettingstarted/installation):
-  ```bash
-  go install github.com/wailsapp/wails/v2/cmd/wails@latest
-  ```
+| Platform | Package Format | Description |
+| :--- | :--- | :--- |
+| **Windows** (x64) | [`.exe` (NSIS Installer)](https://github.com/alikmndlu/QueryBox/releases) | Recommended installer with desktop shortcut & start menu integration |
+| **Windows** (x64) | [`.zip` (Portable)](https://github.com/alikmndlu/QueryBox/releases) | Standalone portable executable (no install required) |
+| **macOS** (Universal) | [`.dmg` (Disk Image)](https://github.com/alikmndlu/QueryBox/releases) | Drag-and-drop installer for Apple Silicon (M1/M2/M3/M4) & Intel |
+| **macOS** (Universal) | [`.tar.gz` (Archive)](https://github.com/alikmndlu/QueryBox/releases) | Standalone `QueryBox.app` bundle |
+| **Linux** (amd64) | [`.deb` (Debian/Ubuntu)](https://github.com/alikmndlu/QueryBox/releases) | Native Debian/Ubuntu package (`sudo dpkg -i ...`) |
+| **Linux** (amd64) | [`.rpm` (Fedora/RHEL)](https://github.com/alikmndlu/QueryBox/releases) | Native RedHat/Fedora package (`sudo rpm -i ...`) |
+| **Linux** (amd64) | [`.tar.gz` (Binary)](https://github.com/alikmndlu/QueryBox/releases) | Standalone binary with desktop file and icons |
 
-#### Clone & Run Live Development
-```bash
-# Clone the repository
-git clone https://github.com/your-username/QueryBox.git
-cd QueryBox
+---
 
-# Start live development with hot-reload
-wails dev
-```
+## 🗄️ Supported Databases
 
-#### Build Production Binary
-```bash
-wails build
-```
-The compiled binary will be located in `build/bin/QueryBox.exe` (Windows) or `build/bin/QueryBox` (macOS / Linux).
+QueryBox uses pure-Go database drivers with **zero external C library dependencies (no CGo)**:
+
+| Database Engine | Driver / Library | Connection Details |
+| :--- | :--- | :--- |
+| **PostgreSQL** | `github.com/lib/pq` | Standard Host, Port (5432), Database, User, Password, SSL modes (`disable`, `require`) |
+| **MySQL** / MariaDB | `github.com/go-sql-driver/mysql` | Host, Port (3306), Database, User, Password, Connection collation |
+| **SQLite** | `github.com/glebarez/go-sqlite` | Local file path (`.db`, `.sqlite`, `.sqlite3`) with in-memory WAL support |
+| **Microsoft SQL Server** | `github.com/microsoft/go-mssqldb` | Host, Port (1433), Database, User, Password, Encrypt modes |
 
 ---
 
@@ -88,90 +145,169 @@ The compiled binary will be located in `build/bin/QueryBox.exe` (Windows) or `bu
 
 | Shortcut | Action | Description |
 | :--- | :--- | :--- |
-| **`Ctrl + Enter`** | **Run Query** | Executes the active query on the selected database connection |
-| **`Ctrl + S`** | **Save Query** | Saves query title, SQL content, and metadata |
-| **`Ctrl + Shift + F`** | **Format SQL** | Formats query according to active SQL dialect |
-| **`Ctrl + Shift + C`** | **Copy SQL** | Copies SQL to system clipboard |
-| **`Ctrl + N`** | **New Tab** | Opens a fresh query tab in the workspace |
-| **`Ctrl + B`** | **Toggle Sidebar** | Collapses / expands the navigation sidebar |
-| **`Ctrl + K`** / **`Ctrl + Shift + P`** | **Command Palette** | Opens the global command palette |
-| **`Ctrl + ,`** | **Settings** | Opens editor and theme settings |
-| **`Ctrl + /`** | **Shortcuts Cheat Sheet** | Displays the interactive keyboard shortcuts modal |
+| **`Ctrl + Enter`** | **Execute Query** | Runs the active query against the selected database connection |
+| **`Ctrl + S`** | **Save Query** | Saves query name, SQL content, variables, and tags |
+| **`Ctrl + Shift + F`** | **Format SQL** | Beautifies SQL using the dialect-specific formatter |
+| **`Ctrl + Shift + C`** | **Copy SQL** | Copies the active editor SQL directly to the clipboard |
+| **`Ctrl + N`** | **New Tab** | Opens a fresh, empty query tab |
+| **`Ctrl + W`** | **Close Tab** | Closes the current query tab |
+| **`Ctrl + B`** | **Toggle Sidebar** | Toggles left navigation panel |
+| **`Ctrl + K`** / **`Ctrl + Shift + P`** | **Command Palette** | Opens Raycast-style command search |
+| **`Ctrl + ,`** | **Settings** | Opens theme, editor, and update preferences |
+| **`Ctrl + /`** | **Cheat Sheet** | Opens interactive keyboard shortcuts reference modal |
 
-*(On macOS, replace `Ctrl` with `Cmd ⌘`)*
+*(Note: On macOS, substitute `Ctrl` with `Cmd ⌘`)*
 
 ---
 
-## 🏗️ Architecture & Tech Stack
+## 🏗️ Architecture
 
-```mermaid
-graph TD
-    UI["React 19 + TypeScript + Tailwind CSS"] --> WailsBridge["Wails v2 IPC Bridge"]
-    WailsBridge --> GoApp["Go Application Core (app.go)"]
-    GoApp --> QueryRepo["Query & Collections Repository (SQLite WAL)"]
-    GoApp --> ExecService["Query Execution & Benchmarking Engine"]
-    GoApp --> SyncService["Bidirectional Git / Directory Sync"]
-    ExecService --> PG["PostgreSQL Driver (github.com/lib/pq)"]
-    ExecService --> MY["MySQL Driver (github.com/go-sql-driver/mysql)"]
-    ExecService --> SL["SQLite Driver (github.com/glebarez/go-sqlite)"]
-    ExecService --> MS["SQL Server Driver (github.com/microsoft/go-mssqldb)"]
+```
+┌──────────────────────────────────────────────────────────────┐
+│             React 19 + TypeScript + Tailwind CSS             │
+│   (Monaco Editor • Virtual Data Grid • SVG Visualizer)       │
+└──────────────────────────────┬───────────────────────────────┘
+                               │ Wails v2 IPC Bridge
+┌──────────────────────────────┴───────────────────────────────┐
+│                     Go Application Core                      │
+│             (app.go • Local SQLite WAL Storage)              │
+├──────────────────────────────┬───────────────────────────────┤
+│    Services & Repositories   │      Native Desktop Tray      │
+│  - Query & Version Repo      │  - Windows Native Tray (.ico) │
+│  - Connection Profile Repo   │  - macOS / Linux Tray (.png)  │
+│  - Query Execution Engine    │  - Minimized-to-Tray Support  │
+│  - Git Bidirectional Sync    │  - Global Window Activation   │
+│  - Self-Updater (GitHub API) │                               │
+└──────────────────────────────┴───────────────────────────────┘
+                               │ Pure Go Database Drivers (Zero CGo)
+    ┌──────────────┬───────────┴───┬──────────────┬─────────────┐
+    ▼              ▼               ▼              ▼             ▼
+PostgreSQL       MySQL           SQLite       SQL Server    Local Git
+ (lib/pq)    (go-sql-driver)  (go-sqlite)   (go-mssqldb)    (Folder)
 ```
 
-- **Core Runtime**: [Wails v2](https://wails.io) (lightweight alternative to Electron using native webview)
-- **Backend**: Go with pure-Go database drivers (zero CGo toolchain required)
-- **Frontend**: React 19, TypeScript 5.7, Vite 7
-- **UI Components & Styling**: Tailwind CSS, Radix UI (shadcn/ui), Lucide React
-- **Code Editor**: Monaco Editor (`@monaco-editor/react`) with custom IntelliSense provider and SQL formatting
+---
+
+## 🛠️ Building from Source
+
+### Prerequisites
+- [Go](https://go.dev/dl/) `1.23` or newer
+- [Node.js](https://nodejs.org/) `20.x` or newer & npm
+- [Wails CLI v2](https://wails.io/docs/gettingstarted/installation):
+  ```bash
+  go install github.com/wailsapp/wails/v2/cmd/wails@latest
+  ```
+
+### Development Mode (Hot Reload)
+```bash
+# Clone the repository
+git clone https://github.com/alikmndlu/QueryBox.git
+cd QueryBox
+
+# Run live development server
+wails dev
+```
+
+### Production Build
+```bash
+# Generate high-resolution icons (automatic during build)
+go run ./scripts/genicon.go
+
+# Compile native binary for your OS
+wails build -clean
+```
+The compiled binary will be placed in `build/bin/`.
 
 ---
 
-## 🚢 Publishing a New Release (GitHub Actions)
+## 🇮🇷 راهنمای کامل به زبان فارسی (Persian Documentation)
 
-This repository includes an automated cross-platform release workflow (`.github/workflows/release.yml`). To trigger a new release:
+<div dir="rtl">
 
-1. Commit and push your changes to `main`.
-2. Create and push a semver tag:
-   ```bash
-   git tag v1.0.0
-   git push origin v1.0.0
-   ```
-3. GitHub Actions will automatically:
-   - Build binaries for **Windows (amd64)**, **Linux (amd64)**, and **macOS (Universal)**.
-   - Package them into `.zip` / `.tar.gz` archives.
-   - Publish a new GitHub Release with download links and changelog.
+**QueryBox** یک ورک‌بنچ و مدیر کوئری مدرن، بسیار پرسرعت و کاملاً آفلاین (Local-First) برای برنامه‌نویسان، مدیران پایگاه داده و مهندسان داده است که با بهره‌گیری از هسته قدرتمند **Go** و رابط کاربری واکنش‌گرای **React 19** ساخته شده است.
 
----
+### 🌟 قابلیت‌های برجسته:
 
-## 🇮🇷 توضیحات به زبان فارسی (Persian)
+1. **🛡️ گارد محافظتی عملیات حساس (Mutation Safety Guard)**:
+   - کوئری‌باکس قبل از اجرای هر دستور، ساختار آن را بررسی می‌کند.
+   - در صورت مشاهده دستورات تغییردهنده داده یا ساختار دیتابیس (`UPDATE`، `DELETE`، `DROP`، `TRUNCATE`، `ALTER`)، اجرای خودکار متوقف شده و یک پنجره تأییدیه امنیتی نمایش داده می‌شود.
+   - در صورتی که دستور `UPDATE` یا `DELETE` بدون شرط `WHERE` باشد، هشدار جدی داده می‌شود تا از حذف یا ویرایش تصادفی کل جدول جلوگیری به عمل آید.
+   - امکان فعال‌سازی حالت امن (Safe Read-Only) با یک کلیک.
 
-**QueryBox** یک نرم‌افزار دسکتاپ مدرن، سبک و کاملاً آفلاین (Local-First) برای مدیریت، نوشتن، قالب‌بندی و اجرای کوئری‌های SQL است که با ترکیب قدرت **Go** و زیبایی **React** ساخته شده است.
+2. **📌 جدول داده‌های مجازی و پین کردن ستون‌ها (Column Pinning)**:
+   - نمایش فوق‌العاده روان ده‌ها هزار رکورد بدون افت فریم به لطف Virtual Data Grid.
+   - قابلیت **پین کردن (Pin)** ستون‌های کلیدی (مانند `id`، `uuid`، نام و ...) به سمت چپ جدول؛ بدین ترتیب در حین اسکرول افقی در جدول‌های عریض، ستون‌های شناسایی همواره ثابت و خوانا باقی می‌مانند.
+   - جستجوی بلادرنگ در نتایج و مرتب‌سازی چندستونه.
+   - خروجی سریع به فرمت‌های CSV، JSON و TSV.
 
-### ویژگی‌های کلیدی:
-1. **اتصال و اجرای زنده کوئری (Live Query Execution)**: اتصال مستقیم به دیتابیس‌های PostgreSQL، MySQL، SQLite و SQL Server بدون نیاز به اینترنت و بدون ارسال داده به سرورهای ابری.
-2. **مرورگر ساختار دیتابیس و تولید DDL**: مشاهده جداول، ستون‌ها، نوع داده و کلیدهای اصلی همراه با تولید خودکار دستور `CREATE TABLE`.
-3. **جدول داده‌های پیشرفته (Data Grid)**: جستجوی درون‌حافظه‌ای، مرتب‌سازی ستون‌ها، انتخاب ستون‌های قابل مشاهده، خروجی CSV/JSON/TSV و پروفایلر آماری ستون‌ها (محاسبه مقادیر یکتا، رکوردهای Null، پرتکرارترین داده‌ها و شاخص‌های میانگین/مجموع).
-4. **رسم نمودار آنی (Instant Charting)**: تبدیل سریع داده‌های جدولی به نمودارهای میله‌ای، خطی و دونات با SVG خالص و فوق‌العاده سریع.
-5. **ادیتور هوشمند Monaco با IntelliSense**: پیشنهاد خودکار نام جداول و ستون‌های دیتابیس متصل در حین تایپ کوئری همراه با فرمت‌کننده خودکار SQL.
-6. **پشتیبانی از متغیرها و پارامترها**: شناسایی خودکار پارامترهای `:param` و `{{param}}` و جایگزینی لحظه‌ای مقادیر.
-7. **فضای کاری چندتبی و مقایسه بصری نسخه‌ها (Monaco Diff)**: باز کردن همزمان چندین کوئری در تب‌های مجزا و مقایسه تغییرات تاریخچه با ادیتور Diff دوطرفه.
-8. **خروجی کد ("Copy as...")**: تولید فوری کدهای آماده به زبان‌های Go، TypeScript، Python، Rust و PHP.
-9. **همگام‌سازی با گیت و پوشه‌های محلی**: ذخیره و فراخوانی کوئری‌ها به عنوان فایل‌های `.sql` همراه با هدرهای استاندارد فرانت‌متر.
-10. **بنچمارک و ارزیابی عملکرد (Benchmark & EXPLAIN)**: محاسبه میانگین، حداقل و حداکثر تأخیر کوئری‌ها در چند تکرار پیاپی.
+3. **📊 پروفایلر آماری داده‌ها (Data Profiler)**:
+   - تحلیل آماری ستون‌ها بدون نیاز به نوشتن کوئری‌های پیچیده `COUNT(DISTINCT)`.
+   - نمایش درصد رکوردهای خالی (Null Ratio)، تعداد مقادیر منحصربه‌فرد، میانگین/مجموع برای فیلدهای عددی و هیستوگرام گرافیکی داده‌های پرتکرار.
+
+4. **📈 رسم نمودار آنی بدون وابستگی خارجی (Instant SVG Charts)**:
+   - تبدیل سریع نتایج کوئری به نمودارهای میله‌ای (Bar)، خطی (Line) و دونات (Donut) با وکتور SVG خالص و بدون سربار کتابخانه‌های سنگین جاوااسکریپت.
+
+5. **🧠 ادیتور پیشرفته Monaco با پیشنهاد هوشمند دیتابیس (IntelliSense)**:
+   - تکمیل خودکار نام جداول، نماها و ستون‌ها بر اساس پایگاه داده متصل به صورت زنده.
+   - مرتب‌سازی استاندارد و فرمت خودکار کدهای SQL با میانبر `Ctrl + Shift + F` متناسب با گویش دیتابیس فعال (PostgreSQL, MySQL, SQLite, T-SQL).
+
+6. **🧩 پارامترها و متغیرهای پویا (`:param` و `{{param}}`)**:
+   - تشخیص خودکار متغیرهای فرمولیزه شده در متن کوئری.
+   - ایجاد خودکار فیلدهای ورودی در نوار ابزار بالای ویرایشگر و جایگزینی خودکار بدون دستکاری ساختار اصلی تمپلیت.
+
+7. **📐 کاوشگر ساختار پایگاه داده و تولید DDL**:
+   - مشاهده درختی پایگاه داده (دیتابیس ➔ اسکیما ➔ جدول‌ها و ویوها ➔ ستون‌ها و انواع داده).
+   - تولید خودکار اسکریپت `CREATE TABLE` هر جدول با یک کلیک.
+
+8. **🔄 سیستم به‌روزرسانی خودکار درون‌برنامه‌ای (In-App Updater)**:
+   - بررسی خودکار و دستی نسخه‌های جدید از روی گیت‌هاب ریلیز.
+   - مشاهده لیست تغییرات، نوار درصد پیشرفت دانلود و جایگزینی خودکار فایل اجرایی بدون نیاز به نصب دستی.
+
+9. **🗂️ فضای کاری چندتبی و مقایسه تصویری نسخه‌ها (Monaco Diff)**:
+   - کار همزمان روی چندین کوئری با سیستم تب‌های پایدار.
+   - ثبت تاریخچه خودکار نسخه‌ها در هر بار ذخیره.
+   - مقایسه تصویری دو نسخه مختلف کوئری با موتور Diff ادیتور مونکا.
+
+10. **💻 مبدل کوئری به کد آماده ("Copy as Code")**:
+    - تولید سریع کد اتصال و اجرای کوئری برای زبان‌های:
+      - **Go**: با پکیج استاندارد `database/sql`
+      - **TypeScript / Node.js**: درایورهای `pg` و `mysql2`
+      - **Python**: کتابخانه‌های `psycopg2` و `pymysql`
+      - **Rust**: فریمورک محبوب `sqlx`
+      - **PHP**: استفاده از `PDO` ایمن با Prepared Statements
+
+11. **🌿 همگام‌سازی دوطرفه با گیت و پوشه‌های محلی**:
+    - ذخیره کوئری‌ها به صورت فایل‌های تمیز `.sql` با متادیتای YAML Frontmatter در هر پوشه یا مخزن گیت محلی.
+
+12. **⏱️ بنچمارک کوئری و تحلیل EXPLAIN**:
+    - اجرای آزمایشی کوئری در دفعات مشخص و محاسبه کمترین، بیشترین و میانگین زمان اجرا به میلی‌ثانیه.
+
+13. **🖥️ آیکون اختصاصی سه‌بعدی و یکپارچگی با تسک‌بار و System Tray**:
+    - طراحی حرفه‌ای لوگوی ۳ بعدی QueryBox.
+    - نمایش کامل در System Tray ویندوز، مک و لینوکس با منوی دسترسی سریع (باز کردن برنامه، کوئری جدید، تنظیمات و خروج).
+
+</div>
 
 ---
 
 ## 🤝 Contributing
 
-Contributions, issues, and feature requests are welcome! Feel free to check the [issues page](https://github.com/your-username/QueryBox/issues).
+Contributions make the open-source community thrive! Any contributions you make are **greatly appreciated**.
 
 1. Fork the Project
-2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the Branch (`git push origin feature/AmazingFeature`)
+2. Create your Feature Branch (`git checkout -b feature/IncredibleFeature`)
+3. Commit your Changes (`git commit -m 'Add some IncredibleFeature'`)
+4. Push to the Branch (`git push origin feature/IncredibleFeature`)
 5. Open a Pull Request
 
 ---
 
-## 📄 License
+## 📜 License
 
-Distributed under the **MIT License**. See [`LICENSE`](LICENSE) for more information.
+Distributed under the **MIT License**. See [`LICENSE`](LICENSE) for more details.
+
+---
+
+<div align="center">
+  <b>QueryBox</b> — Built with passion by <a href="https://github.com/alikmndlu">Ali Kamandlu</a>
+</div>

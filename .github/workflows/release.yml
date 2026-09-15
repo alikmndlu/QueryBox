@@ -82,6 +82,9 @@ jobs:
       - name: Install Wails
         run: go install github.com/wailsapp/wails/v2/cmd/wails@v2.15.0
 
+      - name: Generate Application Icons
+        run: go run ./scripts/genicon.go
+
       - name: Build
         shell: bash
         env:
