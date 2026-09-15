@@ -1,5 +1,5 @@
 import React from 'react';
-import { Settings as SettingsIcon, Sliders, Code2, Database, Sun, Moon, Laptop } from 'lucide-react';
+import { Settings as SettingsIcon, Sliders, Code2, Database, Sun, Moon, Laptop, ArrowUpCircle } from 'lucide-react';
 import { useUIStore } from '../../store/useUIStore';
 import { useSettingsStore } from '../../store/useSettingsStore';
 import { SQLDialect } from '../../types';
@@ -13,7 +13,7 @@ import {
 } from '../ui/dialog';
 
 export const SettingsModal: React.FC = () => {
-  const { settingsModalOpen, setSettingsModalOpen, setImportExportModalOpen } = useUIStore();
+  const { settingsModalOpen, setSettingsModalOpen, setImportExportModalOpen, setUpdateModalOpen } = useUIStore();
   const { settings, updateSettings } = useSettingsStore();
 
   return (
@@ -168,6 +168,31 @@ export const SettingsModal: React.FC = () => {
                 size="sm"
               >
                 Manage Backup
+              </Button>
+            </div>
+          </div>
+
+          {/* Software Updates Section */}
+          <div className="space-y-3">
+            <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+              <ArrowUpCircle className="w-3.5 h-3.5 text-indigo-400" />
+              <span>Software Updates</span>
+            </div>
+            <div className="p-3.5 rounded-lg bg-[#111622] border border-[#1b2333] flex items-center justify-between">
+              <div>
+                <div className="font-medium text-slate-200">QueryBox Updater</div>
+                <div className="text-[11px] text-slate-500">Check for newer versions and install updates automatically</div>
+              </div>
+              <Button
+                onClick={() => {
+                  setSettingsModalOpen(false);
+                  setUpdateModalOpen(true);
+                }}
+                variant="outline"
+                size="sm"
+                className="bg-[#0c101a] border-[#1f293d] hover:bg-[#161f33]"
+              >
+                Check for Updates
               </Button>
             </div>
           </div>

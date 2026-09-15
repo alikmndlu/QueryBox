@@ -11,6 +11,7 @@ import { CopyAsCodeModal } from './components/export/CopyAsCodeModal';
 import { DiffViewerModal } from './components/editor/DiffViewerModal';
 import { GitSyncModal } from './components/sync/GitSyncModal';
 import { ShortcutsModal } from './components/help/ShortcutsModal';
+import { UpdateModal } from './components/settings/UpdateModal';
 import { ToastContainer } from './components/ui/ToastContainer';
 import { TooltipProvider } from './components/ui/tooltip';
 
@@ -145,6 +146,7 @@ export const App: React.FC = () => {
         <CopyAsCodeModal />
         <DiffViewerModal />
         <GitSyncModal />
+        <UpdateModal />
         <ToastContainer />
       </div>
     </TooltipProvider>

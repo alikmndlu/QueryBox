@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=QueryBox
+Comment=Local-first SQL query manager, scratchpad, and database workbench.
+Exec=/usr/bin/querybox %u
+Icon=querybox
+Terminal=false
+Type=Application
+Categories=Development;Database;Utility;
+StartupWMClass=QueryBox

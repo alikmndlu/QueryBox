@@ -19,6 +19,7 @@ import {
   Database,
   FolderSync,
   Keyboard,
+  ArrowUpCircle,
 } from 'lucide-react';
 import { useUIStore } from '../../store/useUIStore';
 import { useQueryStore } from '../../store/useQueryStore';
@@ -35,7 +36,7 @@ import {
   AlertDialogTitle,
 } from '../ui/alert-dialog';
 
-interface CommandItem {
+export interface CommandItem {
   id: string;
   label: string;
   category: string;
@@ -53,6 +54,7 @@ export const CommandPalette: React.FC = () => {
     setImportExportModalOpen,
     setCopyAsCodeModalOpen,
     setGitSyncModalOpen,
+    setUpdateModalOpen,
     toggleLeftSidebar,
     toggleRightSidebar,
   } = useUIStore();
@@ -234,6 +236,13 @@ export const CommandPalette: React.FC = () => {
       icon: <Keyboard className="w-4 h-4 text-indigo-400" />,
       shortcut: '⌘/',
       action: () => setShortcutsModalOpen(true),
+    },
+    {
+      id: 'check-updates',
+      label: 'Check for Updates',
+      category: 'Help',
+      icon: <ArrowUpCircle className="w-4 h-4 text-emerald-400" />,
+      action: () => setUpdateModalOpen(true),
     },
     {
       id: 'export-data',

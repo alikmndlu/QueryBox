@@ -147,14 +147,15 @@ export const CenterPanel: React.FC = () => {
       {/* Multi-Tab Workspace Bar */}
       <TabBar />
 
-      {/* Top Main Toolbar */}
-      <div className="h-12 px-3.5 border-b border-[#1b2333] bg-[#0c101a] flex items-center justify-between gap-3 shrink-0 select-none">
-        {/* Left Side: Sidebar Toggle & Query Title */}
-        <div className="flex items-center gap-2.5 min-w-0 flex-1">
+      {/* 1. Header Bar: Title, Favorite, Save, and Sidebar/Menu Actions */}
+      <div className="h-10 px-3 border-b border-[#182033] bg-[#0c101a] flex items-center justify-between gap-3 shrink-0 select-none">
+        {/* Left Side: Left Sidebar Toggle, Favorite, & Full-Width Title */}
+        <div className="flex items-center gap-2 min-w-0 flex-1">
           <Button
             onClick={toggleLeftSidebar}
             variant="ghost"
             size="iconSm"
+            className="h-7 w-7 text-slate-400 hover:text-slate-200"
             title="Toggle Left Sidebar (Cmd+B)"
           >
             <Sidebar className="w-4 h-4" />
@@ -174,14 +175,95 @@ export const CenterPanel: React.FC = () => {
             type="text"
             value={draftTitle}
             onChange={(e) => updateDraft({ title: e.target.value })}
-            placeholder="Query Title..."
-            className="h-8 px-2 rounded-md bg-transparent hover:bg-[#111622] focus:bg-[#111622] border border-transparent focus:border-indigo-500/50 text-xs font-semibold text-slate-100 focus:outline-none min-w-0 flex-1 truncate transition-colors"
+            placeholder="Untitled Query..."
+            className="h-7 px-2.5 rounded-md bg-transparent hover:bg-[#111622] focus:bg-[#111622] border border-transparent focus:border-indigo-500/50 text-xs font-semibold text-slate-100 focus:outline-none min-w-[160px] flex-1 truncate transition-colors"
           />
         </div>
 
-        {/* Right Side: Action Toolbar */}
-        <div className="flex items-center gap-2 shrink-0">
-          {/* Cluster 1: Database & Execution */}
+        {/* Right Side of Title Bar: Save Button, Info Sidebar Toggle, More Menu */}
+        <div className="flex items-center gap-1.5 shrink-0">
+          <Button
+            onClick={saveActiveQuery}
+            disabled={saveStatus === 'saved'}
+            variant={saveStatus === 'dirty' ? 'default' : 'secondary'}
+            size="sm"
+            className={`h-7 text-xs px-2.5 transition-all ${
+              saveStatus === 'dirty'
+                ? 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-md shadow-indigo-950/40'
+                : 'bg-[#101625] text-slate-400 border border-[#1d273d]'
+            }`}
+            title="Save Query (Cmd+S)"
+          >
+            <Save className="w-3.5 h-3.5 mr-1" />
+            <span>{saveStatus === 'saving' ? 'Saving...' : saveStatus === 'dirty' ? 'Save' : 'Saved'}</span>
+          </Button>
+
+          <Button
+            onClick={toggleRightSidebar}
+            variant="ghost"
+            size="iconSm"
+            className="h-7 w-7 text-slate-400 hover:text-slate-200"
+            title="Toggle Query Info Sidebar"
+          >
+            <Sidebar className="w-4 h-4 rotate-180" />
+          </Button>
+
+          {/* More Actions Dropdown */}
+          <div className="relative">
+            <Button
+              onClick={() => setShowMenu(!showMenu)}
+              variant="ghost"
+              size="iconSm"
+              className="h-7 w-7 text-slate-400 hover:text-slate-200"
+            >
+              <MoreHorizontal className="w-4 h-4" />
+            </Button>
+
+            {showMenu && (
+              <div
+                onMouseLeave={() => setShowMenu(false)}
+                className="absolute right-0 mt-1 w-44 py-1 rounded-lg bg-[#111622] border border-[#1b2333] shadow-2xl z-50 text-xs text-slate-300 space-y-0.5 animate-in fade-in-50 zoom-in-95 duration-100"
+              >
+                <button
+                  onClick={() => {
+                    duplicateQuery(activeQuery.id);
+                    setShowMenu(false);
+                  }}
+                  className="w-full px-3 py-1.5 hover:bg-[#161c2b] flex items-center gap-2 text-left"
+                >
+                  <Edit3 className="w-3.5 h-3.5 text-indigo-400" />
+                  <span>Duplicate Query</span>
+                </button>
+                <button
+                  onClick={() => {
+                    setCopyAsCodeModalOpen(true);
+                    setShowMenu(false);
+                  }}
+                  className="w-full px-3 py-1.5 hover:bg-[#161c2b] flex items-center gap-2 text-left"
+                >
+                  <Code2 className="w-3.5 h-3.5 text-indigo-400" />
+                  <span>Export as Code</span>
+                </button>
+                <button
+                  onClick={() => {
+                    setShowMenu(false);
+                    setShowDeleteAlert(true);
+                  }}
+                  className="w-full px-3 py-1.5 hover:bg-rose-500/10 text-rose-400 hover:text-rose-300 flex items-center gap-2 text-left"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>Delete Query</span>
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* 2. Query Execution & SQL Tooling Bar */}
+      <div className="h-10 px-3 border-b border-[#182033] bg-[#090d16] flex items-center justify-between gap-2 shrink-0 select-none overflow-x-auto no-scrollbar">
+        {/* Left Side: Database Connection & Run Controls */}
+        <div className="flex items-center gap-1.5 shrink-0">
           <div className="flex items-center bg-[#101625]/80 border border-[#1b253b] p-0.5 rounded-lg gap-1">
             <select
               value={activeProfileId || ''}
@@ -192,7 +274,7 @@ export const CenterPanel: React.FC = () => {
                   setActiveProfileId(e.target.value || null);
                 }
               }}
-              className="h-7 px-2 rounded-md bg-[#0c111d] border border-[#1d273d] text-[11px] font-medium text-slate-300 focus:outline-none cursor-pointer max-w-[140px] truncate"
+              className="h-7 px-2 rounded-md bg-[#0c111d] border border-[#1d273d] text-[11px] font-medium text-slate-300 focus:outline-none cursor-pointer max-w-[150px] truncate"
               title="Target Database Connection"
             >
               <option value="" disabled>No Connection</option>
@@ -242,7 +324,7 @@ export const CenterPanel: React.FC = () => {
               title="Analyze Execution Plan (EXPLAIN)"
             >
               <Activity className="w-3.5 h-3.5 text-amber-400" />
-              <span className="hidden xl:inline">Explain</span>
+              <span>Explain</span>
             </Button>
 
             {/* Benchmark Button */}
@@ -255,11 +337,13 @@ export const CenterPanel: React.FC = () => {
               title="Benchmark Query Performance (5 iterations)"
             >
               <Timer className={`w-3.5 h-3.5 text-violet-400 ${isBenchmarking ? 'animate-spin' : ''}`} />
-              <span className="hidden xl:inline">{isBenchmarking ? '...' : 'Benchmark'}</span>
+              <span>{isBenchmarking ? '...' : 'Benchmark'}</span>
             </Button>
           </div>
+        </div>
 
-          {/* Cluster 2: Dialect & Formatting */}
+        {/* Right Side: Dialect, Format, Snippets, Export, Copy */}
+        <div className="flex items-center gap-1.5 shrink-0">
           <div className="flex items-center bg-[#101625]/80 border border-[#1b253b] p-0.5 rounded-lg gap-1">
             <select
               value={draftDialect}
@@ -279,14 +363,13 @@ export const CenterPanel: React.FC = () => {
               className="h-7 text-xs px-2 text-slate-300 hover:text-indigo-300 hover:bg-[#161f33]"
               title="Format SQL (Cmd+Shift+F)"
             >
-              <Sparkles className="w-3.5 h-3.5" />
-              <span className="hidden lg:inline">Format</span>
+              <Sparkles className="w-3.5 h-3.5 mr-1" />
+              <span>Format</span>
             </Button>
 
             <SnippetMenu />
           </div>
 
-          {/* Cluster 3: Export & Save */}
           <div className="flex items-center bg-[#101625]/80 border border-[#1b253b] p-0.5 rounded-lg gap-1">
             <Button
               onClick={() => setCopyAsCodeModalOpen(true)}
@@ -296,7 +379,7 @@ export const CenterPanel: React.FC = () => {
               title="Copy as Code (Go, TS, Python, Rust, PHP)"
             >
               <Code2 className="w-3.5 h-3.5 text-indigo-400" />
-              <span className="hidden lg:inline">Export</span>
+              <span>Export</span>
             </Button>
 
             <Button
@@ -307,83 +390,8 @@ export const CenterPanel: React.FC = () => {
               title="Copy SQL (Cmd+Shift+C)"
             >
               {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-              <span className="hidden sm:inline">{copied ? 'Copied' : 'Copy'}</span>
+              <span className="ml-1">{copied ? 'Copied' : 'Copy'}</span>
             </Button>
-
-            <Button
-              onClick={saveActiveQuery}
-              disabled={saveStatus === 'saved'}
-              variant={saveStatus === 'dirty' ? 'default' : 'secondary'}
-              size="sm"
-              className={`h-7 text-xs px-2.5 transition-all ${
-                saveStatus === 'dirty'
-                  ? 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-md shadow-indigo-950/40'
-                  : 'bg-[#0c111d] text-slate-400 border border-[#1d273d]'
-              }`}
-              title="Save Query (Cmd+S)"
-            >
-              <Save className="w-3.5 h-3.5" />
-              <span>{saveStatus === 'saving' ? 'Saving...' : saveStatus === 'dirty' ? 'Save' : 'Saved'}</span>
-            </Button>
-          </div>
-
-          {/* Toggle Metadata Sidebar */}
-          <Button
-            onClick={toggleRightSidebar}
-            variant="ghost"
-            size="iconSm"
-            title="Toggle Query Info Sidebar"
-          >
-            <Sidebar className="w-4 h-4 rotate-180" />
-          </Button>
-
-          {/* More Actions Dropdown */}
-          <div className="relative">
-            <Button
-              onClick={() => setShowMenu(!showMenu)}
-              variant="ghost"
-              size="iconSm"
-            >
-              <MoreHorizontal className="w-4 h-4" />
-            </Button>
-
-            {showMenu && (
-              <div
-                onMouseLeave={() => setShowMenu(false)}
-                className="absolute right-0 mt-1 w-44 py-1 rounded-lg bg-[#111622] border border-[#1b2333] shadow-2xl z-50 text-xs text-slate-300 space-y-0.5 animate-in fade-in-50 zoom-in-95 duration-100"
-              >
-                <button
-                  onClick={() => {
-                    duplicateQuery(activeQuery.id);
-                    setShowMenu(false);
-                  }}
-                  className="w-full px-3 py-1.5 hover:bg-[#161c2b] flex items-center gap-2 text-left"
-                >
-                  <Edit3 className="w-3.5 h-3.5 text-indigo-400" />
-                  <span>Duplicate Query</span>
-                </button>
-                <button
-                  onClick={() => {
-                    setCopyAsCodeModalOpen(true);
-                    setShowMenu(false);
-                  }}
-                  className="w-full px-3 py-1.5 hover:bg-[#161c2b] flex items-center gap-2 text-left"
-                >
-                  <Code2 className="w-3.5 h-3.5 text-indigo-400" />
-                  <span>Export as Code</span>
-                </button>
-                <button
-                  onClick={() => {
-                    setShowMenu(false);
-                    setShowDeleteAlert(true);
-                  }}
-                  className="w-full px-3 py-1.5 hover:bg-rose-500/10 text-rose-400 hover:text-rose-300 flex items-center gap-2 text-left"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                  <span>Delete Query</span>
-                </button>
-              </div>
-            )}
           </div>
         </div>
       </div>

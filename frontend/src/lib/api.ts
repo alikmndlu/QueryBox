@@ -10,6 +10,9 @@ import {
   ExecutionLog,
   TableInfo,
   BenchmarkResult,
+  UpdateInfo,
+  UpdateProgress,
+  UpdateResult,
 } from '../types';
 import * as WailsApp from '../../wailsjs/go/main/App';
 
@@ -346,5 +349,37 @@ export const API = {
       return await app.OpenFileDialog();
     }
     return '';
+  },
+
+  // Auto-Updater API
+  async getAppVersion(): Promise<string> {
+    const app = getWailsApp();
+    if (app.GetAppVersion) {
+      return await app.GetAppVersion();
+    }
+    return 'v1.0.0';
+  },
+
+  async checkForUpdate(): Promise<UpdateInfo> {
+    const app = getWailsApp();
+    if (app.CheckForUpdate) {
+      return await app.CheckForUpdate();
+    }
+    throw new Error('Updater not available in this environment');
+  },
+
+  async installUpdate(): Promise<UpdateResult> {
+    const app = getWailsApp();
+    if (app.InstallUpdate) {
+      return await app.InstallUpdate();
+    }
+    throw new Error('Updater not available in this environment');
+  },
+
+  async openReleasePage(): Promise<void> {
+    const app = getWailsApp();
+    if (app.OpenReleasePage) {
+      await app.OpenReleasePage();
+    }
   },
 };

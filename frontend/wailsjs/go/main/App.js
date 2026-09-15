@@ -6,6 +6,10 @@ export function BenchmarkQuery(arg1, arg2, arg3) {
   return window['go']['main']['App']['BenchmarkQuery'](arg1, arg2, arg3);
 }
 
+export function CheckForUpdate() {
+  return window['go']['main']['App']['CheckForUpdate']();
+}
+
 export function ClearExecutionHistory() {
   return window['go']['main']['App']['ClearExecutionHistory']();
 }
@@ -50,6 +54,10 @@ export function ExportDataJSON() {
   return window['go']['main']['App']['ExportDataJSON']();
 }
 
+export function GetAppVersion() {
+  return window['go']['main']['App']['GetAppVersion']();
+}
+
 export function GetQuery(arg1) {
   return window['go']['main']['App']['GetQuery'](arg1);
 }
@@ -68,6 +76,10 @@ export function ImportDataJSON(arg1) {
 
 export function ImportQueriesFromFolder(arg1) {
   return window['go']['main']['App']['ImportQueriesFromFolder'](arg1);
+}
+
+export function InstallUpdate() {
+  return window['go']['main']['App']['InstallUpdate']();
 }
 
 export function IntrospectSchema(arg1) {
@@ -96,6 +108,10 @@ export function ListTags() {
 
 export function OpenFileDialog() {
   return window['go']['main']['App']['OpenFileDialog']();
+}
+
+export function OpenReleasePage() {
+  return window['go']['main']['App']['OpenReleasePage']();
 }
 
 export function ResetData() {

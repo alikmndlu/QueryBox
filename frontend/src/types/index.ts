@@ -122,4 +122,30 @@ export interface BenchmarkResult {
   errorMessage?: string;
 }
 
+export interface UpdateInfo {
+  currentVersion: string;
+  latestVersion: string;
+  releaseUrl: string;
+  notes: string;
+  assetName: string;
+  assetUrl: string;
+  packageName: string;
+  packageUrl: string;
+  installHint: string;
+  available: boolean;
+  canInstall: boolean;
+}
+
+export interface UpdateProgress {
+  percent: number;
+  bytes: number;
+  total: number;
+}
+
+export interface UpdateResult {
+  restartRequired: boolean;
+  openedInstaller: boolean;
+}
+
+
 

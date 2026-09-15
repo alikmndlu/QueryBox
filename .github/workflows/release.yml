@@ -1,85 +1,200 @@
-name: Release QueryBox
+name: Release
 
 on:
   push:
     tags:
-      - 'v*'
+      - "v*"
+  workflow_dispatch:
 
 permissions:
   contents: write
 
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_OPTIONS: "--max-old-space-size=4096"
+
 jobs:
   build:
-    name: Build (${{ matrix.platform }})
+    name: Build ${{ matrix.platform }}
+    if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
         include:
           - os: windows-latest
-            platform: windows-amd64
-            archive_name: QueryBox-windows-amd64.zip
-          - os: ubuntu-22.04
-            platform: linux-amd64
-            archive_name: QueryBox-linux-amd64.tar.gz
+            platform: windows/amd64
+            asset: windows-amd64.zip
+            extra_flags: "-webview2 embed -nsis -installscope user"
+          - os: ubuntu-24.04
+            platform: linux/amd64
+            asset: linux-amd64.tar.gz
+            extra_flags: "-tags webkit2_41"
           - os: macos-latest
-            platform: darwin-universal
-            archive_name: QueryBox-macos-universal.zip
+            platform: darwin/universal
+            asset: darwin-universal.tar.gz
+            extra_flags: ""
 
     steps:
-      - name: Checkout Repository
+      - name: Checkout
         uses: actions/checkout@v4
 
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.23'
-          cache: true
+          go-version-file: go.mod
 
-      - name: Setup Node.js
+      - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
-          cache: 'npm'
+          node-version: "20"
+          cache: "npm"
           cache-dependency-path: frontend/package-lock.json
-
-      - name: Install Linux Build Dependencies
-        if: matrix.os == 'ubuntu-22.04'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.0-dev
-
-      - name: Install Wails CLI
-        run: go install github.com/wailsapp/wails/v2/cmd/wails@latest
 
       - name: Install Frontend Dependencies
         working-directory: frontend
         run: npm ci
 
-      - name: Build Binary with Wails
-        run: wails build
+      - name: Install Linux dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.1-dev libayatana-appindicator3-dev gcc pkg-config rpm
 
-      - name: Package Windows Binary
-        if: matrix.os == 'windows-latest'
+      - name: Install MinGW
+        if: runner.os == 'Windows'
+        run: choco install mingw -y --no-progress
+
+      - name: Install NSIS
+        if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          Compress-Archive -Path build/bin/QueryBox.exe -DestinationPath ${{ matrix.archive_name }}
+          choco install nsis -y --no-progress
+          Add-Content -Path $env:GITHUB_PATH -Value "${env:ProgramFiles(x86)}\NSIS"
 
-      - name: Package Linux Binary
-        if: matrix.os == 'ubuntu-22.04'
+      - name: Add Go bin to PATH
+        shell: bash
+        run: echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
+
+      - name: Install Wails
+        run: go install github.com/wailsapp/wails/v2/cmd/wails@v2.15.0
+
+      - name: Build
+        shell: bash
+        env:
+          CGO_ENABLED: "1"
+        run: wails build -platform "${{ matrix.platform }}" -clean ${{ matrix.extra_flags }} -ldflags "-X querybox/internal/updater.Version=${{ github.ref_name }}"
+
+      - name: Package Windows
+        if: runner.os == 'Windows'
+        shell: pwsh
         run: |
-          tar -czvf ${{ matrix.archive_name }} -C build/bin QueryBox
+          Compress-Archive -Path build/bin/QueryBox.exe -DestinationPath "QueryBox-${{ github.ref_name }}-${{ matrix.asset }}"
+          $installer = Get-ChildItem build/bin/*-installer.exe | Select-Object -First 1
+          if (-not $installer) { throw "NSIS installer was not created. Is makensis on PATH?" }
+          Copy-Item $installer.FullName "QueryBox-${{ github.ref_name }}-windows-amd64-setup.exe"
 
-      - name: Package macOS Application
-        if: matrix.os == 'macos-latest'
+      - name: Package Linux
+        if: runner.os == 'Linux'
+        env:
+          VERSION: ${{ github.ref_name }}
+          NFPM_VERSION: "2.47.0"
         run: |
-          ditto -c -k --sequesterRsrc --keepParent build/bin/QueryBox.app ${{ matrix.archive_name }}
+          set -euo pipefail
+          chmod +x build/bin/QueryBox
+          tar -C build/bin -czf "QueryBox-${{ github.ref_name }}-linux-amd64.tar.gz" QueryBox
+          curl -sSL "https://github.com/goreleaser/nfpm/releases/download/v${NFPM_VERSION}/nfpm_${NFPM_VERSION}_Linux_x86_64.tar.gz" \
+            | tar -xz -C "$(go env GOPATH)/bin" nfpm
+          nfpm --version
+          export VERSION="${VERSION#v}"
+          nfpm package --config build/linux/nfpm.yaml --packager deb --target "QueryBox-${{ github.ref_name }}-linux-amd64.deb"
+          nfpm package --config build/linux/nfpm.yaml --packager rpm --target "QueryBox-${{ github.ref_name }}-linux-amd64.rpm"
 
-      - name: Upload Release Asset
-        uses: softprops/action-gh-release@v2
-        if: startsWith(github.ref, 'refs/tags/')
+      - name: Package macOS
+        if: runner.os == 'macOS'
+        run: |
+          set -euo pipefail
+          tar -C build/bin -czf "QueryBox-${{ github.ref_name }}-darwin-universal.tar.gz" QueryBox.app
+          STAGE=$(mktemp -d)
+          mkdir -p "$STAGE/QueryBox"
+          cp -R build/bin/QueryBox.app "$STAGE/QueryBox/"
+          ln -s /Applications "$STAGE/QueryBox/Applications"
+          hdiutil create -volname QueryBox -srcfolder "$STAGE/QueryBox" -ov -format UDZO "QueryBox-${{ github.ref_name }}-darwin-universal.dmg"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
         with:
-          files: ${{ matrix.archive_name }}
-          generate_release_notes: true
+          name: QueryBox-${{ github.ref_name }}-${{ matrix.asset }}
+          path: QueryBox-${{ github.ref_name }}-${{ matrix.asset }}
+          if-no-files-found: error
+
+      - name: Upload Windows installer
+        if: runner.os == 'Windows'
+        uses: actions/upload-artifact@v4
+        with:
+          name: QueryBox-${{ github.ref_name }}-windows-amd64-setup.exe
+          path: QueryBox-${{ github.ref_name }}-windows-amd64-setup.exe
+          if-no-files-found: error
+
+      - name: Upload Linux packages
+        if: runner.os == 'Linux'
+        uses: actions/upload-artifact@v4
+        with:
+          name: QueryBox-${{ github.ref_name }}-linux-packages
+          path: |
+            QueryBox-${{ github.ref_name }}-linux-amd64.deb
+            QueryBox-${{ github.ref_name }}-linux-amd64.rpm
+          if-no-files-found: error
+
+      - name: Upload macOS disk image
+        if: runner.os == 'macOS'
+        uses: actions/upload-artifact@v4
+        with:
+          name: QueryBox-${{ github.ref_name }}-darwin-universal.dmg
+          path: QueryBox-${{ github.ref_name }}-darwin-universal.dmg
+          if-no-files-found: error
+
+  release:
+    name: GitHub Release
+    needs: build
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: Checksums
+        working-directory: dist
+        run: sha256sum * > SHA256SUMS.txt
+
+      - name: Publish release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: QueryBox ${{ github.ref_name }}
           draft: false
-          prerelease: false
+          generate_release_notes: true
+          files: dist/*
+          body: |
+            Desktop builds of QueryBox for this release.
+
+            Verify downloads against `SHA256SUMS.txt` in this release.
+
+            ### Windows
+            Download `QueryBox-${{ github.ref_name }}-windows-amd64-setup.exe` and run the installer.
+            Or use `QueryBox-${{ github.ref_name }}-windows-amd64.zip` for standalone portable use.
+            In-app self-updater can check and install future releases automatically.
+
+            ### macOS
+            Download `QueryBox-${{ github.ref_name }}-darwin-universal.dmg`, open it, and drag `QueryBox.app` to Applications.
+            The `.tar.gz` archive is utilized by the in-app updater.
+
+            ### Linux
+            - **Debian / Ubuntu**: `sudo apt install ./QueryBox-${{ github.ref_name }}-linux-amd64.deb`
+            - **Fedora / RHEL**: `sudo dnf install ./QueryBox-${{ github.ref_name }}-linux-amd64.rpm`
+            - **Portable**: `QueryBox-${{ github.ref_name }}-linux-amd64.tar.gz`

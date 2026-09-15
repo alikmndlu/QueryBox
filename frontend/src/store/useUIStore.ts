@@ -17,6 +17,7 @@ interface UIState {
   diffModalOpen: boolean;
   diffVersion: any | null;
   shortcutsModalOpen: boolean;
+  updateModalOpen: boolean;
   toasts: ToastNotice[];
   toggleLeftSidebar: () => void;
   toggleRightSidebar: () => void;
@@ -27,6 +28,7 @@ interface UIState {
   setGitSyncModalOpen: (open: boolean) => void;
   setDiffModalOpen: (open: boolean, version?: any | null) => void;
   setShortcutsModalOpen: (open: boolean) => void;
+  setUpdateModalOpen: (open: boolean) => void;
   showToast: (message: string, type?: 'success' | 'info' | 'error') => void;
   removeToast: (id: string) => void;
 }
@@ -42,6 +44,7 @@ export const useUIStore = create<UIState>((set, get) => ({
   diffModalOpen: false,
   diffVersion: null,
   shortcutsModalOpen: false,
+  updateModalOpen: false,
   toasts: [],
 
   toggleLeftSidebar: () => set((state) => ({ leftSidebarOpen: !state.leftSidebarOpen })),
@@ -53,6 +56,7 @@ export const useUIStore = create<UIState>((set, get) => ({
   setGitSyncModalOpen: (open) => set({ gitSyncModalOpen: open }),
   setDiffModalOpen: (open, version = null) => set({ diffModalOpen: open, diffVersion: version }),
   setShortcutsModalOpen: (open) => set({ shortcutsModalOpen: open }),
+  setUpdateModalOpen: (open) => set({ updateModalOpen: open }),
 
   showToast: (message, type = 'success') => {
     const id = Math.random().toString(36).substring(2, 9);
