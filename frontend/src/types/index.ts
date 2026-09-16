@@ -4,14 +4,15 @@ export interface Query {
   id: string;
   title: string;
   sqlContent: string;
-  description: string;
+  description?: string;
   collectionId: string | null;
   dialect: SQLDialect;
   isFavorite: boolean;
-  createdAt: string;
-  updatedAt: string;
-  lastUsedAt: string;
-  tags: string[];
+  createdAt?: string;
+  updatedAt?: string;
+  lastUsedAt?: string;
+  tags?: string[];
+  isTemporary?: boolean;
 }
 
 export interface Collection {
@@ -106,6 +107,7 @@ export interface ColumnInfo {
 }
 
 export interface TableInfo {
+  database?: string;
   schema: string;
   name: string;
   type: string;

@@ -83,10 +83,6 @@ export const DataGridPanel: React.FC = () => {
     return [...pinned, ...unpinned].map(({ idx }) => idx);
   }, [lastResult, hiddenCols, pinnedCols]);
 
-  if (!isDataGridOpen) {
-    return null;
-  }
-
   // Handle column sort toggle
   const handleSort = (colIdx: number) => {
     if (sortColIdx === colIdx) {
@@ -102,22 +98,23 @@ export const DataGridPanel: React.FC = () => {
     }
   };
 
-  // Filter and sort rows in memory
+  // Filter and sort rows in memory (called unconditionally to satisfy Rules of Hooks)
   const processedRows = useMemo(() => {
-    if (!lastResult || !lastResult.rows) return [];
+    if (!lastResult || !lastResult.rows || !Array.isArray(lastResult.rows)) return [];
     let rows = [...lastResult.rows];
 
     // Filter
     if (filterText.trim()) {
       const q = filterText.toLowerCase();
       rows = rows.filter((r) =>
-        r.some((cell) => cell !== null && cell !== undefined && String(cell).toLowerCase().includes(q))
+        r && Array.isArray(r) && r.some((cell) => cell !== null && cell !== undefined && String(cell).toLowerCase().includes(q))
       );
     }
 
     // Sort
     if (sortColIdx !== null) {
       rows.sort((a, b) => {
+        if (!a || !b) return 0;
         const valA = a[sortColIdx];
         const valB = b[sortColIdx];
         if (valA === valB) return 0;
@@ -139,8 +136,12 @@ export const DataGridPanel: React.FC = () => {
     return rows;
   }, [lastResult, filterText, sortColIdx, sortDirection]);
 
+  if (!isDataGridOpen) {
+    return null;
+  }
+
   const handleCopyCell = (val: any, cellKey: string) => {
-    const text = val === null || val === undefined ? 'NULL' : String(val);
+    const text = val === null || val === undefined ? 'NULL' : typeof val === 'object' ? JSON.stringify(val) : String(val);
     navigator.clipboard.writeText(text);
     setCopiedCell(cellKey);
     setTimeout(() => setCopiedCell(null), 1500);
@@ -778,12 +779,12 @@ export const DataGridPanel: React.FC = () => {
                           {rowIdx + 1}
                         </td>
                         {visibleColIndices.map((colIdx) => {
-                          const cell = row[colIdx];
-                          const col = lastResult.columns[colIdx];
+                          const cell = row ? row[colIdx] : null;
+                          const col = lastResult?.columns?.[colIdx] || '';
                           const isPinned = !!pinnedCols[col];
                           const cellKey = `${rowIdx}-${colIdx}`;
                           const isNull = cell === null || cell === undefined;
-                          const cellStr = isNull ? 'NULL' : String(cell);
+                          const cellStr = isNull ? 'NULL' : typeof cell === 'object' ? JSON.stringify(cell) : String(cell);
 
                           return (
                             <td

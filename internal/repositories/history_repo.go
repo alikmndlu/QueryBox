@@ -1,4 +1,4 @@
-﻿package repositories
+package repositories
 
 import (
 	"database/sql"
@@ -21,8 +21,8 @@ func (r *HistoryRepository) SaveExecutionLog(log *models.ExecutionLog) error {
 	if log.ID == "" {
 		log.ID = uuid.New().String()
 	}
-	if log.ExecutedAt.IsZero() {
-		log.ExecutedAt = time.Now()
+	if log.ExecutedAt == "" {
+		log.ExecutedAt = time.Now().Format(time.RFC3339)
 	}
 
 	query := `
@@ -41,7 +41,7 @@ func (r *HistoryRepository) SaveExecutionLog(log *models.ExecutionLog) error {
 		log.RowCount,
 		log.Status,
 		log.ErrorMessage,
-		log.ExecutedAt.Format(time.RFC3339),
+		log.ExecutedAt,
 	)
 	return err
 }
@@ -68,7 +68,6 @@ func (r *HistoryRepository) ListExecutionLogs(limit int) ([]models.ExecutionLog,
 	var logs []models.ExecutionLog
 	for rows.Next() {
 		var log models.ExecutionLog
-		var executedAtStr string
 		err := rows.Scan(
 			&log.ID,
 			&log.ProfileID,
@@ -78,12 +77,11 @@ func (r *HistoryRepository) ListExecutionLogs(limit int) ([]models.ExecutionLog,
 			&log.RowCount,
 			&log.Status,
 			&log.ErrorMessage,
-			&executedAtStr,
+			&log.ExecutedAt,
 		)
 		if err != nil {
 			return nil, err
 		}
-		log.ExecutedAt, _ = time.Parse(time.RFC3339, executedAtStr)
 		logs = append(logs, log)
 	}
 

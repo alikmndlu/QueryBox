@@ -56,7 +56,7 @@ func (s *ImportExportService) ExportDataJSON() (string, error) {
 	}
 
 	backup := models.BackupData{
-		ExportedAt:  time.Now(),
+		ExportedAt:  time.Now().Format(time.RFC3339),
 		AppVersion:  "1.0.0",
 		Queries:     queries,
 		Collections: collections,

@@ -20,8 +20,10 @@ func (r *CollectionRepository) Create(c *models.Collection) error {
 	if c.ID == "" {
 		c.ID = uuid.New().String()
 	}
-	now := time.Now()
-	c.CreatedAt = now
+	now := time.Now().Format(time.RFC3339)
+	if c.CreatedAt == "" {
+		c.CreatedAt = now
+	}
 	c.UpdatedAt = now
 
 	_, err := r.DB.Exec(
@@ -32,7 +34,7 @@ func (r *CollectionRepository) Create(c *models.Collection) error {
 }
 
 func (r *CollectionRepository) Update(c *models.Collection) error {
-	c.UpdatedAt = time.Now()
+	c.UpdatedAt = time.Now().Format(time.RFC3339)
 	_, err := r.DB.Exec(
 		`UPDATE collections SET name = ?, parent_id = ?, sort_order = ?, updated_at = ? WHERE id = ?`,
 		c.Name, c.ParentID, c.SortOrder, c.UpdatedAt, c.ID,

@@ -56,7 +56,6 @@ export const CommandPalette: React.FC = () => {
     setGitSyncModalOpen,
     setUpdateModalOpen,
     toggleLeftSidebar,
-    toggleRightSidebar,
   } = useUIStore();
   const {
     createNewQuery,
@@ -213,13 +212,6 @@ export const CommandPalette: React.FC = () => {
       icon: <Sidebar className="w-4 h-4 text-slate-400" />,
       shortcut: '⌘B',
       action: () => toggleLeftSidebar(),
-    },
-    {
-      id: 'toggle-right-sidebar',
-      label: 'Toggle Metadata Sidebar',
-      category: 'View',
-      icon: <Sidebar className="w-4 h-4 rotate-180 text-slate-400" />,
-      action: () => toggleRightSidebar(),
     },
     {
       id: 'open-settings',

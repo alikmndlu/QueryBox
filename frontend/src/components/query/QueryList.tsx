@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
-import { Star, Folder, Sparkles, Copy, Trash2, Edit3, ExternalLink, Search, X } from 'lucide-react';
-import { Query } from '../../types';
+import React, { useState, useMemo } from 'react';
+import { Star, Folder, Sparkles, Copy, Check, Trash2, Edit3, Search, X, Plus, ExternalLink } from 'lucide-react';
+import { Query, SQLDialect } from '../../types';
 import { useQueryStore } from '../../store/useQueryStore';
 import { useCollectionStore } from '../../store/useCollectionStore';
 import { useUIStore } from '../../store/useUIStore';
@@ -34,16 +34,23 @@ export const QueryList: React.FC<QueryListProps> = ({
     toggleFavorite,
     deleteQuery,
     duplicateQuery,
-    formatActiveQuery,
     createNewQuery,
     searchText,
     setSearchText,
+    formatActiveQuery,
   } = useQueryStore();
   const { collections } = useCollectionStore();
   const { showToast } = useUIStore();
 
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; query: Query } | null>(null);
   const [queryToDelete, setQueryToDelete] = useState<Query | null>(null);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [dialectFilter, setDialectFilter] = useState<'all' | SQLDialect>('all');
+
+  const filteredQueries = useMemo(() => {
+    if (dialectFilter === 'all') return queries;
+    return queries.filter((q) => q.dialect === dialectFilter);
+  }, [queries, dialectFilter]);
 
   const getCollectionName = (id: string | null) => {
     if (!id) return null;
@@ -51,10 +58,12 @@ export const QueryList: React.FC<QueryListProps> = ({
     return col ? col.name : null;
   };
 
-  const handleCopySQL = (e: React.MouseEvent, sql: string) => {
+  const handleCopySQL = (e: React.MouseEvent, query: Query) => {
     e.stopPropagation();
-    navigator.clipboard.writeText(sql);
-    showToast('SQL copied to clipboard');
+    navigator.clipboard.writeText(query.sqlContent);
+    setCopiedId(query.id);
+    showToast(`Copied "${query.title}" to clipboard`);
+    setTimeout(() => setCopiedId(null), 1500);
   };
 
   const handleContextMenu = (e: React.MouseEvent, query: Query) => {
@@ -74,10 +83,19 @@ export const QueryList: React.FC<QueryListProps> = ({
       {/* Header & Quick Search Bar - Always Visible */}
       <div className="p-2.5 border-b border-[#1b2333] space-y-2 bg-[#0c101a] shrink-0">
         <div className="flex items-center justify-between text-xs font-semibold text-slate-400 px-1">
-          <span className="tracking-wider">QUERIES</span>
-          <Badge variant="secondary" className="px-1.5 py-0 text-[10px]">
-            {queries.length}
-          </Badge>
+          <span className="tracking-wider text-[11px] font-bold text-slate-300">SAVED QUERIES</span>
+          <div className="flex items-center gap-1.5">
+            <Badge variant="secondary" className="px-1.5 py-0 text-[10px] font-mono bg-[#161c2b] text-slate-400 border border-[#222c42]">
+              {filteredQueries.length}
+            </Badge>
+            <button
+              onClick={() => createNewQuery()}
+              className="p-1 rounded-md bg-indigo-600/20 hover:bg-indigo-600 text-indigo-300 hover:text-white border border-indigo-500/30 transition-all"
+              title="New Query (Cmd+N)"
+            >
+              <Plus className="w-3 h-3" />
+            </button>
+          </div>
         </div>
 
         <div className="relative">
@@ -86,8 +104,8 @@ export const QueryList: React.FC<QueryListProps> = ({
             type="text"
             value={searchText}
             onChange={(e) => setSearchText(e.target.value)}
-            placeholder="Filter queries..."
-            className="pl-8 pr-7 bg-[#111622] border-[#1b2333]"
+            placeholder="Search queries or SQL..."
+            className="pl-8 pr-7 bg-[#111622] border-[#1b2333] text-xs h-8"
           />
           {searchText && (
             <button
@@ -99,32 +117,52 @@ export const QueryList: React.FC<QueryListProps> = ({
             </button>
           )}
         </div>
+
+        {/* Quick Dialect Filter Chips */}
+        <div className="flex items-center gap-1 overflow-x-auto no-scrollbar pt-0.5">
+          {(['all', 'postgresql', 'mysql', 'sqlite', 'sqlserver'] as const).map((d) => (
+            <button
+              key={d}
+              onClick={() => setDialectFilter(d)}
+              className={`px-1.5 py-0.5 rounded text-[10px] font-mono uppercase transition-colors shrink-0 ${
+                dialectFilter === d
+                  ? 'bg-indigo-600 text-white font-semibold'
+                  : 'bg-[#121826] text-slate-400 hover:text-slate-200 border border-[#1b2438]'
+              }`}
+            >
+              {d === 'all' ? 'All' : d === 'postgresql' ? 'PG' : d === 'mysql' ? 'MY' : d === 'sqlite' ? 'SQLite' : 'MSSQL'}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Query List Area */}
       <div className="flex-1 overflow-y-auto divide-y divide-[#1b2333]/50">
-        {queries.length === 0 ? (
+        {filteredQueries.length === 0 ? (
           <div className="h-full flex flex-col items-center justify-center p-6 text-center">
             <div className="w-10 h-10 rounded-xl bg-indigo-600/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 mb-2 shadow-sm">
               <Sparkles className="w-5 h-5" />
             </div>
             <h3 className="text-xs font-semibold text-slate-200">
-              {searchText ? 'No search results' : 'No queries found'}
+              {searchText || dialectFilter !== 'all' ? 'No matching queries' : 'No queries found'}
             </h3>
             <p className="text-[11px] text-slate-400 max-w-[200px] mt-1 leading-relaxed">
-              {searchText
-                ? `No queries match "${searchText}". Try a different keyword.`
-                : 'Build your personal SQL library.'}
+              {searchText || dialectFilter !== 'all'
+                ? 'Try adjusting your search terms or dialect filter.'
+                : 'Build your personal ready-to-use SQL library.'}
             </p>
 
-            {searchText ? (
+            {searchText || dialectFilter !== 'all' ? (
               <Button
-                onClick={() => setSearchText('')}
+                onClick={() => {
+                  setSearchText('');
+                  setDialectFilter('all');
+                }}
                 variant="secondary"
                 size="sm"
                 className="mt-3 text-[11px]"
               >
-                Clear Search Filter
+                Reset Filters
               </Button>
             ) : (
               <Button
@@ -138,9 +176,10 @@ export const QueryList: React.FC<QueryListProps> = ({
             )}
           </div>
         ) : (
-          queries.map((q) => {
+          filteredQueries.map((q) => {
             const isActive = q.id === activeQueryId;
             const colName = getCollectionName(q.collectionId);
+            const sqlPreview = q.sqlContent ? q.sqlContent.replace(/\s+/g, ' ').trim() : '';
 
             return (
               <div
@@ -163,7 +202,7 @@ export const QueryList: React.FC<QueryListProps> = ({
                       e.stopPropagation();
                       toggleFavorite(q.id);
                     }}
-                    className={`p-0.5 hover:scale-110 transition-transform ${
+                    className={`p-0.5 hover:scale-110 transition-transform shrink-0 ${
                       q.isFavorite ? 'text-amber-400' : 'text-slate-600 hover:text-amber-400'
                     }`}
                     title="Toggle Favorite"
@@ -172,15 +211,13 @@ export const QueryList: React.FC<QueryListProps> = ({
                   </button>
                 </div>
 
-                {q.description && (
-                  <p className="text-[11px] text-slate-400 line-clamp-1 mt-1">
-                    {q.description}
-                  </p>
-                )}
+                <p className="text-[11px] text-slate-400 font-mono truncate mt-1 leading-snug">
+                  {sqlPreview || 'Empty query'}
+                </p>
 
                 <div className="flex items-center gap-1.5 flex-wrap mt-2">
                   <span
-                    className={`text-[9px] px-1.5 py-0.5 rounded border uppercase font-mono font-semibold tracking-wide ${
+                    className={`text-[9px] px-1.5 py-0.2 rounded border uppercase font-mono font-semibold tracking-wide ${
                       q.dialect === 'postgresql'
                         ? 'text-indigo-300 bg-indigo-500/15 border-indigo-500/30'
                         : q.dialect === 'mysql'
@@ -192,11 +229,11 @@ export const QueryList: React.FC<QueryListProps> = ({
                         : 'text-slate-300 bg-slate-500/15 border-slate-500/30'
                     }`}
                   >
-                    {q.dialect || 'sql'}
+                    {q.dialect === 'postgresql' ? 'PG' : q.dialect === 'mysql' ? 'MY' : q.dialect === 'sqlite' ? 'SQL' : q.dialect === 'sqlserver' ? 'MS' : (q.dialect || 'SQL')}
                   </span>
 
                   {colName && (
-                    <span className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-[#161c2b] border border-[#1b2333] text-slate-400 text-[10px]">
+                    <span className="flex items-center gap-1 px-1.5 py-0.2 rounded bg-[#161c2b] border border-[#1b2333] text-slate-400 text-[10px]">
                       <Folder className="w-2.5 h-2.5" />
                       <span className="truncate max-w-[80px]">{colName}</span>
                     </span>
@@ -206,11 +243,11 @@ export const QueryList: React.FC<QueryListProps> = ({
                 {/* Quick Hover Action Bar */}
                 <div className="absolute right-2 bottom-2 hidden group-hover:flex items-center gap-1 bg-[#161c2b] px-1.5 py-1 rounded-md border border-[#1b2333] shadow-lg animate-in fade-in-50 duration-100">
                   <button
-                    onClick={(e) => handleCopySQL(e, q.sqlContent)}
-                    className="p-1 hover:bg-[#1f293d] text-slate-400 hover:text-slate-200 rounded transition-colors"
+                    onClick={(e) => handleCopySQL(e, q)}
+                    className="p-1 hover:bg-[#1f293d] text-slate-400 hover:text-emerald-300 rounded transition-colors"
                     title="Copy SQL"
                   >
-                    <Copy className="w-3 h-3" />
+                    {copiedId === q.id ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
                   </button>
                   <button
                     onClick={(e) => {

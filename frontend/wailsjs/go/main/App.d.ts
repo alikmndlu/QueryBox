@@ -3,7 +3,7 @@
 import {models} from '../models';
 import {updater} from '../models';
 
-export function BenchmarkQuery(arg1:string,arg2:string,arg3:number):Promise<models.BenchmarkResult>;
+export function BenchmarkQuery(arg1:string,arg2:string,arg3:string,arg4:number):Promise<models.BenchmarkResult>;
 
 export function CheckForUpdate():Promise<updater.Info>;
 
@@ -23,9 +23,9 @@ export function DeleteQuery(arg1:string):Promise<void>;
 
 export function DuplicateQuery(arg1:string):Promise<models.Query>;
 
-export function ExecuteQuery(arg1:string,arg2:string,arg3:number):Promise<models.QueryResult>;
+export function ExecuteQuery(arg1:string,arg2:string,arg3:string,arg4:number):Promise<models.QueryResult>;
 
-export function ExplainQuery(arg1:string,arg2:string):Promise<string>;
+export function ExplainQuery(arg1:string,arg2:string,arg3:string):Promise<string>;
 
 export function ExportDataJSON():Promise<string>;
 
@@ -43,11 +43,15 @@ export function ImportQueriesFromFolder(arg1:string):Promise<number>;
 
 export function InstallUpdate():Promise<updater.Result>;
 
+export function IntrospectDatabase(arg1:string,arg2:string):Promise<Array<models.TableInfo>>;
+
 export function IntrospectSchema(arg1:string):Promise<Array<models.TableInfo>>;
 
 export function ListCollections():Promise<Array<models.Collection>>;
 
 export function ListConnectionProfiles():Promise<Array<models.ConnectionProfile>>;
+
+export function ListDatabases(arg1:string):Promise<Array<string>>;
 
 export function ListExecutionHistory(arg1:number):Promise<Array<models.ExecutionLog>>;
 

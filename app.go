@@ -250,12 +250,18 @@ func (a *App) UpdateConnectionProfile(c models.ConnectionProfile) error {
 	if err := a.ensureInit(); err != nil {
 		return err
 	}
+	if a.executorService != nil {
+		a.executorService.CloseConnection(c.ID)
+	}
 	return a.connectionRepo.Update(&c)
 }
 
 func (a *App) DeleteConnectionProfile(id string) error {
 	if err := a.ensureInit(); err != nil {
 		return err
+	}
+	if a.executorService != nil {
+		a.executorService.CloseConnection(id)
 	}
 	return a.connectionRepo.Delete(id)
 }
@@ -269,7 +275,7 @@ func (a *App) TestConnection(c models.ConnectionProfile) error {
 
 // --- Live Query Execution & Explain Bindings ---
 
-func (a *App) ExecuteQuery(profileID string, rawSQL string, limit int) (*models.QueryResult, error) {
+func (a *App) ExecuteQuery(profileID string, dbName string, rawSQL string, limit int) (*models.QueryResult, error) {
 	if err := a.ensureInit(); err != nil {
 		return nil, err
 	}
@@ -277,10 +283,10 @@ func (a *App) ExecuteQuery(profileID string, rawSQL string, limit int) (*models.
 	if err != nil {
 		return nil, fmt.Errorf("connection profile not found: %w", err)
 	}
-	return a.executorService.ExecuteQuery(profile, rawSQL, limit)
+	return a.executorService.ExecuteQuery(profile, dbName, rawSQL, limit)
 }
 
-func (a *App) ExplainQuery(profileID string, rawSQL string) (string, error) {
+func (a *App) ExplainQuery(profileID string, dbName string, rawSQL string) (string, error) {
 	if err := a.ensureInit(); err != nil {
 		return "", err
 	}
@@ -288,7 +294,7 @@ func (a *App) ExplainQuery(profileID string, rawSQL string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("connection profile not found: %w", err)
 	}
-	return a.executorService.ExplainQuery(profile, rawSQL)
+	return a.executorService.ExplainQuery(profile, dbName, rawSQL)
 }
 
 func (a *App) ListExecutionHistory(limit int) ([]models.ExecutionLog, error) {
@@ -305,6 +311,28 @@ func (a *App) ClearExecutionHistory() error {
 	return a.executorService.ClearExecutionHistory()
 }
 
+func (a *App) ListDatabases(profileID string) ([]string, error) {
+	if err := a.ensureInit(); err != nil {
+		return nil, err
+	}
+	profile, err := a.connectionRepo.GetByID(profileID)
+	if err != nil {
+		return nil, fmt.Errorf("connection profile not found: %w", err)
+	}
+	return a.executorService.ListDatabases(profile)
+}
+
+func (a *App) IntrospectDatabase(profileID string, dbName string) ([]models.TableInfo, error) {
+	if err := a.ensureInit(); err != nil {
+		return nil, err
+	}
+	profile, err := a.connectionRepo.GetByID(profileID)
+	if err != nil {
+		return nil, fmt.Errorf("connection profile not found: %w", err)
+	}
+	return a.executorService.IntrospectDatabase(profile, dbName)
+}
+
 func (a *App) IntrospectSchema(profileID string) ([]models.TableInfo, error) {
 	if err := a.ensureInit(); err != nil {
 		return nil, err
@@ -316,7 +344,7 @@ func (a *App) IntrospectSchema(profileID string) ([]models.TableInfo, error) {
 	return a.executorService.IntrospectSchema(profile)
 }
 
-func (a *App) BenchmarkQuery(profileID string, rawSQL string, iterations int) (*models.BenchmarkResult, error) {
+func (a *App) BenchmarkQuery(profileID string, dbName string, rawSQL string, iterations int) (*models.BenchmarkResult, error) {
 	if err := a.ensureInit(); err != nil {
 		return nil, err
 	}
@@ -324,7 +352,7 @@ func (a *App) BenchmarkQuery(profileID string, rawSQL string, iterations int) (*
 	if err != nil {
 		return nil, fmt.Errorf("connection profile not found: %w", err)
 	}
-	return a.executorService.BenchmarkQuery(profile, rawSQL, iterations)
+	return a.executorService.BenchmarkQuery(profile, dbName, rawSQL, iterations)
 }
 
 // --- Git & Directory Synchronization Bindings ---

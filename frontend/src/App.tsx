@@ -2,7 +2,6 @@ import React, { useEffect } from 'react';
 import { LeftSidebar } from './components/layout/LeftSidebar';
 import { QueryList } from './components/query/QueryList';
 import { CenterPanel } from './components/layout/CenterPanel';
-import { RightSidebar } from './components/layout/RightSidebar';
 import { CommandPalette } from './components/command/CommandPalette';
 import { SettingsModal } from './components/settings/SettingsModal';
 import { ImportExportModal } from './components/importexport/ImportExportModal';
@@ -36,7 +35,7 @@ export const App: React.FC = () => {
   const { fetchProfiles } = useConnectionStore();
   const {
     leftSidebarOpen,
-    rightSidebarOpen,
+    sidebarTab,
     toggleLeftSidebar,
     setCommandPaletteOpen,
     setSettingsModalOpen,
@@ -124,18 +123,17 @@ export const App: React.FC = () => {
         {/* Left Navigation Sidebar */}
         {leftSidebarOpen && <LeftSidebar />}
 
-        {/* Query List Panel */}
-        <QueryList
-          queries={queries}
-          activeQueryId={activeQuery ? activeQuery.id : null}
-          onSelectQuery={(q) => setActiveQuery(q)}
-        />
+        {/* Query List Panel - Active in Queries Mode */}
+        {sidebarTab === 'queries' && (
+          <QueryList
+            queries={queries}
+            activeQueryId={activeQuery ? activeQuery.id : null}
+            onSelectQuery={(q) => setActiveQuery(q)}
+          />
+        )}
 
         {/* Center Main SQL Editor */}
         <CenterPanel />
-
-        {/* Right Query Metadata & Version History Sidebar */}
-        {rightSidebarOpen && activeQuery && <RightSidebar />}
 
         {/* Global Modals & Overlays */}
         <CommandPalette />

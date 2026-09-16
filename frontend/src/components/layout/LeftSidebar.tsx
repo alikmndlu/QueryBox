@@ -4,7 +4,6 @@ import {
   Clock,
   Folder,
   FolderPlus,
-  Tag as TagIcon,
   Settings as SettingsIcon,
   Plus,
   Search,
@@ -19,7 +18,6 @@ import {
 } from 'lucide-react';
 import { useQueryStore } from '../../store/useQueryStore';
 import { useCollectionStore } from '../../store/useCollectionStore';
-import { useTagStore } from '../../store/useTagStore';
 import { useUIStore } from '../../store/useUIStore';
 import { useConnectionStore } from '../../store/useConnectionStore';
 import { ContextMenu } from '../ui/ContextMenu';
@@ -58,11 +56,16 @@ export const LeftSidebar: React.FC = () => {
     fetchCollections,
   } = useCollectionStore();
 
-  const { tags, selectedTagId, selectTag, fetchTags } = useTagStore();
-  const { setCommandPaletteOpen, setSettingsModalOpen, setGitSyncModalOpen, setShortcutsModalOpen } = useUIStore();
+  const {
+    sidebarTab,
+    setSidebarTab,
+    setCommandPaletteOpen,
+    setSettingsModalOpen,
+    setGitSyncModalOpen,
+    setShortcutsModalOpen,
+  } = useUIStore();
   const { profiles, schemaTables, setConnectionModalOpen } = useConnectionStore();
 
-  const [sidebarTab, setSidebarTab] = useState<'queries' | 'schema'>('queries');
   const [isCreatingCol, setIsCreatingCol] = useState(false);
   const [newColName, setNewColName] = useState('');
   const [editingColId, setEditingColId] = useState<string | null>(null);
@@ -72,7 +75,6 @@ export const LeftSidebar: React.FC = () => {
 
   useEffect(() => {
     fetchCollections();
-    fetchTags();
   }, []);
 
   const handleCreateCollection = async (e: React.FormEvent) => {
@@ -105,7 +107,7 @@ export const LeftSidebar: React.FC = () => {
   };
 
   return (
-    <div className="w-64 h-full bg-[#0d121c] border-r border-[#1b2333] flex flex-col select-none text-slate-300 shrink-0">
+    <div className="w-56 h-full bg-[#0d121c] border-r border-[#1b2333] flex flex-col select-none text-slate-300 shrink-0">
       {/* App Branding Header with QueryBox Logo */}
       <div className="p-3.5 border-b border-[#1b2333] flex items-center justify-between bg-[#0a0e17]">
         <QueryBoxLogo size={30} showText={true} />
@@ -178,12 +180,11 @@ export const LeftSidebar: React.FC = () => {
           <button
             onClick={() => {
               selectCollection(null);
-              selectTag(null);
               setSearchText('');
               setQuickFilter('all');
             }}
             className={`w-full h-8 px-2.5 rounded-md text-xs font-medium flex items-center justify-between transition-colors ${
-              quickFilter === 'all' && !selectedCollectionId && !selectedTagId
+              quickFilter === 'all' && !selectedCollectionId
                 ? 'bg-indigo-600/15 text-indigo-300 font-semibold border border-indigo-500/30'
                 : 'hover:bg-[#161c2b] text-slate-400 hover:text-slate-200'
             }`}
@@ -200,7 +201,6 @@ export const LeftSidebar: React.FC = () => {
           <button
             onClick={() => {
               selectCollection(null);
-              selectTag(null);
               setSearchText('');
               setQuickFilter('favorites');
             }}
@@ -219,7 +219,6 @@ export const LeftSidebar: React.FC = () => {
           <button
             onClick={() => {
               selectCollection(null);
-              selectTag(null);
               setSearchText('');
               setQuickFilter('recent');
             }}
@@ -238,7 +237,6 @@ export const LeftSidebar: React.FC = () => {
           <button
             onClick={() => {
               selectCollection(null);
-              selectTag(null);
               setSearchText('');
               setQuickFilter('uncategorized');
             }}
@@ -310,7 +308,6 @@ export const LeftSidebar: React.FC = () => {
                   ) : (
                     <button
                       onClick={() => {
-                        selectTag(null);
                         setSearchText('');
                         setQuickFilter('all');
                         selectCollection(col.id);
@@ -361,44 +358,6 @@ export const LeftSidebar: React.FC = () => {
             })}
           </div>
         </div>
-
-        {/* Tags Section */}
-        {tags.length > 0 && (
-          <div>
-            <div className="px-2 py-1 text-[11px] font-semibold tracking-wider text-slate-400 uppercase">
-              Tags
-            </div>
-            <div className="mt-1 space-y-0.5">
-              {tags.map((t) => {
-                const isSelected = selectedTagId === t.id;
-                return (
-                  <button
-                    key={t.id}
-                    onClick={() => {
-                      selectCollection(null);
-                      setSearchText('');
-                      setQuickFilter('all');
-                      selectTag(isSelected ? null : t.id);
-                    }}
-                    className={`w-full h-7 px-2.5 rounded-md text-xs font-medium flex items-center justify-between transition-colors ${
-                      isSelected
-                        ? 'bg-indigo-600/15 text-indigo-300 font-semibold border border-indigo-500/30'
-                        : 'hover:bg-[#161c2b] text-slate-400 hover:text-slate-200'
-                    }`}
-                  >
-                    <div className="flex items-center gap-2">
-                      <TagIcon className="w-3 h-3 text-slate-500" />
-                      <span>#{t.name}</span>
-                    </div>
-                    <Badge variant="outline" className="text-[10px] px-1.5 py-0">
-                      {t.usageCount}
-                    </Badge>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        )}
       </div>
       )}
 

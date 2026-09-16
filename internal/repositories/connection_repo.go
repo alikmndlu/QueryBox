@@ -20,8 +20,10 @@ func (r *ConnectionRepository) Create(c *models.ConnectionProfile) error {
 	if c.ID == "" {
 		c.ID = uuid.New().String()
 	}
-	now := time.Now()
-	c.CreatedAt = now
+	now := time.Now().Format(time.RFC3339)
+	if c.CreatedAt == "" {
+		c.CreatedAt = now
+	}
 	c.UpdatedAt = now
 
 	readOnlyInt := 0
@@ -38,7 +40,7 @@ func (r *ConnectionRepository) Create(c *models.ConnectionProfile) error {
 }
 
 func (r *ConnectionRepository) Update(c *models.ConnectionProfile) error {
-	c.UpdatedAt = time.Now()
+	c.UpdatedAt = time.Now().Format(time.RFC3339)
 	readOnlyInt := 0
 	if c.ReadOnly {
 		readOnlyInt = 1

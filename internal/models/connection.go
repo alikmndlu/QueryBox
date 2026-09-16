@@ -1,21 +1,19 @@
 package models
 
-import "time"
-
 // ConnectionProfile represents database connection configuration
 type ConnectionProfile struct {
-	ID        string    `json:"id"`
-	Name      string    `json:"name"`
-	Driver    string    `json:"driver"` // postgresql, mysql, sqlite, sqlserver
-	Host      string    `json:"host"`
-	Port      int       `json:"port"`
-	Database  string    `json:"database"`
-	Username  string    `json:"username"`
-	Password  string    `json:"password"`
-	SSLMode   string    `json:"sslMode"` // disable, require, verify-full
-	ReadOnly  bool      `json:"readOnly"`
-	CreatedAt time.Time `json:"createdAt"`
-	UpdatedAt time.Time `json:"updatedAt"`
+	ID        string `json:"id"`
+	Name      string `json:"name"`
+	Driver    string `json:"driver"` // postgresql, mysql, sqlite, sqlserver
+	Host      string `json:"host"`
+	Port      int    `json:"port"`
+	Database  string `json:"database"`
+	Username  string `json:"username"`
+	Password  string `json:"password"`
+	SSLMode   string `json:"sslMode"` // disable, require, verify-full
+	ReadOnly  bool   `json:"readOnly"`
+	CreatedAt string `json:"createdAt"`
+	UpdatedAt string `json:"updatedAt"`
 }
 
 // QueryResult represents the execution outcome of a SQL query
@@ -39,15 +37,15 @@ type ExplainResult struct {
 
 // ExecutionLog records an execution entry in the audit history
 type ExecutionLog struct {
-	ID              string    `json:"id"`
-	ProfileID       string    `json:"profileId"`
-	ProfileName     string    `json:"profileName"`
-	SQLContent      string    `json:"sqlContent"`
-	ExecutionTimeMs int64     `json:"executionTimeMs"`
-	RowCount        int64     `json:"rowCount"`
-	Status          string    `json:"status"` // "success" or "error"
-	ErrorMessage    string    `json:"errorMessage,omitempty"`
-	ExecutedAt      time.Time `json:"executedAt"`
+	ID              string `json:"id"`
+	ProfileID       string `json:"profileId"`
+	ProfileName     string `json:"profileName"`
+	SQLContent      string `json:"sqlContent"`
+	ExecutionTimeMs int64  `json:"executionTimeMs"`
+	RowCount        int64  `json:"rowCount"`
+	Status          string `json:"status"` // "success" or "error"
+	ErrorMessage    string `json:"errorMessage,omitempty"`
+	ExecutedAt      string `json:"executedAt"`
 }
 
 // ColumnInfo represents column metadata for a table
@@ -60,10 +58,11 @@ type ColumnInfo struct {
 
 // TableInfo represents table or view metadata
 type TableInfo struct {
-	Schema  string       `json:"schema"`
-	Name    string       `json:"name"`
-	Type    string       `json:"type"` // "TABLE" or "VIEW"
-	Columns []ColumnInfo `json:"columns"`
+	Database string       `json:"database,omitempty"`
+	Schema   string       `json:"schema"`
+	Name     string       `json:"name"`
+	Type     string       `json:"type"` // "TABLE" or "VIEW"
+	Columns  []ColumnInfo `json:"columns"`
 }
 
 // BenchmarkResult stores the statistical outcome of running a query multiple times

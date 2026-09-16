@@ -82,7 +82,7 @@ func (s *GitSyncService) ExportToDirectory(targetDir string) (int, error) {
 		if q.Description != "" {
 			sb.WriteString(fmt.Sprintf("description: %s\n", q.Description))
 		}
-		sb.WriteString(fmt.Sprintf("updated_at: %s\n", q.UpdatedAt.Format(time.RFC3339)))
+		sb.WriteString(fmt.Sprintf("updated_at: %s\n", q.UpdatedAt))
 		sb.WriteString("*/\n\n")
 		sb.WriteString(q.SQLContent)
 
@@ -182,8 +182,8 @@ func (s *GitSyncService) ImportFromDirectory(sourceDir string) (int, error) {
 				newCol := &models.Collection{
 					ID:        uuid.New().String(),
 					Name:      colName,
-					CreatedAt: time.Now(),
-					UpdatedAt: time.Now(),
+					CreatedAt: time.Now().Format(time.RFC3339),
+					UpdatedAt: time.Now().Format(time.RFC3339),
 				}
 				if err := s.collectionRepo.Create(newCol); err == nil {
 					colMap[strings.ToLower(colName)] = newCol.ID

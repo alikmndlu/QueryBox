@@ -1,13 +1,15 @@
-﻿import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Database,
   Plus,
   Trash2,
   ShieldCheck,
-  ShieldAlert,
   Save,
   Radio,
   X,
+  CheckCircle2,
+  AlertCircle,
+  Loader2,
 } from 'lucide-react';
 import { useConnectionStore } from '../../store/useConnectionStore';
 import { ConnectionProfile, SQLDialect } from '../../types';
@@ -59,6 +61,7 @@ export const ConnectionManagerModal: React.FC = () => {
   const [formSslMode, setFormSslMode] = useState('disable');
   const [formReadOnly, setFormReadOnly] = useState(true);
 
+  const [testStatus, setTestStatus] = useState<{ success: boolean; message: string } | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
   const selectProfile = (p: ConnectionProfile) => {
@@ -66,13 +69,14 @@ export const ConnectionManagerModal: React.FC = () => {
     setIsCreatingNew(false);
     setFormName(p.name);
     setFormDriver(p.driver);
-    setFormHost(p.host);
-    setFormPort(p.port);
+    setFormHost(p.host || 'localhost');
+    setFormPort(p.port || DEFAULT_PORTS[p.driver] || 5432);
     setFormDatabase(p.database);
     setFormUsername(p.username);
     setFormPassword(p.password || '');
     setFormSslMode(p.sslMode || 'disable');
     setFormReadOnly(p.readOnly ?? true);
+    setTestStatus(null);
   };
 
   const handleStartNew = () => {
@@ -87,7 +91,23 @@ export const ConnectionManagerModal: React.FC = () => {
     setFormPassword('');
     setFormSslMode('disable');
     setFormReadOnly(true);
+    setTestStatus(null);
   };
+
+  // Synchronize form when modal opens or profiles load
+  useEffect(() => {
+    if (!connectionModalOpen) {
+      setTestStatus(null);
+      return;
+    }
+
+    if (profiles.length > 0) {
+      const target = profiles.find((p) => p.id === (selectedId || activeProfileId)) || profiles[0];
+      selectProfile(target);
+    } else {
+      handleStartNew();
+    }
+  }, [connectionModalOpen, profiles.length]);
 
   const handleDriverChange = (driver: SQLDialect) => {
     setFormDriver(driver);
@@ -95,6 +115,7 @@ export const ConnectionManagerModal: React.FC = () => {
     if (driver === 'sqlite' && (!formDatabase || formDatabase === 'postgres' || formDatabase === 'mysql')) {
       setFormDatabase('querybox_local.db');
     }
+    setTestStatus(null);
   };
 
   const handleSave = async () => {
@@ -113,6 +134,7 @@ export const ConnectionManagerModal: React.FC = () => {
         readOnly: formReadOnly,
       });
       selectProfile(created);
+      setTestStatus({ success: true, message: `Profile "${created.name}" created and saved successfully.` });
     } else if (selectedId) {
       const existing = profiles.find((p) => p.id === selectedId);
       if (existing) {
@@ -129,11 +151,13 @@ export const ConnectionManagerModal: React.FC = () => {
           readOnly: formReadOnly,
         };
         await updateProfile(updated);
+        setTestStatus({ success: true, message: `Changes to "${updated.name}" saved successfully.` });
       }
     }
   };
 
   const handleTest = async () => {
+    setTestStatus(null);
     const tempProfile: ConnectionProfile = {
       id: selectedId || 'temp',
       name: formName,
@@ -145,16 +169,18 @@ export const ConnectionManagerModal: React.FC = () => {
       password: formPassword,
       sslMode: formSslMode,
       readOnly: formReadOnly,
-      createdAt: '',
-      updatedAt: '',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
     };
-    await testProfile(tempProfile);
+    const result = await testProfile(tempProfile);
+    setTestStatus(result);
   };
 
   const handleDelete = async () => {
     if (!deleteConfirmId) return;
     await deleteProfile(deleteConfirmId);
     setDeleteConfirmId(null);
+    setTestStatus(null);
     if (profiles.length > 1) {
       const next = profiles.find((p) => p.id !== deleteConfirmId);
       if (next) selectProfile(next);
@@ -281,7 +307,10 @@ export const ConnectionManagerModal: React.FC = () => {
                   <label className="text-[11px] font-medium text-slate-300 mb-1.5 block">Profile Name</label>
                   <Input
                     value={formName}
-                    onChange={(e) => setFormName(e.target.value)}
+                    onChange={(e) => {
+                      setFormName(e.target.value);
+                      setTestStatus(null);
+                    }}
                     placeholder="e.g. Local PostgreSQL"
                     className="h-8 text-xs bg-[#111622] border-[#1b2333]"
                   />
@@ -309,7 +338,10 @@ export const ConnectionManagerModal: React.FC = () => {
                       <label className="text-[11px] font-medium text-slate-300 mb-1.5 block">Host / Server</label>
                       <Input
                         value={formHost}
-                        onChange={(e) => setFormHost(e.target.value)}
+                        onChange={(e) => {
+                          setFormHost(e.target.value);
+                          setTestStatus(null);
+                        }}
                         placeholder="localhost or 127.0.0.1"
                         className="h-8 text-xs bg-[#111622] border-[#1b2333]"
                       />
@@ -319,7 +351,10 @@ export const ConnectionManagerModal: React.FC = () => {
                       <Input
                         type="number"
                         value={formPort}
-                        onChange={(e) => setFormPort(Number(e.target.value))}
+                        onChange={(e) => {
+                          setFormPort(Number(e.target.value));
+                          setTestStatus(null);
+                        }}
                         className="h-8 text-xs bg-[#111622] border-[#1b2333]"
                       />
                     </div>
@@ -330,7 +365,10 @@ export const ConnectionManagerModal: React.FC = () => {
                       <label className="text-[11px] font-medium text-slate-300 mb-1.5 block">Database Name</label>
                       <Input
                         value={formDatabase}
-                        onChange={(e) => setFormDatabase(e.target.value)}
+                        onChange={(e) => {
+                          setFormDatabase(e.target.value);
+                          setTestStatus(null);
+                        }}
                         placeholder="postgres"
                         className="h-8 text-xs bg-[#111622] border-[#1b2333]"
                       />
@@ -339,7 +377,10 @@ export const ConnectionManagerModal: React.FC = () => {
                       <label className="text-[11px] font-medium text-slate-300 mb-1.5 block">SSL Mode</label>
                       <select
                         value={formSslMode}
-                        onChange={(e) => setFormSslMode(e.target.value)}
+                        onChange={(e) => {
+                          setFormSslMode(e.target.value);
+                          setTestStatus(null);
+                        }}
                         className="w-full h-8 px-2.5 rounded-md bg-[#111622] border border-[#1b2333] text-xs text-slate-100 focus:outline-none focus:border-indigo-500"
                       >
                         <option value="disable">Disable</option>
@@ -354,7 +395,10 @@ export const ConnectionManagerModal: React.FC = () => {
                       <label className="text-[11px] font-medium text-slate-300 mb-1.5 block">Username</label>
                       <Input
                         value={formUsername}
-                        onChange={(e) => setFormUsername(e.target.value)}
+                        onChange={(e) => {
+                          setFormUsername(e.target.value);
+                          setTestStatus(null);
+                        }}
                         placeholder="postgres"
                         className="h-8 text-xs bg-[#111622] border-[#1b2333]"
                       />
@@ -364,7 +408,10 @@ export const ConnectionManagerModal: React.FC = () => {
                       <Input
                         type="password"
                         value={formPassword}
-                        onChange={(e) => setFormPassword(e.target.value)}
+                        onChange={(e) => {
+                          setFormPassword(e.target.value);
+                          setTestStatus(null);
+                        }}
                         placeholder="••••••••"
                         className="h-8 text-xs bg-[#111622] border-[#1b2333]"
                       />
@@ -376,7 +423,10 @@ export const ConnectionManagerModal: React.FC = () => {
                   <label className="text-[11px] font-medium text-slate-300 mb-1.5 block">Database File Path</label>
                   <Input
                     value={formDatabase}
-                    onChange={(e) => setFormDatabase(e.target.value)}
+                    onChange={(e) => {
+                      setFormDatabase(e.target.value);
+                      setTestStatus(null);
+                    }}
                     placeholder="e.g. C:\data\database.db"
                     className="h-8 text-xs bg-[#111622] border-[#1b2333]"
                   />
@@ -386,33 +436,107 @@ export const ConnectionManagerModal: React.FC = () => {
                 </div>
               )}
 
-              {/* Safe Mode Toggle */}
-              <div className="p-3 bg-[#0d1322] border border-[#1b2333] rounded-lg flex items-center justify-between">
+              {/* Safe Mode Banner */}
+              <div className="p-3 bg-[#0d1322] border border-emerald-500/30 rounded-lg flex items-center justify-between">
                 <div className="flex items-center gap-2.5">
-                  {formReadOnly ? (
-                    <ShieldCheck className="w-5 h-5 text-emerald-400" />
-                  ) : (
-                    <ShieldAlert className="w-5 h-5 text-amber-400" />
-                  )}
+                  <ShieldCheck className="w-5 h-5 text-emerald-400 shrink-0" />
                   <div>
-                    <div className="text-xs font-semibold text-slate-200">
-                      Safe / Read-Only Mode
+                    <div className="text-xs font-semibold text-slate-200 flex items-center gap-2">
+                      <span>Strict Read-Only Mode</span>
+                      <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 uppercase tracking-wider">
+                        Active
+                      </span>
                     </div>
-                    <div className="text-[11px] text-slate-400">
-                      {formReadOnly
-                        ? 'Blocks destructive queries (DROP, TRUNCATE, DELETE/UPDATE without WHERE)'
-                        : 'Caution: unrestricted query execution mode enabled'}
+                    <div className="text-[11px] text-slate-400 mt-0.5">
+                      QueryBox exclusively runs data retrieval queries (SELECT, EXPLAIN, SHOW, DESCRIBE). All modifications (DELETE, UPDATE, INSERT, DROP) are permanently blocked.
                     </div>
                   </div>
                 </div>
-
-                <input
-                  type="checkbox"
-                  checked={formReadOnly}
-                  onChange={(e) => setFormReadOnly(e.target.checked)}
-                  className="w-4 h-4 rounded border-slate-700 bg-slate-800 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
-                />
               </div>
+
+              {/* Connection Test / Status Result Alert */}
+              {isTesting && (
+                <div className="p-3 rounded-lg border border-indigo-500/30 bg-indigo-500/10 text-indigo-200 text-xs flex items-center gap-2.5 animate-pulse">
+                  <Loader2 className="w-4 h-4 text-indigo-400 animate-spin shrink-0" />
+                  <span>Testing database connection to {formHost}:{formPort}...</span>
+                </div>
+              )}
+
+              {!isTesting && testStatus && (
+                <div
+                  className={`p-3.5 rounded-lg border text-xs flex items-start gap-3 transition-all ${
+                    testStatus.success
+                      ? 'bg-emerald-950/40 border-emerald-500/40 text-emerald-200'
+                      : 'bg-rose-950/40 border-rose-500/40 text-rose-200'
+                  }`}
+                >
+                  {testStatus.success ? (
+                    <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                  ) : (
+                    <AlertCircle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
+                  )}
+                  <div className="flex-1 min-w-0 space-y-1.5">
+                    <div className="font-semibold text-xs flex items-center justify-between">
+                      <span>{testStatus.success ? 'Connection Successful!' : 'Connection Failed'}</span>
+                    </div>
+                    <div className="text-[11px] text-slate-200 break-words font-mono select-text bg-[#070a10]/80 p-2.5 rounded border border-white/10">
+                      {testStatus.message}
+                    </div>
+
+                    {!testStatus.success && (
+                      <div className="text-[11px] text-slate-300 font-sans space-y-1 pt-1.5 border-t border-rose-500/20">
+                        <div className="font-medium text-rose-300">Suggestions:</div>
+                        {testStatus.message.toLowerCase().includes('password authentication failed') && (
+                          <div className="text-slate-400">
+                            • Authentication error: The password or username was rejected by PostgreSQL. Check that <strong>Username</strong> ({formUsername}) and <strong>Password</strong> are correct.
+                          </div>
+                        )}
+                        {(testStatus.message.toLowerCase().includes('connection refused') ||
+                          testStatus.message.toLowerCase().includes('actively refused') ||
+                          testStatus.message.toLowerCase().includes('connectex')) && (
+                          <div className="text-slate-400">
+                            • Server is unreachable on <strong>{formHost}:{formPort}</strong>. Ensure PostgreSQL service is running and listening on this port.
+                            {formHost.toLowerCase() === 'localhost' && (
+                              <div className="mt-1">
+                                • Try switching Host to{' '}
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setFormHost('127.0.0.1');
+                                    setTestStatus(null);
+                                  }}
+                                  className="text-indigo-400 underline font-mono hover:text-indigo-300 cursor-pointer"
+                                >
+                                  127.0.0.1
+                                </button>{' '}
+                                if your server only listens on IPv4.
+                              </div>
+                            )}
+                          </div>
+                        )}
+                        {testStatus.message.toLowerCase().includes('does not exist') && (
+                          <div className="text-slate-400">
+                            • Database <strong>&apos;{formDatabase}&apos;</strong> does not exist on the server. Verify your Database Name.
+                          </div>
+                        )}
+                        {formDriver === 'postgresql' && formSslMode !== 'disable' && (
+                          <div className="text-slate-400">
+                            • For local database, setting <strong>SSL Mode</strong> to <code>Disable</code> is usually recommended.
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  <button
+                    onClick={() => setTestStatus(null)}
+                    className="text-slate-400 hover:text-slate-200 p-0.5 rounded transition-colors"
+                    title="Close"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              )}
 
               {/* Bottom Buttons */}
               <div className="flex items-center justify-between pt-2 border-t border-[#1b2333]">

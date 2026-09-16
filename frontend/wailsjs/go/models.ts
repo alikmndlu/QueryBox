@@ -29,10 +29,8 @@ export namespace models {
 	    name: string;
 	    parentId?: string;
 	    sortOrder: number;
-	    // Go type: time
-	    createdAt: any;
-	    // Go type: time
-	    updatedAt: any;
+	    createdAt: string;
+	    updatedAt: string;
 	    itemCount: number;
 	
 	    static createFrom(source: any = {}) {
@@ -45,28 +43,10 @@ export namespace models {
 	        this.name = source["name"];
 	        this.parentId = source["parentId"];
 	        this.sortOrder = source["sortOrder"];
-	        this.createdAt = this.convertValues(source["createdAt"], null);
-	        this.updatedAt = this.convertValues(source["updatedAt"], null);
+	        this.createdAt = source["createdAt"];
+	        this.updatedAt = source["updatedAt"];
 	        this.itemCount = source["itemCount"];
 	    }
-	
-		convertValues(a: any, classs: any, asMap: boolean = false): any {
-		    if (!a) {
-		        return a;
-		    }
-		    if (a.slice && a.map) {
-		        return (a as any[]).map(elem => this.convertValues(elem, classs));
-		    } else if ("object" === typeof a) {
-		        if (asMap) {
-		            for (const key of Object.keys(a)) {
-		                a[key] = new classs(a[key]);
-		            }
-		            return a;
-		        }
-		        return new classs(a);
-		    }
-		    return a;
-		}
 	}
 	export class ColumnInfo {
 	    name: string;
@@ -97,10 +77,8 @@ export namespace models {
 	    password: string;
 	    sslMode: string;
 	    readOnly: boolean;
-	    // Go type: time
-	    createdAt: any;
-	    // Go type: time
-	    updatedAt: any;
+	    createdAt: string;
+	    updatedAt: string;
 	
 	    static createFrom(source: any = {}) {
 	        return new ConnectionProfile(source);
@@ -118,27 +96,9 @@ export namespace models {
 	        this.password = source["password"];
 	        this.sslMode = source["sslMode"];
 	        this.readOnly = source["readOnly"];
-	        this.createdAt = this.convertValues(source["createdAt"], null);
-	        this.updatedAt = this.convertValues(source["updatedAt"], null);
+	        this.createdAt = source["createdAt"];
+	        this.updatedAt = source["updatedAt"];
 	    }
-	
-		convertValues(a: any, classs: any, asMap: boolean = false): any {
-		    if (!a) {
-		        return a;
-		    }
-		    if (a.slice && a.map) {
-		        return (a as any[]).map(elem => this.convertValues(elem, classs));
-		    } else if ("object" === typeof a) {
-		        if (asMap) {
-		            for (const key of Object.keys(a)) {
-		                a[key] = new classs(a[key]);
-		            }
-		            return a;
-		        }
-		        return new classs(a);
-		    }
-		    return a;
-		}
 	}
 	export class ExecutionLog {
 	    id: string;
@@ -149,8 +109,7 @@ export namespace models {
 	    rowCount: number;
 	    status: string;
 	    errorMessage?: string;
-	    // Go type: time
-	    executedAt: any;
+	    executedAt: string;
 	
 	    static createFrom(source: any = {}) {
 	        return new ExecutionLog(source);
@@ -166,26 +125,8 @@ export namespace models {
 	        this.rowCount = source["rowCount"];
 	        this.status = source["status"];
 	        this.errorMessage = source["errorMessage"];
-	        this.executedAt = this.convertValues(source["executedAt"], null);
+	        this.executedAt = source["executedAt"];
 	    }
-	
-		convertValues(a: any, classs: any, asMap: boolean = false): any {
-		    if (!a) {
-		        return a;
-		    }
-		    if (a.slice && a.map) {
-		        return (a as any[]).map(elem => this.convertValues(elem, classs));
-		    } else if ("object" === typeof a) {
-		        if (asMap) {
-		            for (const key of Object.keys(a)) {
-		                a[key] = new classs(a[key]);
-		            }
-		            return a;
-		        }
-		        return new classs(a);
-		    }
-		    return a;
-		}
 	}
 	export class Query {
 	    id: string;
@@ -195,12 +136,9 @@ export namespace models {
 	    collectionId?: string;
 	    dialect: string;
 	    isFavorite: boolean;
-	    // Go type: time
-	    createdAt: any;
-	    // Go type: time
-	    updatedAt: any;
-	    // Go type: time
-	    lastUsedAt: any;
+	    createdAt: string;
+	    updatedAt: string;
+	    lastUsedAt: string;
 	    tags: string[];
 	
 	    static createFrom(source: any = {}) {
@@ -216,29 +154,11 @@ export namespace models {
 	        this.collectionId = source["collectionId"];
 	        this.dialect = source["dialect"];
 	        this.isFavorite = source["isFavorite"];
-	        this.createdAt = this.convertValues(source["createdAt"], null);
-	        this.updatedAt = this.convertValues(source["updatedAt"], null);
-	        this.lastUsedAt = this.convertValues(source["lastUsedAt"], null);
+	        this.createdAt = source["createdAt"];
+	        this.updatedAt = source["updatedAt"];
+	        this.lastUsedAt = source["lastUsedAt"];
 	        this.tags = source["tags"];
 	    }
-	
-		convertValues(a: any, classs: any, asMap: boolean = false): any {
-		    if (!a) {
-		        return a;
-		    }
-		    if (a.slice && a.map) {
-		        return (a as any[]).map(elem => this.convertValues(elem, classs));
-		    } else if ("object" === typeof a) {
-		        if (asMap) {
-		            for (const key of Object.keys(a)) {
-		                a[key] = new classs(a[key]);
-		            }
-		            return a;
-		        }
-		        return new classs(a);
-		    }
-		    return a;
-		}
 	}
 	export class QueryResult {
 	    columns: string[];
@@ -268,8 +188,7 @@ export namespace models {
 	    id: string;
 	    queryId: string;
 	    sqlContent: string;
-	    // Go type: time
-	    createdAt: any;
+	    createdAt: string;
 	
 	    static createFrom(source: any = {}) {
 	        return new QueryVersion(source);
@@ -280,26 +199,8 @@ export namespace models {
 	        this.id = source["id"];
 	        this.queryId = source["queryId"];
 	        this.sqlContent = source["sqlContent"];
-	        this.createdAt = this.convertValues(source["createdAt"], null);
+	        this.createdAt = source["createdAt"];
 	    }
-	
-		convertValues(a: any, classs: any, asMap: boolean = false): any {
-		    if (!a) {
-		        return a;
-		    }
-		    if (a.slice && a.map) {
-		        return (a as any[]).map(elem => this.convertValues(elem, classs));
-		    } else if ("object" === typeof a) {
-		        if (asMap) {
-		            for (const key of Object.keys(a)) {
-		                a[key] = new classs(a[key]);
-		            }
-		            return a;
-		        }
-		        return new classs(a);
-		    }
-		    return a;
-		}
 	}
 	export class SearchFilter {
 	    searchText: string;
@@ -354,6 +255,7 @@ export namespace models {
 	    }
 	}
 	export class TableInfo {
+	    database?: string;
 	    schema: string;
 	    name: string;
 	    type: string;
@@ -365,6 +267,7 @@ export namespace models {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.database = source["database"];
 	        this.schema = source["schema"];
 	        this.name = source["name"];
 	        this.type = source["type"];

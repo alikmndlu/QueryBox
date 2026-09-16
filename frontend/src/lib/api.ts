@@ -205,7 +205,13 @@ export const API = {
   async createConnectionProfile(profile: Partial<ConnectionProfile>): Promise<ConnectionProfile> {
     const app = getWailsApp();
     if (app.CreateConnectionProfile) {
-      return await app.CreateConnectionProfile(profile);
+      const now = new Date().toISOString();
+      const payload = {
+        ...profile,
+        createdAt: profile.createdAt || now,
+        updatedAt: profile.updatedAt || now,
+      };
+      return await app.CreateConnectionProfile(payload);
     }
     throw new Error('Wails App binding unavailable');
   },
@@ -213,7 +219,12 @@ export const API = {
   async updateConnectionProfile(profile: ConnectionProfile): Promise<void> {
     const app = getWailsApp();
     if (app.UpdateConnectionProfile) {
-      await app.UpdateConnectionProfile(profile);
+      const payload = {
+        ...profile,
+        createdAt: profile.createdAt || new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+      await app.UpdateConnectionProfile(payload);
     }
   },
 
@@ -227,23 +238,29 @@ export const API = {
   async testConnection(profile: ConnectionProfile): Promise<void> {
     const app = getWailsApp();
     if (app.TestConnection) {
-      await app.TestConnection(profile);
+      const now = new Date().toISOString();
+      const payload = {
+        ...profile,
+        createdAt: profile.createdAt || now,
+        updatedAt: profile.updatedAt || now,
+      };
+      await app.TestConnection(payload);
     }
   },
 
   // Live Query Execution & EXPLAIN
-  async executeQuery(profileId: string, rawSQL: string, limit: number = 500): Promise<QueryResult> {
+  async executeQuery(profileId: string, rawSQL: string, limit: number = 500, database?: string): Promise<QueryResult> {
     const app = getWailsApp();
     if (app.ExecuteQuery) {
-      return await app.ExecuteQuery(profileId, rawSQL, limit);
+      return await app.ExecuteQuery(profileId, database || '', rawSQL, limit);
     }
     throw new Error('Wails App binding unavailable');
   },
 
-  async explainQuery(profileId: string, rawSQL: string): Promise<string> {
+  async explainQuery(profileId: string, rawSQL: string, database?: string): Promise<string> {
     const app = getWailsApp();
     if (app.ExplainQuery) {
-      return await app.ExplainQuery(profileId, rawSQL);
+      return await app.ExplainQuery(profileId, database || '', rawSQL);
     }
     throw new Error('Wails App binding unavailable');
   },
@@ -267,6 +284,30 @@ export const API = {
     }
   },
 
+  async listDatabases(profileId: string): Promise<string[]> {
+    try {
+      const app = getWailsApp();
+      if (app.ListDatabases) {
+        return (await app.ListDatabases(profileId)) || [];
+      }
+    } catch (e) {
+      console.warn('API listDatabases error:', e);
+    }
+    return [];
+  },
+
+  async introspectDatabase(profileId: string, dbName: string): Promise<TableInfo[]> {
+    try {
+      const app = getWailsApp();
+      if (app.IntrospectDatabase) {
+        return (await app.IntrospectDatabase(profileId, dbName)) || [];
+      }
+    } catch (e) {
+      console.warn('API introspectDatabase error:', e);
+    }
+    return [];
+  },
+
   async introspectSchema(profileId: string): Promise<TableInfo[]> {
     try {
       const app = getWailsApp();
@@ -279,10 +320,10 @@ export const API = {
     return [];
   },
 
-  async benchmarkQuery(profileId: string, rawSQL: string, iterations = 5): Promise<BenchmarkResult> {
+  async benchmarkQuery(profileId: string, rawSQL: string, iterations = 5, database?: string): Promise<BenchmarkResult> {
     const app = getWailsApp();
     if (app.BenchmarkQuery) {
-      return await app.BenchmarkQuery(profileId, rawSQL, iterations);
+      return await app.BenchmarkQuery(profileId, database || '', rawSQL, iterations);
     }
     throw new Error('Wails App binding unavailable');
   },

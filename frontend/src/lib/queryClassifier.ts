@@ -50,8 +50,8 @@ export function checkQueryMutation(rawSQL: string): QueryMutationCheck {
       isMutating: true,
       operationType: 'DROP',
       hasWhereClause: true,
-      warningTitle: 'Irreversible Schema Deletion (DROP)',
-      warningMessage: 'This query contains a DROP statement that will permanently destroy tables or database schemas and all associated records.',
+      warningTitle: 'Blocked: DROP Statement',
+      warningMessage: 'QueryBox is in strict Read-Only mode. DROP statements cannot be executed.',
       severity: 'danger',
     };
   }
@@ -61,53 +61,33 @@ export function checkQueryMutation(rawSQL: string): QueryMutationCheck {
       isMutating: true,
       operationType: 'TRUNCATE',
       hasWhereClause: true,
-      warningTitle: 'Complete Table Wipe (TRUNCATE)',
-      warningMessage: 'This query contains a TRUNCATE statement that will delete all rows from the target table immediately without transaction rollback.',
+      warningTitle: 'Blocked: TRUNCATE Statement',
+      warningMessage: 'QueryBox is in strict Read-Only mode. TRUNCATE statements cannot be executed.',
       severity: 'danger',
     };
   }
 
   // 2. DELETE queries
   if (/\bDELETE\s+FROM\b/i.test(sqlWithoutComments) || /^\s*DELETE\b/i.test(sqlWithoutComments)) {
-    if (!hasWhere) {
-      return {
-        isMutating: true,
-        operationType: 'DELETE (NO WHERE)',
-        hasWhereClause: false,
-        warningTitle: 'Unconditional Data Deletion (DELETE WITHOUT WHERE)',
-        warningMessage: 'DANGER: This DELETE statement has NO WHERE clause! Every single row in the target table will be permanently deleted.',
-        severity: 'danger',
-      };
-    }
     return {
       isMutating: true,
       operationType: 'DELETE',
-      hasWhereClause: true,
-      warningTitle: 'Data Deletion (DELETE)',
-      warningMessage: 'This query will delete matching rows from the database. Are you sure you want to proceed?',
-      severity: 'warning',
+      hasWhereClause: hasWhere,
+      warningTitle: 'Blocked: DELETE Statement',
+      warningMessage: 'QueryBox is in strict Read-Only mode. DELETE operations cannot be executed.',
+      severity: 'danger',
     };
   }
 
   // 3. UPDATE queries
   if (/\bUPDATE\s+[\w."`]+(?:\s+AS\s+\w+)?\s+SET\b/i.test(sqlWithoutComments) || /^\s*UPDATE\b/i.test(sqlWithoutComments)) {
-    if (!hasWhere) {
-      return {
-        isMutating: true,
-        operationType: 'UPDATE (NO WHERE)',
-        hasWhereClause: false,
-        warningTitle: 'Unconditional Data Modification (UPDATE WITHOUT WHERE)',
-        warningMessage: 'WARNING: This UPDATE statement has NO WHERE clause! Every row in the target table will be updated.',
-        severity: 'danger',
-      };
-    }
     return {
       isMutating: true,
       operationType: 'UPDATE',
-      hasWhereClause: true,
-      warningTitle: 'Data Modification (UPDATE)',
-      warningMessage: 'This query will modify existing records in the database. Are you sure you want to proceed?',
-      severity: 'warning',
+      hasWhereClause: hasWhere,
+      warningTitle: 'Blocked: UPDATE Statement',
+      warningMessage: 'QueryBox is in strict Read-Only mode. UPDATE operations cannot be executed.',
+      severity: 'danger',
     };
   }
 
@@ -117,9 +97,9 @@ export function checkQueryMutation(rawSQL: string): QueryMutationCheck {
       isMutating: true,
       operationType: 'INSERT',
       hasWhereClause: true,
-      warningTitle: 'Data Insertion (INSERT)',
-      warningMessage: 'This query will insert new records into the target database table.',
-      severity: 'warning',
+      warningTitle: 'Blocked: INSERT Statement',
+      warningMessage: 'QueryBox is in strict Read-Only mode. INSERT operations cannot be executed.',
+      severity: 'danger',
     };
   }
 
@@ -129,9 +109,9 @@ export function checkQueryMutation(rawSQL: string): QueryMutationCheck {
       isMutating: true,
       operationType: 'ALTER',
       hasWhereClause: true,
-      warningTitle: 'Schema Alteration (ALTER)',
-      warningMessage: 'This query will alter the table definition, columns, or constraints.',
-      severity: 'warning',
+      warningTitle: 'Blocked: ALTER Statement',
+      warningMessage: 'QueryBox is in strict Read-Only mode. Schema alterations cannot be executed.',
+      severity: 'danger',
     };
   }
 
@@ -141,9 +121,9 @@ export function checkQueryMutation(rawSQL: string): QueryMutationCheck {
       isMutating: true,
       operationType: 'CREATE',
       hasWhereClause: true,
-      warningTitle: 'Schema Creation (CREATE)',
-      warningMessage: 'This query will create new tables, views, or database objects.',
-      severity: 'warning',
+      warningTitle: 'Blocked: CREATE Statement',
+      warningMessage: 'QueryBox is in strict Read-Only mode. Schema creation statements cannot be executed.',
+      severity: 'danger',
     };
   }
 

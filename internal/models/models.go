@@ -1,31 +1,29 @@
 package models
 
-import "time"
-
 // Query represents a saved SQL query record
 type Query struct {
-	ID           string    `json:"id"`
-	Title        string    `json:"title"`
-	SQLContent   string    `json:"sqlContent"`
-	Description  string    `json:"description"`
-	CollectionID *string   `json:"collectionId"`
-	Dialect      string    `json:"dialect"` // postgresql, mysql, sqlite, sqlserver
-	IsFavorite   bool      `json:"isFavorite"`
-	CreatedAt    time.Time `json:"createdAt"`
-	UpdatedAt    time.Time `json:"updatedAt"`
-	LastUsedAt   time.Time `json:"lastUsedAt"`
-	Tags         []string  `json:"tags"`
+	ID           string   `json:"id"`
+	Title        string   `json:"title"`
+	SQLContent   string   `json:"sqlContent"`
+	Description  string   `json:"description"`
+	CollectionID *string  `json:"collectionId"`
+	Dialect      string   `json:"dialect"` // postgresql, mysql, sqlite, sqlserver
+	IsFavorite   bool     `json:"isFavorite"`
+	CreatedAt    string   `json:"createdAt"`
+	UpdatedAt    string   `json:"updatedAt"`
+	LastUsedAt   string   `json:"lastUsedAt"`
+	Tags         []string `json:"tags"`
 }
 
 // Collection represents a folder/category for organizing queries
 type Collection struct {
-	ID        string    `json:"id"`
-	Name      string    `json:"name"`
-	ParentID  *string   `json:"parentId"`
-	SortOrder int       `json:"sortOrder"`
-	CreatedAt time.Time `json:"createdAt"`
-	UpdatedAt time.Time `json:"updatedAt"`
-	ItemCount int       `json:"itemCount"`
+	ID        string  `json:"id"`
+	Name      string  `json:"name"`
+	ParentID  *string `json:"parentId"`
+	SortOrder int     `json:"sortOrder"`
+	CreatedAt string  `json:"createdAt"`
+	UpdatedAt string  `json:"updatedAt"`
+	ItemCount int     `json:"itemCount"`
 }
 
 // Tag represents a searchable query tag
@@ -37,10 +35,10 @@ type Tag struct {
 
 // QueryVersion represents a historical snapshot of a query's SQL content
 type QueryVersion struct {
-	ID         string    `json:"id"`
-	QueryID    string    `json:"queryId"`
-	SQLContent string    `json:"sqlContent"`
-	CreatedAt  time.Time `json:"createdAt"`
+	ID         string `json:"id"`
+	QueryID    string `json:"queryId"`
+	SQLContent string `json:"sqlContent"`
+	CreatedAt  string `json:"createdAt"`
 }
 
 // Settings represents application settings
@@ -59,7 +57,7 @@ type Settings struct {
 
 // BackupData represents full application backup for export/import
 type BackupData struct {
-	ExportedAt    time.Time      `json:"exportedAt"`
+	ExportedAt    string         `json:"exportedAt"`
 	AppVersion    string         `json:"appVersion"`
 	Queries       []Query        `json:"queries"`
 	Collections   []Collection   `json:"collections"`

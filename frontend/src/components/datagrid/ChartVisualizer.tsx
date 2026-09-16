@@ -1,4 +1,4 @@
-﻿import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { BarChart3, LineChart, PieChart, Info } from 'lucide-react';
 
 interface ChartVisualizerProps {
@@ -9,48 +9,52 @@ interface ChartVisualizerProps {
 type ChartType = 'bar' | 'line' | 'donut';
 
 export const ChartVisualizer: React.FC<ChartVisualizerProps> = ({ columns, rows }) => {
-  if (!columns || columns.length === 0 || !rows || rows.length === 0) {
-    return (
-      <div className="h-full flex flex-col items-center justify-center p-8 text-slate-500 text-xs">
-        <Info className="w-5 h-5 mb-2 text-slate-600" />
-        <span>No query data available to visualize. Execute a query with results first.</span>
-      </div>
-    );
-  }
+  const safeColumns = useMemo(() => (Array.isArray(columns) ? columns : []), [columns]);
+  const safeRows = useMemo(() => (Array.isArray(rows) ? rows : []), [rows]);
 
-  // Auto-detect best column for X-axis (labels) and Y-axis (values)
-  const defaultLabelColIdx = 0;
-  let defaultValueColIdx = columns.length > 1 ? 1 : 0;
-
-  for (let c = 0; c < columns.length; c++) {
-    const isNumeric = rows.slice(0, 10).some((r) => !isNaN(Number(r[c])) && r[c] !== null && r[c] !== '');
-    if (isNumeric && c !== defaultLabelColIdx) {
-      defaultValueColIdx = c;
-      break;
-    }
-  }
-
-  const [labelColIdx, setLabelColIdx] = useState<number>(defaultLabelColIdx);
-  const [valColIdx, setValColIdx] = useState<number>(defaultValueColIdx);
+  const [labelColIdx, setLabelColIdx] = useState<number>(0);
+  const [valColIdx, setValColIdx] = useState<number>(1);
   const [chartType, setChartType] = useState<ChartType>('bar');
+
+  // Auto-detect best column for X-axis (labels) and Y-axis (values) when dataset changes
+  React.useEffect(() => {
+    if (safeColumns.length === 0 || safeRows.length === 0) return;
+    const defaultLabelColIdx = 0;
+    let defaultValueColIdx = safeColumns.length > 1 ? 1 : 0;
+
+    for (let c = 0; c < safeColumns.length; c++) {
+      const isNumeric = safeRows.slice(0, 10).some((r) => r && !isNaN(Number(r[c])) && r[c] !== null && r[c] !== '');
+      if (isNumeric && c !== defaultLabelColIdx) {
+        defaultValueColIdx = c;
+        break;
+      }
+    }
+
+    setLabelColIdx(defaultLabelColIdx);
+    setValColIdx(defaultValueColIdx);
+  }, [safeColumns, safeRows]);
 
   // Prepare chart dataset (limit to first 30 rows for crisp rendering)
   const chartData = useMemo(() => {
-    return rows.slice(0, 30).map((r, idx) => {
+    if (safeRows.length === 0) return [];
+    return safeRows.slice(0, 30).map((r, idx) => {
+      if (!r) return { label: `Row ${idx + 1}`, value: 0 };
       const rawLabel = r[labelColIdx];
       const label = rawLabel === null || rawLabel === undefined ? `Row ${idx + 1}` : String(rawLabel);
       const rawVal = Number(r[valColIdx]);
       const value = isNaN(rawVal) ? 0 : rawVal;
       return { label, value };
     });
-  }, [rows, labelColIdx, valColIdx]);
+  }, [safeRows, labelColIdx, valColIdx]);
 
   const maxValue = useMemo(() => {
+    if (chartData.length === 0) return 1;
     const max = Math.max(...chartData.map((d) => d.value), 0);
     return max === 0 ? 1 : max;
   }, [chartData]);
 
   const totalSum = useMemo(() => {
+    if (chartData.length === 0) return 1;
     return chartData.reduce((acc, curr) => acc + Math.max(curr.value, 0), 0) || 1;
   }, [chartData]);
 
@@ -58,6 +62,15 @@ export const ChartVisualizer: React.FC<ChartVisualizerProps> = ({ columns, rows 
     '#6366f1', '#10b981', '#38bdf8', '#f59e0b', '#ec4899',
     '#8b5cf6', '#14b8a6', '#f97316', '#06b6d4', '#84cc16'
   ];
+
+  if (safeColumns.length === 0 || safeRows.length === 0) {
+    return (
+      <div className="h-full flex flex-col items-center justify-center p-8 text-slate-500 text-xs">
+        <Info className="w-5 h-5 mb-2 text-slate-600" />
+        <span>No query data available to visualize. Execute a query with results first.</span>
+      </div>
+    );
+  }
 
   return (
     <div className="h-full flex flex-col p-4 bg-[#080b11] overflow-hidden select-none">

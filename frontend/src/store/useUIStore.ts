@@ -18,9 +18,11 @@ interface UIState {
   diffVersion: any | null;
   shortcutsModalOpen: boolean;
   updateModalOpen: boolean;
+  sidebarTab: 'queries' | 'schema';
   toasts: ToastNotice[];
   toggleLeftSidebar: () => void;
   toggleRightSidebar: () => void;
+  setSidebarTab: (tab: 'queries' | 'schema') => void;
   setCommandPaletteOpen: (open: boolean) => void;
   setSettingsModalOpen: (open: boolean) => void;
   setImportExportModalOpen: (open: boolean) => void;
@@ -35,7 +37,8 @@ interface UIState {
 
 export const useUIStore = create<UIState>((set, get) => ({
   leftSidebarOpen: true,
-  rightSidebarOpen: true,
+  rightSidebarOpen: false,
+  sidebarTab: 'queries',
   commandPaletteOpen: false,
   settingsModalOpen: false,
   importExportModalOpen: false,
@@ -49,6 +52,7 @@ export const useUIStore = create<UIState>((set, get) => ({
 
   toggleLeftSidebar: () => set((state) => ({ leftSidebarOpen: !state.leftSidebarOpen })),
   toggleRightSidebar: () => set((state) => ({ rightSidebarOpen: !state.rightSidebarOpen })),
+  setSidebarTab: (tab) => set({ sidebarTab: tab }),
   setCommandPaletteOpen: (open) => set({ commandPaletteOpen: open }),
   setSettingsModalOpen: (open) => set({ settingsModalOpen: open }),
   setImportExportModalOpen: (open) => set({ importExportModalOpen: open }),

@@ -11,10 +11,8 @@ interface QueryState {
   activeQuery: Query | null;
   draftSQL: string;
   draftTitle: string;
-  draftDescription: string;
   draftCollectionId: string | null;
   draftDialect: SQLDialect;
-  draftTags: string[];
   isDirty: boolean;
   isSaving: boolean;
   saveStatus: 'saved' | 'saving' | 'dirty';
@@ -26,17 +24,16 @@ interface QueryState {
   // Actions
   fetchQueries: () => Promise<void>;
   setActiveQuery: (query: Query | null) => Promise<void>;
+  openScratchpad: (data: { title: string; sqlContent: string; dialect: SQLDialect }) => void;
   setSearchText: (text: string) => void;
   setQuickFilter: (filter: 'all' | 'favorites' | 'recent' | 'uncategorized') => void;
   updateDraft: (fields: Partial<{
     title: string;
     sqlContent: string;
-    description: string;
     collectionId: string | null;
     dialect: SQLDialect;
-    tags: string[];
   }>) => void;
-  createNewQuery: (initialCollectionId?: string | null) => Promise<Query>;
+  createNewQuery: (initialCollectionId?: string | null, initialData?: Partial<Query>) => Promise<Query>;
   saveActiveQuery: () => Promise<void>;
   toggleFavorite: (id: string) => Promise<void>;
   duplicateQuery: (id: string) => Promise<void>;
@@ -51,10 +48,8 @@ export const useQueryStore = create<QueryState>((set, get) => ({
   activeQuery: null,
   draftSQL: '',
   draftTitle: '',
-  draftDescription: '',
   draftCollectionId: null,
   draftDialect: 'postgresql',
-  draftTags: [],
   isDirty: false,
   isSaving: false,
   saveStatus: 'saved',
@@ -78,7 +73,7 @@ export const useQueryStore = create<QueryState>((set, get) => ({
       const currentActive = get().activeQuery;
       if (!currentActive && queries.length > 0) {
         get().setActiveQuery(queries[0]);
-      } else if (currentActive) {
+      } else if (currentActive && !currentActive.isTemporary) {
         // Keep active query ref updated if in list
         const updatedRef = queries.find((q) => q.id === currentActive.id);
         if (updatedRef) {
@@ -91,10 +86,10 @@ export const useQueryStore = create<QueryState>((set, get) => ({
   },
 
   setActiveQuery: async (query) => {
-    const { isDirty, saveActiveQuery } = get();
+    const { isDirty, saveActiveQuery, activeQuery } = get();
 
-    // Auto-save unsaved changes before switching query
-    if (isDirty && get().activeQuery) {
+    // Auto-save unsaved changes before switching query if it's a persistent query
+    if (isDirty && activeQuery && !activeQuery.isTemporary) {
       await saveActiveQuery();
     }
 
@@ -103,10 +98,8 @@ export const useQueryStore = create<QueryState>((set, get) => ({
         activeQuery: null,
         draftSQL: '',
         draftTitle: '',
-        draftDescription: '',
         draftCollectionId: null,
         draftDialect: 'postgresql',
-        draftTags: [],
         isDirty: false,
         saveStatus: 'saved',
         versionHistory: [],
@@ -118,20 +111,48 @@ export const useQueryStore = create<QueryState>((set, get) => ({
       activeQuery: query,
       draftSQL: query.sqlContent || '',
       draftTitle: query.title || '',
-      draftDescription: query.description || '',
       draftCollectionId: query.collectionId,
       draftDialect: query.dialect || 'postgresql',
-      draftTags: query.tags || [],
       isDirty: false,
       saveStatus: 'saved',
     });
 
-    // Touch query last_used timestamp asynchronously
-    API.touchQuery(query.id).catch(() => {});
-    // Load version history
-    get().fetchVersionHistory(query.id);
+    if (!query.isTemporary) {
+      // Touch query last_used timestamp asynchronously
+      API.touchQuery(query.id).catch(() => {});
+      // Load version history
+      get().fetchVersionHistory(query.id);
+    }
     // Ensure tab is tracked
     useTabStore.getState().openTab(query.id);
+  },
+
+  openScratchpad: (data) => {
+    const scratchId = `temp_${Date.now()}`;
+    const scratchQuery: Query = {
+      id: scratchId,
+      title: data.title || 'Table Preview',
+      sqlContent: data.sqlContent,
+      collectionId: null,
+      dialect: data.dialect || 'postgresql',
+      isFavorite: false,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      lastUsedAt: new Date().toISOString(),
+      isTemporary: true,
+    };
+
+    set({
+      activeQuery: scratchQuery,
+      draftSQL: scratchQuery.sqlContent,
+      draftTitle: scratchQuery.title,
+      draftCollectionId: null,
+      draftDialect: scratchQuery.dialect,
+      isDirty: false,
+      saveStatus: 'saved',
+    });
+
+    useTabStore.getState().openTab(scratchId);
   },
 
   setSearchText: (text) => {
@@ -148,43 +169,40 @@ export const useQueryStore = create<QueryState>((set, get) => ({
     set((state) => ({
       draftTitle: fields.title !== undefined ? fields.title : state.draftTitle,
       draftSQL: fields.sqlContent !== undefined ? fields.sqlContent : state.draftSQL,
-      draftDescription: fields.description !== undefined ? fields.description : state.draftDescription,
       draftCollectionId: fields.collectionId !== undefined ? fields.collectionId : state.draftCollectionId,
       draftDialect: fields.dialect !== undefined ? fields.dialect : state.draftDialect,
-      draftTags: fields.tags !== undefined ? fields.tags : state.draftTags,
       isDirty: true,
       saveStatus: 'dirty',
     }));
   },
 
-  createNewQuery: async (initialCollectionId) => {
-    const { isDirty, saveActiveQuery } = get();
-    if (isDirty && get().activeQuery) {
+  createNewQuery: async (initialCollectionId, initialData) => {
+    const { isDirty, saveActiveQuery, activeQuery } = get();
+    if (isDirty && activeQuery && !activeQuery.isTemporary) {
       await saveActiveQuery();
     }
 
-    const defaultDialect = useSettingsStore.getState().settings.defaultDialect || 'postgresql';
-    const defaultSQL = `SELECT\n    *\nFROM users\nORDER BY created_at DESC;`;
+    const defaultDialect = initialData?.dialect || useSettingsStore.getState().settings.defaultDialect || 'postgresql';
+    const defaultSQL = initialData?.sqlContent ?? `SELECT\n    *\nFROM users\nORDER BY created_at DESC;`;
+    const defaultTitle = initialData?.title || 'Untitled Query';
 
     const newQ: Partial<Query> = {
-      title: 'Untitled Query',
+      title: defaultTitle,
       sqlContent: defaultSQL,
-      description: '',
-      collectionId: initialCollectionId || null,
+      collectionId: initialCollectionId || initialData?.collectionId || null,
       dialect: defaultDialect,
-      isFavorite: false,
-      tags: [],
+      isFavorite: initialData?.isFavorite || false,
     };
 
     const created = await API.createQuery(newQ);
     await get().fetchQueries();
     await get().setActiveQuery(created);
-    useUIStore.getState().showToast('Created new query');
+    useUIStore.getState().showToast(`Created query "${created.title}"`);
     return created;
   },
 
   saveActiveQuery: async () => {
-    const { activeQuery, draftTitle, draftSQL, draftDescription, draftCollectionId, draftDialect, draftTags } = get();
+    const { activeQuery, draftTitle, draftSQL, draftCollectionId, draftDialect } = get();
     if (!activeQuery) return;
 
     set({ isSaving: true, saveStatus: 'saving' });
@@ -202,27 +220,50 @@ export const useQueryStore = create<QueryState>((set, get) => ({
     }
 
     try {
-      const updated: Query = {
-        ...activeQuery,
-        title: draftTitle.trim() || 'Untitled Query',
-        sqlContent: finalSQL,
-        description: draftDescription,
-        collectionId: draftCollectionId,
-        dialect: draftDialect,
-        tags: draftTags,
-      };
+      if (activeQuery.isTemporary) {
+        // Explicitly saving a temporary table preview -> add to persistent library
+        const newQ: Partial<Query> = {
+          title: draftTitle.trim() || 'Untitled Query',
+          sqlContent: finalSQL,
+          collectionId: draftCollectionId,
+          dialect: draftDialect,
+          isFavorite: false,
+        };
 
-      const saved = await API.updateQuery(updated);
-      set({
-        activeQuery: saved,
-        isDirty: false,
-        isSaving: false,
-        saveStatus: 'saved',
-      });
+        const created = await API.createQuery(newQ);
+        const oldId = activeQuery.id;
+        set({
+          activeQuery: created,
+          isDirty: false,
+          isSaving: false,
+          saveStatus: 'saved',
+        });
 
-      await get().fetchQueries();
-      await get().fetchVersionHistory(saved.id);
-      useUIStore.getState().showToast('Query saved');
+        await get().fetchQueries();
+        useTabStore.getState().closeTab(oldId);
+        useTabStore.getState().openTab(created.id);
+        useUIStore.getState().showToast('Query saved to library');
+      } else {
+        const updated: Query = {
+          ...activeQuery,
+          title: draftTitle.trim() || 'Untitled Query',
+          sqlContent: finalSQL,
+          collectionId: draftCollectionId,
+          dialect: draftDialect,
+        };
+
+        const saved = await API.updateQuery(updated);
+        set({
+          activeQuery: saved,
+          isDirty: false,
+          isSaving: false,
+          saveStatus: 'saved',
+        });
+
+        await get().fetchQueries();
+        await get().fetchVersionHistory(saved.id);
+        useUIStore.getState().showToast('Query saved');
+      }
     } catch (err) {
       set({ isSaving: false, saveStatus: 'dirty' });
       useUIStore.getState().showToast('Failed to save query', 'error');

@@ -22,10 +22,14 @@ func (r *QueryRepository) Create(q *models.Query) error {
 	if q.ID == "" {
 		q.ID = uuid.New().String()
 	}
-	now := time.Now()
-	q.CreatedAt = now
+	now := time.Now().Format(time.RFC3339)
+	if q.CreatedAt == "" {
+		q.CreatedAt = now
+	}
 	q.UpdatedAt = now
-	q.LastUsedAt = now
+	if q.LastUsedAt == "" {
+		q.LastUsedAt = now
+	}
 
 	tx, err := r.DB.Begin()
 	if err != nil {
@@ -70,7 +74,7 @@ func (r *QueryRepository) Create(q *models.Query) error {
 }
 
 func (r *QueryRepository) Update(q *models.Query) error {
-	now := time.Now()
+	now := time.Now().Format(time.RFC3339)
 	q.UpdatedAt = now
 
 	tx, err := r.DB.Begin()
@@ -229,12 +233,12 @@ func (r *QueryRepository) ToggleFavorite(id string) (bool, error) {
 	if current == 1 {
 		nextVal = 0
 	}
-	_, err = r.DB.Exec(`UPDATE queries SET is_favorite = ?, updated_at = ? WHERE id = ?`, nextVal, time.Now(), id)
+	_, err = r.DB.Exec(`UPDATE queries SET is_favorite = ?, updated_at = ? WHERE id = ?`, nextVal, time.Now().Format(time.RFC3339), id)
 	return nextVal == 1, err
 }
 
 func (r *QueryRepository) UpdateLastUsed(id string) error {
-	_, err := r.DB.Exec(`UPDATE queries SET last_used_at = ? WHERE id = ?`, time.Now(), id)
+	_, err := r.DB.Exec(`UPDATE queries SET last_used_at = ? WHERE id = ?`, time.Now().Format(time.RFC3339), id)
 	return err
 }
 
