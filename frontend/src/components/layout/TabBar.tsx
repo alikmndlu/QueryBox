@@ -1,11 +1,11 @@
-﻿import React from 'react';
+import React from 'react';
 import { X, Plus } from 'lucide-react';
 import { useTabStore } from '../../store/useTabStore';
 import { useQueryStore } from '../../store/useQueryStore';
 
 export const TabBar: React.FC = () => {
   const { tabIds, activeTabId, setActiveTabId, closeTab } = useTabStore();
-  const { queries, activeQuery, draftTitle, isDirty, createNewQuery } = useQueryStore();
+  const { queries, scratchQueries, activeQuery, draftTitle, isDirty, createNewQuery } = useQueryStore();
 
   if (tabIds.length === 0) {
     return null;
@@ -23,7 +23,7 @@ export const TabBar: React.FC = () => {
       <div className="flex items-center gap-1 min-w-0">
         {tabIds.map((id) => {
           const isActive = id === activeTabId;
-          const query = queries.find((q) => q.id === id);
+          const query = queries.find((q) => q.id === id) || scratchQueries?.[id] || (activeQuery?.id === id ? activeQuery : null);
           const title = isActive ? draftTitle || 'Untitled Query' : query?.title || 'Untitled Query';
           const dialect = (isActive && activeQuery?.dialect) || query?.dialect || 'postgresql';
           const badgeStyle = dialectBadgeColors[dialect] || dialectBadgeColors.postgresql;

@@ -90,9 +90,15 @@ export const CenterPanel: React.FC = () => {
   const [showMenu, setShowMenu] = useState(false);
   const [showDeleteAlert, setShowDeleteAlert] = useState(false);
   const [paramValues, setParamValues] = useState<Record<string, string>>({});
+  const [selectedSQL, setSelectedSQL] = useState('');
 
-  const executeWithMutationGuard = () => {
-    const finalSQL = substituteParameters(draftSQL, paramValues);
+  const executeWithMutationGuard = (targetSQL?: string) => {
+    const raw = (targetSQL !== undefined ? targetSQL : (selectedSQL.trim() ? selectedSQL : draftSQL)).trim();
+    if (!raw) {
+      showToast('No query to execute', 'info');
+      return;
+    }
+    const finalSQL = substituteParameters(raw, paramValues);
     const check = checkQueryMutation(finalSQL);
     if (check.isMutating) {
       showToast(
@@ -101,18 +107,25 @@ export const CenterPanel: React.FC = () => {
       );
       return;
     }
+    if (selectedSQL.trim() && !targetSQL) {
+      showToast(`Running selected SQL (${raw.split('\n').length} lines)...`);
+    }
     executeQuery(finalSQL, queryLimit);
   };
 
-  const handleExecute = () => executeWithMutationGuard();
+  const handleExecute = (overrideSQL?: string) => executeWithMutationGuard(overrideSQL);
 
   const handleExplain = () => {
-    const finalSQL = substituteParameters(draftSQL, paramValues);
+    const raw = (selectedSQL.trim() ? selectedSQL : draftSQL).trim();
+    if (!raw) return;
+    const finalSQL = substituteParameters(raw, paramValues);
     explainQuery(finalSQL);
   };
 
   const handleBenchmark = () => {
-    const finalSQL = substituteParameters(draftSQL, paramValues);
+    const raw = (selectedSQL.trim() ? selectedSQL : draftSQL).trim();
+    if (!raw) return;
+    const finalSQL = substituteParameters(raw, paramValues);
     runBenchmark(finalSQL, 5);
   };
 
@@ -126,7 +139,7 @@ export const CenterPanel: React.FC = () => {
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [draftSQL, paramValues, activeProfileId]);
+  }, [draftSQL, selectedSQL, paramValues, activeProfileId, queryLimit]);
 
   if (!activeQuery) {
     return (
@@ -194,6 +207,12 @@ export const CenterPanel: React.FC = () => {
             type="text"
             value={draftTitle}
             onChange={(e) => updateDraft({ title: e.target.value })}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.currentTarget.blur();
+                saveActiveQuery();
+              }
+            }}
             placeholder="Untitled Query..."
             className="h-7 px-2 rounded bg-transparent hover:bg-[#111622] focus:bg-[#111622] border border-transparent focus:border-indigo-500/50 text-xs font-semibold text-slate-100 focus:outline-none min-w-[140px] max-w-sm truncate transition-colors"
           />
@@ -284,15 +303,25 @@ export const CenterPanel: React.FC = () => {
             </select>
 
             <Button
-              onClick={handleExecute}
+              onClick={() => handleExecute()}
               disabled={isExecuting}
               variant="default"
               size="sm"
-              className="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold shadow-sm gap-1 text-xs h-6 px-2 transition-all"
-              title="Run Query (Ctrl+Enter)"
+              className={`text-white font-semibold shadow-sm gap-1 text-xs h-6 px-2 transition-all ${
+                selectedSQL.trim()
+                  ? 'bg-amber-600 hover:bg-amber-500'
+                  : 'bg-emerald-600 hover:bg-emerald-500'
+              }`}
+              title={selectedSQL.trim() ? "Run Selected Query (Ctrl+Enter)" : "Run Query (Ctrl+Enter)"}
             >
               <Play className={`w-3 h-3 fill-white ${isExecuting ? 'animate-spin' : ''}`} />
-              <span>{isExecuting ? 'Running...' : 'Run'}</span>
+              <span>
+                {isExecuting
+                  ? 'Running...'
+                  : selectedSQL.trim()
+                  ? 'Run Selection'
+                  : 'Run'}
+              </span>
             </Button>
           </div>
 
@@ -300,7 +329,7 @@ export const CenterPanel: React.FC = () => {
 
           {/* Save Status */}
           <Button
-            onClick={saveActiveQuery}
+            onClick={() => saveActiveQuery()}
             disabled={saveStatus === 'saved'}
             variant="ghost"
             size="sm"
@@ -403,7 +432,8 @@ export const CenterPanel: React.FC = () => {
         <SQLEditor
           value={draftSQL}
           onChange={(val) => updateDraft({ sqlContent: val })}
-          onSave={saveActiveQuery}
+          onSelectionChange={setSelectedSQL}
+          onSave={(currentVal) => saveActiveQuery(currentVal)}
           onFormat={formatActiveQuery}
           onExecute={handleExecute}
         />

@@ -8,9 +8,10 @@ import { formatSQL } from '../../lib/formatter';
 interface SQLEditorProps {
   value: string;
   onChange: (val: string) => void;
-  onSave?: () => void;
+  onSave?: (currentVal?: string) => void;
   onFormat?: () => void;
-  onExecute?: () => void;
+  onExecute?: (selectedSQL?: string) => void;
+  onSelectionChange?: (selectedSQL: string) => void;
 }
 
 let sqlCompletionDisposable: any = null;
@@ -47,6 +48,7 @@ export const SQLEditor: React.FC<SQLEditorProps> = ({
   onSave,
   onFormat,
   onExecute,
+  onSelectionChange,
 }) => {
   const editorRef = useRef<any>(null);
   const monacoRef = useRef<any>(null);
@@ -173,9 +175,22 @@ export const SQLEditor: React.FC<SQLEditorProps> = ({
       }
     });
 
+    // Track selection changes and notify parent component
+    editor.onDidChangeCursorSelection((e: any) => {
+      const model = editor.getModel();
+      if (model && e.selection && !e.selection.isEmpty()) {
+        const selText = model.getValueInRange(e.selection).trim();
+        if (onSelectionChange) onSelectionChange(selText);
+      } else {
+        if (onSelectionChange) onSelectionChange('');
+      }
+    });
+
     // Add keyboard shortcuts inside Monaco Editor
     editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => {
-      if (onSave) onSave();
+      const currentVal = editor.getValue();
+      onChange(currentVal);
+      if (onSave) onSave(currentVal);
     });
 
     editor.addCommand(
@@ -190,7 +205,13 @@ export const SQLEditor: React.FC<SQLEditorProps> = ({
     );
 
     editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter, () => {
-      if (onExecute) onExecute();
+      const model = editor.getModel();
+      const selection = editor.getSelection();
+      let selectedText = '';
+      if (model && selection && !selection.isEmpty()) {
+        selectedText = model.getValueInRange(selection).trim();
+      }
+      if (onExecute) onExecute(selectedText || undefined);
     });
   };
 

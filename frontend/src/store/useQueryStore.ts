@@ -8,6 +8,7 @@ import { useTabStore } from './useTabStore';
 
 interface QueryState {
   queries: Query[];
+  scratchQueries: Record<string, Query>;
   activeQuery: Query | null;
   draftSQL: string;
   draftTitle: string;
@@ -25,6 +26,7 @@ interface QueryState {
   fetchQueries: () => Promise<void>;
   setActiveQuery: (query: Query | null) => Promise<void>;
   openScratchpad: (data: { title: string; sqlContent: string; dialect: SQLDialect }) => void;
+  removeScratchQuery: (id: string) => void;
   setSearchText: (text: string) => void;
   setQuickFilter: (filter: 'all' | 'favorites' | 'recent' | 'uncategorized') => void;
   updateDraft: (fields: Partial<{
@@ -34,7 +36,7 @@ interface QueryState {
     dialect: SQLDialect;
   }>) => void;
   createNewQuery: (initialCollectionId?: string | null, initialData?: Partial<Query>) => Promise<Query>;
-  saveActiveQuery: () => Promise<void>;
+  saveActiveQuery: (overrideSQL?: string) => Promise<void>;
   toggleFavorite: (id: string) => Promise<void>;
   duplicateQuery: (id: string) => Promise<void>;
   deleteQuery: (id: string) => Promise<void>;
@@ -45,6 +47,7 @@ interface QueryState {
 
 export const useQueryStore = create<QueryState>((set, get) => ({
   queries: [],
+  scratchQueries: {},
   activeQuery: null,
   draftSQL: '',
   draftTitle: '',
@@ -61,10 +64,17 @@ export const useQueryStore = create<QueryState>((set, get) => ({
   fetchQueries: async () => {
     set({ isLoading: true });
     const { quickFilter, searchText } = get();
+    let selectedCollectionId: string | null = null;
+    try {
+      const { useCollectionStore } = await import('./useCollectionStore');
+      selectedCollectionId = useCollectionStore.getState().selectedCollectionId;
+    } catch {}
+
     try {
       const filter: SearchFilter = {
         searchText,
         quickFilter,
+        collectionId: selectedCollectionId,
       };
       const queries = await API.listQueries(filter);
       set({ queries, isLoading: false });
@@ -142,7 +152,8 @@ export const useQueryStore = create<QueryState>((set, get) => ({
       isTemporary: true,
     };
 
-    set({
+    set((state) => ({
+      scratchQueries: { ...state.scratchQueries, [scratchId]: scratchQuery },
       activeQuery: scratchQuery,
       draftSQL: scratchQuery.sqlContent,
       draftTitle: scratchQuery.title,
@@ -150,9 +161,17 @@ export const useQueryStore = create<QueryState>((set, get) => ({
       draftDialect: scratchQuery.dialect,
       isDirty: false,
       saveStatus: 'saved',
-    });
+    }));
 
     useTabStore.getState().openTab(scratchId);
+  },
+
+  removeScratchQuery: (id) => {
+    set((state) => {
+      const copy = { ...state.scratchQueries };
+      delete copy[id];
+      return { scratchQueries: copy };
+    });
   },
 
   setSearchText: (text) => {
@@ -197,33 +216,39 @@ export const useQueryStore = create<QueryState>((set, get) => ({
     const created = await API.createQuery(newQ);
     await get().fetchQueries();
     await get().setActiveQuery(created);
+    try {
+      const { useCollectionStore } = await import('./useCollectionStore');
+      useCollectionStore.getState().fetchCollections();
+    } catch {}
     useUIStore.getState().showToast(`Created query "${created.title}"`);
     return created;
   },
 
-  saveActiveQuery: async () => {
+  saveActiveQuery: async (overrideSQL?: string) => {
     const { activeQuery, draftTitle, draftSQL, draftCollectionId, draftDialect } = get();
     if (!activeQuery) return;
 
     set({ isSaving: true, saveStatus: 'saving' });
 
-    let finalSQL = draftSQL;
+    let finalSQL = overrideSQL !== undefined ? overrideSQL : draftSQL;
     const settings = useSettingsStore.getState().settings;
 
     // Optional format on save
-    if (settings.formatOnSave && draftSQL.trim()) {
-      const res = formatSQL(draftSQL, draftDialect);
+    if (settings.formatOnSave && finalSQL.trim()) {
+      const res = formatSQL(finalSQL, draftDialect);
       if (!res.error) {
         finalSQL = res.formatted;
         set({ draftSQL: finalSQL });
       }
     }
 
+    const cleanTitle = draftTitle.trim() || 'Untitled Query';
+
     try {
       if (activeQuery.isTemporary) {
         // Explicitly saving a temporary table preview -> add to persistent library
         const newQ: Partial<Query> = {
-          title: draftTitle.trim() || 'Untitled Query',
+          title: cleanTitle,
           sqlContent: finalSQL,
           collectionId: draftCollectionId,
           dialect: draftDialect,
@@ -232,21 +257,34 @@ export const useQueryStore = create<QueryState>((set, get) => ({
 
         const created = await API.createQuery(newQ);
         const oldId = activeQuery.id;
-        set({
-          activeQuery: created,
-          isDirty: false,
-          isSaving: false,
-          saveStatus: 'saved',
+
+        set((state) => {
+          const newScratch = { ...state.scratchQueries };
+          delete newScratch[oldId];
+          return {
+            scratchQueries: newScratch,
+            activeQuery: created,
+            draftTitle: created.title,
+            draftSQL: created.sqlContent,
+            draftCollectionId: created.collectionId,
+            draftDialect: created.dialect,
+            isDirty: false,
+            isSaving: false,
+            saveStatus: 'saved',
+          };
         });
 
+        useTabStore.getState().replaceTab(oldId, created.id);
         await get().fetchQueries();
-        useTabStore.getState().closeTab(oldId);
-        useTabStore.getState().openTab(created.id);
+        try {
+          const { useCollectionStore } = await import('./useCollectionStore');
+          useCollectionStore.getState().fetchCollections();
+        } catch {}
         useUIStore.getState().showToast('Query saved to library');
       } else {
         const updated: Query = {
           ...activeQuery,
-          title: draftTitle.trim() || 'Untitled Query',
+          title: cleanTitle,
           sqlContent: finalSQL,
           collectionId: draftCollectionId,
           dialect: draftDialect,
@@ -255,6 +293,10 @@ export const useQueryStore = create<QueryState>((set, get) => ({
         const saved = await API.updateQuery(updated);
         set({
           activeQuery: saved,
+          draftTitle: saved.title,
+          draftSQL: saved.sqlContent,
+          draftCollectionId: saved.collectionId,
+          draftDialect: saved.dialect,
           isDirty: false,
           isSaving: false,
           saveStatus: 'saved',
@@ -262,6 +304,10 @@ export const useQueryStore = create<QueryState>((set, get) => ({
 
         await get().fetchQueries();
         await get().fetchVersionHistory(saved.id);
+        try {
+          const { useCollectionStore } = await import('./useCollectionStore');
+          useCollectionStore.getState().fetchCollections();
+        } catch {}
         useUIStore.getState().showToast('Query saved');
       }
     } catch (err) {

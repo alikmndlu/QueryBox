@@ -31,7 +31,11 @@ export const useCollectionStore = create<CollectionState>((set, get) => ({
     }
   },
 
-  selectCollection: (id) => set({ selectedCollectionId: id }),
+  selectCollection: (id) => {
+    set({ selectedCollectionId: id });
+    // Dynamically import to avoid cyclic dependency issues
+    import('./useQueryStore').then((m) => m.useQueryStore.getState().fetchQueries());
+  },
 
   toggleExpand: (id) =>
     set((state) => ({

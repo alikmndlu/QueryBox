@@ -1,4 +1,4 @@
-﻿import { create } from 'zustand';
+import { create } from 'zustand';
 import { useQueryStore } from './useQueryStore';
 
 interface TabState {
@@ -6,6 +6,7 @@ interface TabState {
   activeTabId: string | null;
   openTab: (queryId: string) => void;
   closeTab: (queryId: string) => void;
+  replaceTab: (oldId: string, newId: string) => void;
   closeOtherTabs: (queryId: string) => void;
   closeAllTabs: () => void;
   setActiveTabId: (queryId: string) => void;
@@ -27,6 +28,14 @@ export const useTabStore = create<TabState>((set, get) => ({
     }
   },
 
+  replaceTab: (oldId: string, newId: string) => {
+    const { tabIds, activeTabId } = get();
+    set({
+      tabIds: tabIds.map((id) => (id === oldId ? newId : id)),
+      activeTabId: activeTabId === oldId ? newId : activeTabId,
+    });
+  },
+
   closeTab: (queryId: string) => {
     const { tabIds, activeTabId } = get();
     const index = tabIds.indexOf(queryId);
@@ -42,12 +51,15 @@ export const useTabStore = create<TabState>((set, get) => ({
       } else {
         const nextIndex = Math.min(index, newTabIds.length - 1);
         nextActiveId = newTabIds[nextIndex];
-        const nextQuery = useQueryStore.getState().queries.find((q) => q.id === nextActiveId);
+        const store = useQueryStore.getState();
+        const nextQuery = store.queries.find((q) => q.id === nextActiveId) || store.scratchQueries?.[nextActiveId];
         if (nextQuery) {
-          useQueryStore.getState().setActiveQuery(nextQuery);
+          store.setActiveQuery(nextQuery);
         }
       }
     }
+
+    useQueryStore.getState().removeScratchQuery?.(queryId);
 
     set({
       tabIds: newTabIds,
@@ -60,9 +72,10 @@ export const useTabStore = create<TabState>((set, get) => ({
       tabIds: [queryId],
       activeTabId: queryId,
     });
-    const query = useQueryStore.getState().queries.find((q) => q.id === queryId);
+    const store = useQueryStore.getState();
+    const query = store.queries.find((q) => q.id === queryId) || store.scratchQueries?.[queryId];
     if (query) {
-      useQueryStore.getState().setActiveQuery(query);
+      store.setActiveQuery(query);
     }
   },
 
@@ -85,9 +98,10 @@ export const useTabStore = create<TabState>((set, get) => ({
       set({ activeTabId: queryId });
     }
 
-    const query = useQueryStore.getState().queries.find((q) => q.id === queryId);
+    const store = useQueryStore.getState();
+    const query = store.queries.find((q) => q.id === queryId) || store.scratchQueries?.[queryId];
     if (query) {
-      useQueryStore.getState().setActiveQuery(query);
+      store.setActiveQuery(query);
     }
   },
 }));
