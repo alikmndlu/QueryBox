@@ -134,7 +134,7 @@ export const LeftSidebar: React.FC = () => {
   return (
     <div
       style={{ width: `${leftSidebarWidth}px` }}
-      className="h-full bg-[#0d121c] border-r border-[#1b2333] flex flex-col select-none text-slate-300 shrink-0 relative group/sidebar"
+      className="h-full bg-[#0e121d] border-r border-[#1c2538] flex flex-col select-none text-slate-300 shrink-0 relative group/sidebar shadow-xl"
     >
       {/* Resizer Handle Bar */}
       <div
@@ -144,13 +144,14 @@ export const LeftSidebar: React.FC = () => {
         title="Drag to resize left panel (Double click to reset)"
       />
       {/* App Branding Header with QueryBox Logo */}
-      <div className="p-3.5 border-b border-[#1b2333] flex items-center justify-between bg-[#0a0e17]">
+      <div className="p-3.5 border-b border-[#1c2538] flex items-center justify-between bg-[#0b0e17]">
         <QueryBoxLogo size={30} showText={true} />
 
         <Button
           onClick={() => createNewQuery(selectedCollectionId)}
           size="iconSm"
           variant="subtle"
+          className="bg-indigo-600/10 hover:bg-indigo-600/25 text-indigo-300 border border-indigo-500/20"
           title="New Query (Cmd+N)"
         >
           <Plus className="w-4 h-4" />
@@ -161,44 +162,44 @@ export const LeftSidebar: React.FC = () => {
       <div className="p-3">
         <button
           onClick={() => setCommandPaletteOpen(true)}
-          className="w-full h-8 px-2.5 rounded-lg bg-[#111622] hover:bg-[#161c2b] border border-[#1b2333] text-slate-400 text-xs flex items-center justify-between transition-all group"
+          className="w-full h-8.5 px-3 rounded-lg bg-[#131926] hover:bg-[#182133] border border-[#1c2538] hover:border-indigo-500/30 text-slate-400 text-xs flex items-center justify-between transition-all group shadow-inner"
         >
           <div className="flex items-center gap-2">
             <Search className="w-3.5 h-3.5 text-slate-500 group-hover:text-indigo-400 transition-colors" />
-            <span className="group-hover:text-slate-200 transition-colors">Command Palette...</span>
+            <span className="group-hover:text-slate-200 transition-colors font-medium">Search & Commands...</span>
           </div>
-          <kbd className="px-1.5 py-0.5 rounded bg-[#1b2333] text-[10px] font-mono text-slate-400 border border-[#2a3449]">
+          <kbd className="px-1.5 py-0.5 rounded bg-[#1c2538] text-[10px] font-mono text-slate-400 border border-[#27344d]">
             ⌘K
           </kbd>
         </button>
       </div>
 
       {/* Sidebar View Toggle: Queries vs Schema */}
-      <div className="px-3 pb-2 pt-0 flex items-center gap-1">
+      <div className="px-3 pb-2 pt-0 flex items-center gap-1.5">
         <button
           onClick={() => setSidebarTab('queries')}
-          className={`flex-1 flex items-center justify-center gap-1.5 h-7 rounded-md text-xs font-medium transition-colors ${
+          className={`flex-1 flex items-center justify-center gap-1.5 h-7.5 rounded-lg text-xs font-semibold transition-all ${
             sidebarTab === 'queries'
-              ? 'bg-indigo-600/20 text-indigo-200 border border-indigo-500/30'
-              : 'text-slate-400 hover:text-slate-200 hover:bg-[#111622]'
+              ? 'bg-gradient-to-r from-indigo-600/25 to-purple-600/20 text-indigo-200 border border-indigo-500/40 shadow-sm shadow-indigo-500/20'
+              : 'text-slate-400 hover:text-slate-200 hover:bg-[#131926]'
           }`}
         >
-          <Folder className="w-3.5 h-3.5" />
+          <Folder className="w-3.5 h-3.5 text-indigo-400" />
           <span>Queries</span>
         </button>
 
         <button
           onClick={() => setSidebarTab('schema')}
-          className={`flex-1 flex items-center justify-center gap-1.5 h-7 rounded-md text-xs font-medium transition-colors ${
+          className={`flex-1 flex items-center justify-center gap-1.5 h-7.5 rounded-lg text-xs font-semibold transition-all ${
             sidebarTab === 'schema'
-              ? 'bg-indigo-600/20 text-indigo-200 border border-indigo-500/30'
-              : 'text-slate-400 hover:text-slate-200 hover:bg-[#111622]'
+              ? 'bg-gradient-to-r from-indigo-600/25 to-purple-600/20 text-indigo-200 border border-indigo-500/40 shadow-sm shadow-indigo-500/20'
+              : 'text-slate-400 hover:text-slate-200 hover:bg-[#131926]'
           }`}
         >
-          <Database className="w-3.5 h-3.5" />
+          <Database className="w-3.5 h-3.5 text-emerald-400" />
           <span>Tables</span>
           {schemaTables.length > 0 && (
-            <span className="text-[10px] font-mono px-1 rounded bg-indigo-500/20 text-indigo-300">
+            <span className="text-[10px] font-mono px-1.5 py-0.2 rounded-full bg-emerald-500/20 text-emerald-300 font-bold border border-emerald-500/30">
               {schemaTables.length}
             </span>
           )}

@@ -119,7 +119,11 @@ export const App: React.FC = () => {
 
   return (
     <TooltipProvider delayDuration={300}>
-      <div className="w-screen h-screen flex overflow-hidden bg-[#080b11] text-slate-100 font-sans">
+      <div className="w-screen h-screen flex overflow-hidden bg-[#0a0d16] text-slate-200 font-sans relative selection:bg-indigo-500/30 selection:text-white">
+        {/* Subtle Ambient Glow Blobs for Warm Atmosphere */}
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-indigo-600/5 rounded-full blur-[140px] pointer-events-none" />
+        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-purple-600/5 rounded-full blur-[140px] pointer-events-none" />
+
         {/* Left Navigation Sidebar */}
         {leftSidebarOpen && <LeftSidebar />}
 

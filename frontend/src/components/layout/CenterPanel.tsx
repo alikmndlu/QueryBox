@@ -180,14 +180,14 @@ export const CenterPanel: React.FC = () => {
       <TabBar />
 
       {/* Unified Minimal Workspace Toolbar */}
-      <div className="h-11 px-3 border-b border-[#1b2333] bg-[#0c101a] flex items-center justify-between gap-2 shrink-0 select-none">
+      <div className="h-11 px-3 border-b border-[#1c2538] bg-[#0e1320] flex items-center justify-between gap-2 shrink-0 select-none shadow-sm">
         {/* Left: Sidebar Toggle, Favorite, Title, Dialect Badge */}
         <div className="flex items-center gap-2 min-w-0 flex-1">
           <Button
             onClick={toggleLeftSidebar}
             variant="ghost"
             size="iconSm"
-            className="h-7 w-7 text-slate-400 hover:text-slate-200"
+            className="h-7 w-7 text-slate-400 hover:text-slate-200 hover:bg-[#161f32]"
             title="Toggle Navigation Sidebar (Cmd+B)"
           >
             <Sidebar className="w-4 h-4" />
@@ -214,12 +214,12 @@ export const CenterPanel: React.FC = () => {
               }
             }}
             placeholder="Untitled Query..."
-            className="h-7 px-2 rounded bg-transparent hover:bg-[#111622] focus:bg-[#111622] border border-transparent focus:border-indigo-500/50 text-xs font-semibold text-slate-100 focus:outline-none min-w-[140px] max-w-sm truncate transition-colors"
+            className="h-7 px-2 rounded-lg bg-transparent hover:bg-[#131926] focus:bg-[#131926] border border-transparent focus:border-indigo-500/60 text-xs font-semibold text-slate-100 focus:outline-none min-w-[140px] max-w-sm truncate transition-all"
           />
 
           {/* Collection Selector */}
-          <div className="flex items-center gap-1 bg-[#101625] border border-[#1d273d] rounded px-1.5 h-6 shrink-0">
-            <Folder className="w-3 h-3 text-slate-500 shrink-0" />
+          <div className="flex items-center gap-1 bg-[#131926] border border-[#1c2538] rounded-md px-1.5 h-6.5 shrink-0">
+            <Folder className="w-3 h-3 text-indigo-400 shrink-0" />
             <select
               value={draftCollectionId || ''}
               onChange={(e) => updateDraft({ collectionId: e.target.value || null })}
@@ -239,7 +239,7 @@ export const CenterPanel: React.FC = () => {
           <select
             value={draftDialect}
             onChange={(e) => updateDraft({ dialect: e.target.value as SQLDialect })}
-            className="h-6 px-1.5 rounded bg-[#101625] border border-[#1d273d] text-[10px] font-mono font-semibold text-indigo-300 focus:outline-none uppercase cursor-pointer"
+            className="h-6.5 px-2 rounded-md bg-[#131926] border border-[#1c2538] text-[10px] font-mono font-semibold text-indigo-300 focus:outline-none uppercase cursor-pointer"
             title="SQL Dialect"
           >
             <option value="postgresql">Postgres</option>
@@ -256,7 +256,7 @@ export const CenterPanel: React.FC = () => {
             onClick={formatActiveQuery}
             variant="ghost"
             size="sm"
-            className="h-7 text-xs px-2 text-slate-300 hover:text-indigo-300 hover:bg-[#161f33] gap-1"
+            className="h-7 text-xs px-2 text-slate-300 hover:text-indigo-300 hover:bg-[#161f32] gap-1"
             title="Format SQL (Cmd+Shift+F)"
           >
             <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
@@ -277,10 +277,10 @@ export const CenterPanel: React.FC = () => {
             <span>{copied ? 'Copied' : 'Copy SQL'}</span>
           </Button>
 
-          <span className="w-px h-4 bg-[#1b2333] mx-0.5" />
+          <span className="w-px h-4 bg-[#1c2538] mx-0.5" />
 
           {/* Database Execution Controls (Compact & Clean) */}
-          <div className="flex items-center bg-[#101625] border border-[#1b253b] rounded-lg p-0.5 gap-0.5">
+          <div className="flex items-center bg-[#131926] border border-[#1c2538] rounded-lg p-0.5 gap-1 shadow-inner">
             <select
               value={activeProfileId || ''}
               onChange={(e) => {
@@ -290,7 +290,7 @@ export const CenterPanel: React.FC = () => {
                   setActiveProfileId(e.target.value || null);
                 }
               }}
-              className="h-6 px-1.5 rounded bg-[#0c111d] text-[11px] font-medium text-slate-300 focus:outline-none cursor-pointer max-w-[120px] truncate border border-transparent hover:border-[#1d273d]"
+              className="h-6.5 px-2 rounded-md bg-[#0e1320] text-[11px] font-medium text-slate-200 focus:outline-none cursor-pointer max-w-[125px] truncate border border-transparent hover:border-[#1c2538]"
               title="Target Connection Profile"
             >
               <option value="" disabled>No DB</option>
@@ -307,10 +307,10 @@ export const CenterPanel: React.FC = () => {
               disabled={isExecuting}
               variant="default"
               size="sm"
-              className={`text-white font-semibold shadow-sm gap-1 text-xs h-6 px-2 transition-all ${
+              className={`text-white font-semibold shadow-md gap-1.5 text-xs h-6.5 px-2.5 transition-all ${
                 selectedSQL.trim()
-                  ? 'bg-amber-600 hover:bg-amber-500'
-                  : 'bg-emerald-600 hover:bg-emerald-500'
+                  ? 'bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 shadow-amber-600/20'
+                  : 'bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 shadow-emerald-600/20'
               }`}
               title={selectedSQL.trim() ? "Run Selected Query (Ctrl+Enter)" : "Run Query (Ctrl+Enter)"}
             >

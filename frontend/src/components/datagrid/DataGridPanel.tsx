@@ -264,10 +264,10 @@ export const DataGridPanel: React.FC = () => {
   return (
     <div
       style={{ height: `${panelHeight}px` }}
-      className="border-t border-[#1b2333] bg-[#0c101a] flex flex-col z-20 transition-all select-none"
+      className="border-t border-[#1c2538] bg-[#0c101b] flex flex-col z-20 transition-all select-none shadow-2xl"
     >
       {/* Panel Tab Header */}
-      <div className="h-8.5 px-3 bg-[#0a0d17] border-b border-[#1b2333] flex items-center justify-between gap-2 shrink-0">
+      <div className="h-9 px-3 bg-[#0b0e17] border-b border-[#1c2538] flex items-center justify-between gap-2 shrink-0">
         <div className="flex items-center gap-1">
           {/* Results Tab */}
           <button
@@ -906,8 +906,8 @@ export const DataGridPanel: React.FC = () => {
                     {processedRows.map((row, rowIdx) => (
                       <tr
                         key={rowIdx}
-                        className={`hover:bg-[#151c2d]/70 transition-colors ${
-                          rowIdx % 2 === 0 ? 'bg-[#080b11]' : 'bg-[#0b0f19]'
+                        className={`hover:bg-[#151f33]/80 transition-colors ${
+                          rowIdx % 2 === 0 ? 'bg-[#090d15]' : 'bg-[#0c111c]'
                         }`}
                       >
                         <td className="px-3 py-1.5 text-[10px] text-slate-600 border-r border-[#1b2333]/40 text-center select-none font-mono">

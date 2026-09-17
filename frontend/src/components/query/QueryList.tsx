@@ -104,7 +104,7 @@ export const QueryList: React.FC<QueryListProps> = ({
   return (
     <div
       style={{ width: `${queryListWidth}px` }}
-      className="h-full bg-[#090d16] border-r border-[#1b2333] flex flex-col overflow-hidden shrink-0 select-none relative group/querylist"
+      className="h-full bg-[#0c101b] border-r border-[#1c2538] flex flex-col overflow-hidden shrink-0 select-none relative group/querylist shadow-xl"
     >
       {/* Resizer Handle Bar */}
       <div
@@ -114,19 +114,22 @@ export const QueryList: React.FC<QueryListProps> = ({
         title="Drag to resize queries panel (Double click to reset)"
       />
       {/* Header & Quick Search Bar - Always Visible */}
-      <div className="p-2.5 border-b border-[#1b2333] space-y-2 bg-[#0c101a] shrink-0">
-        <div className="flex items-center justify-between text-xs font-semibold text-slate-400 px-1">
-          <span className="tracking-wider text-[11px] font-bold text-slate-300">SAVED QUERIES</span>
+      <div className="p-3 border-b border-[#1c2538] space-y-2 bg-[#0e1320] shrink-0">
+        <div className="flex items-center justify-between text-xs font-semibold text-slate-400 px-0.5">
+          <span className="tracking-wider text-[11px] font-bold text-slate-200 uppercase flex items-center gap-1.5">
+            <Sparkles className="w-3 h-3 text-indigo-400" />
+            Saved Queries
+          </span>
           <div className="flex items-center gap-1.5">
-            <Badge variant="secondary" className="px-1.5 py-0 text-[10px] font-mono bg-[#161c2b] text-slate-400 border border-[#222c42]">
+            <Badge variant="secondary" className="px-1.5 py-0.2 text-[10px] font-mono bg-[#161f32] text-indigo-300 border border-[#273552]">
               {filteredQueries.length}
             </Badge>
             <button
               onClick={() => createNewQuery()}
-              className="p-1 rounded-md bg-indigo-600/20 hover:bg-indigo-600 text-indigo-300 hover:text-white border border-indigo-500/30 transition-all"
+              className="p-1 rounded-lg bg-indigo-600/20 hover:bg-indigo-600 text-indigo-300 hover:text-white border border-indigo-500/30 transition-all shadow-sm"
               title="New Query (Cmd+N)"
             >
-              <Plus className="w-3 h-3" />
+              <Plus className="w-3.5 h-3.5" />
             </button>
           </div>
         </div>
@@ -138,7 +141,7 @@ export const QueryList: React.FC<QueryListProps> = ({
             value={searchText}
             onChange={(e) => setSearchText(e.target.value)}
             placeholder="Search queries or SQL..."
-            className="pl-8 pr-7 bg-[#111622] border-[#1b2333] text-xs h-8"
+            className="pl-8 pr-7 bg-[#131926] border-[#1c2538] focus:border-indigo-500/70 text-xs h-8.5 rounded-lg"
           />
           {searchText && (
             <button
@@ -157,10 +160,10 @@ export const QueryList: React.FC<QueryListProps> = ({
             <button
               key={d}
               onClick={() => setDialectFilter(d)}
-              className={`px-1.5 py-0.5 rounded text-[10px] font-mono uppercase transition-colors shrink-0 ${
+              className={`px-2 py-0.5 rounded-md text-[10px] font-mono uppercase transition-all shrink-0 ${
                 dialectFilter === d
-                  ? 'bg-indigo-600 text-white font-semibold'
-                  : 'bg-[#121826] text-slate-400 hover:text-slate-200 border border-[#1b2438]'
+                  ? 'bg-gradient-to-r from-indigo-600 to-violet-600 text-white font-semibold shadow-sm shadow-indigo-600/30'
+                  : 'bg-[#131926] text-slate-400 hover:text-slate-200 border border-[#1c2538]'
               }`}
             >
               {d === 'all' ? 'All' : d === 'postgresql' ? 'PG' : d === 'mysql' ? 'MY' : d === 'sqlite' ? 'SQLite' : 'MSSQL'}
