@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"syscall"
 
@@ -27,20 +28,32 @@ func replaceRunning(newBinary, version string) error {
 		return notWritableError()
 	}
 	syncUninstallDisplayVersion(version)
+
+	pid := strconv.Itoa(os.Getpid())
 	script := filepath.Join(filepath.Dir(newBinary), "apply-update.bat")
 	body := "@echo off\r\n" +
-		"setlocal\r\n" +
+		"setlocal enabledelayedexpansion\r\n" +
 		"set \"TARGET=" + current + "\"\r\n" +
 		"set \"SOURCE=" + newBinary + "\"\r\n" +
+		"set \"APP_PID=" + pid + "\"\r\n" +
+		"\r\n" +
+		":wait_process\r\n" +
+		"timeout /t 1 /nobreak >nul\r\n" +
+		"taskkill /F /PID %APP_PID% >nul 2>nul\r\n" +
+		"\r\n" +
 		"set /a N=0\r\n" +
-		":wait\r\n" +
+		":copy_retry\r\n" +
+		"copy /Y \"%SOURCE%\" \"%TARGET%\" >nul 2>nul\r\n" +
+		"if not errorlevel 1 goto launch_app\r\n" +
 		"timeout /t 1 /nobreak >nul\r\n" +
 		"set /a N+=1\r\n" +
-		"if %N% GEQ 30 exit /b 1\r\n" +
-		"move /Y \"%SOURCE%\" \"%TARGET%\" >nul 2>nul\r\n" +
-		"if errorlevel 1 goto wait\r\n" +
+		"if %N% LSS 15 goto copy_retry\r\n" +
+		"\r\n" +
+		":launch_app\r\n" +
+		"if exist \"%SOURCE%\" del /f /q \"%SOURCE%\" >nul 2>nul\r\n" +
 		"start \"\" \"%TARGET%\"\r\n" +
-		"del \"%~f0\"\r\n"
+		"(goto) 2>nul & del \"%~f0\"\r\n"
+
 	if err := os.WriteFile(script, []byte(body), 0o700); err != nil {
 		return fmt.Errorf("unable to schedule the update")
 	}
