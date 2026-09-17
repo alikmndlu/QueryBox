@@ -11,6 +11,7 @@ interface UIState {
   rightSidebarOpen: boolean;
   leftSidebarWidth: number;
   queryListWidth: number;
+  dataGridHeight: number;
   commandPaletteOpen: boolean;
   settingsModalOpen: boolean;
   importExportModalOpen: boolean;
@@ -26,6 +27,7 @@ interface UIState {
   toggleRightSidebar: () => void;
   setLeftSidebarWidth: (width: number) => void;
   setQueryListWidth: (width: number) => void;
+  setDataGridHeight: (height: number) => void;
   setSidebarTab: (tab: 'queries' | 'schema') => void;
   setCommandPaletteOpen: (open: boolean) => void;
   setSettingsModalOpen: (open: boolean) => void;
@@ -47,11 +49,16 @@ const initialQueryListWidth = typeof window !== 'undefined'
   ? Number(localStorage.getItem('qb_query_list_width')) || 280
   : 280;
 
+const initialDataGridHeight = typeof window !== 'undefined'
+  ? Number(localStorage.getItem('qb_datagrid_height')) || 320
+  : 320;
+
 export const useUIStore = create<UIState>((set, get) => ({
   leftSidebarOpen: true,
   rightSidebarOpen: false,
   leftSidebarWidth: initialLeftWidth,
   queryListWidth: initialQueryListWidth,
+  dataGridHeight: initialDataGridHeight,
   sidebarTab: 'queries',
   commandPaletteOpen: false,
   settingsModalOpen: false,
@@ -79,6 +86,14 @@ export const useUIStore = create<UIState>((set, get) => ({
       localStorage.setItem('qb_query_list_width', String(clamped));
     }
     set({ queryListWidth: clamped });
+  },
+  setDataGridHeight: (height) => {
+    const maxHeight = typeof window !== 'undefined' ? Math.floor(window.innerHeight * 0.85) : 800;
+    const clamped = Math.max(120, Math.min(maxHeight, height));
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('qb_datagrid_height', String(clamped));
+    }
+    set({ dataGridHeight: clamped });
   },
   setSidebarTab: (tab) => set({ sidebarTab: tab }),
   setCommandPaletteOpen: (open) => set({ commandPaletteOpen: open }),

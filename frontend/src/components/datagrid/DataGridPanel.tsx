@@ -49,11 +49,32 @@ export const DataGridPanel: React.FC = () => {
     clearExecutionHistory,
     executeQuery,
   } = useConnectionStore();
-  const { showToast } = useUIStore();
+  const { showToast, dataGridHeight, setDataGridHeight } = useUIStore();
   const { updateDraft } = useQueryStore();
 
   const [copiedCell, setCopiedCell] = useState<string | null>(null);
-  const [panelHeight, setPanelHeight] = useState<number>(300);
+  const [isResizingHeight, setIsResizingHeight] = useState<boolean>(false);
+
+  const handleHeightResizeMouseDown = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsResizingHeight(true);
+    const startY = e.clientY;
+    const startHeight = dataGridHeight;
+
+    const handleMouseMove = (moveEvent: MouseEvent) => {
+      const deltaY = startY - moveEvent.clientY; // dragging UP increases height
+      setDataGridHeight(startHeight + deltaY);
+    };
+
+    const handleMouseUp = () => {
+      setIsResizingHeight(false);
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+  };
   const [filterText, setFilterText] = useState<string>('');
   const [sortColIdx, setSortColIdx] = useState<number | null>(null);
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
@@ -263,9 +284,21 @@ export const DataGridPanel: React.FC = () => {
 
   return (
     <div
-      style={{ height: `${panelHeight}px` }}
-      className="border-t border-[#1c2538] bg-[#0c101b] flex flex-col z-20 transition-all select-none shadow-2xl"
+      style={{ height: `${dataGridHeight}px` }}
+      className={`border-t border-[#1c2538] bg-[#0b0f19] flex flex-col z-20 relative select-none shadow-2xl ${
+        isResizingHeight ? 'select-none border-t-2 border-t-indigo-500' : ''
+      }`}
     >
+      {/* Top Drag Resizer Handle */}
+      <div
+        onMouseDown={handleHeightResizeMouseDown}
+        onDoubleClick={() => setDataGridHeight(dataGridHeight > 350 ? 250 : 500)}
+        className="h-2 w-full cursor-row-resize bg-transparent hover:bg-indigo-500/40 active:bg-indigo-500 transition-colors shrink-0 flex items-center justify-center -mt-1 group z-30"
+        title="Drag up or down to resize query results table (Double-click to toggle height)"
+      >
+        <div className="w-16 h-1 rounded-full bg-slate-700/40 group-hover:bg-indigo-400 transition-colors" />
+      </div>
+
       {/* Panel Tab Header */}
       <div className="h-9 px-3 bg-[#0b0e17] border-b border-[#1c2538] flex items-center justify-between gap-2 shrink-0">
         <div className="flex items-center gap-1">
@@ -556,11 +589,11 @@ export const DataGridPanel: React.FC = () => {
           )}
 
           <button
-            onClick={() => setPanelHeight(panelHeight === 300 ? 500 : 300)}
+            onClick={() => setDataGridHeight(dataGridHeight > 350 ? 250 : 520)}
             className="p-1 text-slate-400 hover:text-slate-200 hover:bg-[#161d2d] rounded transition-colors"
-            title={panelHeight === 300 ? 'Expand Grid Height' : 'Shrink Grid Height'}
+            title={dataGridHeight > 350 ? 'Shrink Grid Height' : 'Expand Grid Height'}
           >
-            {panelHeight === 300 ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+            {dataGridHeight > 350 ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronUp className="w-3.5 h-3.5" />}
           </button>
 
           <button

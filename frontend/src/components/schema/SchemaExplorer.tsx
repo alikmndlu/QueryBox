@@ -445,8 +445,17 @@ export const SchemaExplorer: React.FC = () => {
                                   <Play className="w-3 h-3 fill-current" />
                                 </button>
 
-                                <span className="text-[10px] text-slate-500 font-mono">
-                                  {table.columns.length}
+                                <span
+                                  className="text-[10px] text-indigo-300/80 font-mono px-1.5 py-0.2 rounded bg-[#131926] border border-[#1c2538] shrink-0"
+                                  title={`${table.rowCount?.toLocaleString() ?? 0} records (${table.columns.length} columns)`}
+                                >
+                                  {table.rowCount !== undefined && table.rowCount !== null
+                                    ? table.rowCount >= 1_000_000
+                                      ? `${(table.rowCount / 1_000_000).toFixed(1)}M rows`
+                                      : table.rowCount >= 1_000
+                                      ? `${(table.rowCount / 1_000).toFixed(1)}k rows`
+                                      : `${table.rowCount} rows`
+                                    : '0 rows'}
                                 </span>
                               </div>
                             </div>
@@ -454,6 +463,10 @@ export const SchemaExplorer: React.FC = () => {
                             {/* Expanded Columns */}
                             {isTableExpanded && (
                               <div className="pl-6 pr-2 py-1 pb-1.5 space-y-0.5 border-t border-[#1b2333]/40 bg-[#06090f]">
+                                <div className="text-[10px] uppercase font-bold text-slate-500 px-1.5 py-0.5 flex items-center justify-between">
+                                  <span>Columns</span>
+                                  <span className="font-mono text-[9px] text-indigo-400 font-normal">{table.columns.length} fields</span>
+                                </div>
                                 {table.columns.map((col) => (
                                   <div
                                     key={col.name}

@@ -62,6 +62,7 @@ type TableInfo struct {
 	Schema   string       `json:"schema"`
 	Name     string       `json:"name"`
 	Type     string       `json:"type"` // "TABLE" or "VIEW"
+	RowCount int64        `json:"rowCount"`
 	Columns  []ColumnInfo `json:"columns"`
 }
 

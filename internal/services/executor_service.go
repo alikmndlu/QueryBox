@@ -633,6 +633,11 @@ func (s *ExecutorService) IntrospectDatabase(p *models.ConnectionProfile, dbName
 		}
 
 		for i := range tables {
+			// Fetch row count
+			var cnt int64
+			_ = db.QueryRowContext(ctx, fmt.Sprintf("SELECT COUNT(*) FROM \"%s\"", tables[i].Name)).Scan(&cnt)
+			tables[i].RowCount = cnt
+
 			colRows, err := db.QueryContext(ctx, fmt.Sprintf("PRAGMA table_info('%s')", tables[i].Name))
 			if err != nil {
 				continue
@@ -655,7 +660,7 @@ func (s *ExecutorService) IntrospectDatabase(p *models.ConnectionProfile, dbName
 		}
 
 	case "mysql":
-		rows, err := db.QueryContext(ctx, "SELECT table_schema, table_name, table_type FROM information_schema.tables WHERE table_schema = ? ORDER BY table_name", dbName)
+		rows, err := db.QueryContext(ctx, "SELECT table_schema, table_name, table_type, COALESCE(table_rows, 0) FROM information_schema.tables WHERE table_schema = ? ORDER BY table_name", dbName)
 		if err != nil {
 			return nil, err
 		}
@@ -665,7 +670,7 @@ func (s *ExecutorService) IntrospectDatabase(p *models.ConnectionProfile, dbName
 		for rows.Next() {
 			var t models.TableInfo
 			t.Database = dbName
-			if err := rows.Scan(&t.Schema, &t.Name, &t.Type); err == nil {
+			if err := rows.Scan(&t.Schema, &t.Name, &t.Type, &t.RowCount); err == nil {
 				tableMap[t.Name] = len(tables)
 				t.Columns = []models.ColumnInfo{}
 				tables = append(tables, t)
@@ -727,10 +732,12 @@ func (s *ExecutorService) IntrospectDatabase(p *models.ConnectionProfile, dbName
 
 	default: // postgresql
 		rows, err := db.QueryContext(ctx, `
-			SELECT table_schema, table_name, table_type
-			FROM information_schema.tables
-			WHERE table_schema NOT IN ('pg_catalog', 'information_schema')
-			ORDER BY table_name
+			SELECT t.table_schema, t.table_name, t.table_type, COALESCE(c.reltuples::bigint, 0)
+			FROM information_schema.tables t
+			LEFT JOIN pg_class c ON c.relname = t.table_name
+			LEFT JOIN pg_namespace n ON n.oid = c.relnamespace AND n.nspname = t.table_schema
+			WHERE t.table_schema NOT IN ('pg_catalog', 'information_schema')
+			ORDER BY t.table_name
 		`)
 		if err != nil {
 			return nil, err
@@ -741,7 +748,10 @@ func (s *ExecutorService) IntrospectDatabase(p *models.ConnectionProfile, dbName
 		for rows.Next() {
 			var t models.TableInfo
 			t.Database = dbName
-			if err := rows.Scan(&t.Schema, &t.Name, &t.Type); err == nil {
+			if err := rows.Scan(&t.Schema, &t.Name, &t.Type, &t.RowCount); err == nil {
+				if t.RowCount < 0 {
+					t.RowCount = 0
+				}
 				tableMap[t.Name] = len(tables)
 				t.Columns = []models.ColumnInfo{}
 				tables = append(tables, t)

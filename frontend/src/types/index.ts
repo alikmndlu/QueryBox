@@ -111,6 +111,7 @@ export interface TableInfo {
   schema: string;
   name: string;
   type: string;
+  rowCount?: number;
   columns: ColumnInfo[];
 }
 

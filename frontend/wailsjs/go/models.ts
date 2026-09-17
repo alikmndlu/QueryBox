@@ -259,6 +259,7 @@ export namespace models {
 	    schema: string;
 	    name: string;
 	    type: string;
+	    rowCount: number;
 	    columns: ColumnInfo[];
 	
 	    static createFrom(source: any = {}) {
@@ -271,6 +272,7 @@ export namespace models {
 	        this.schema = source["schema"];
 	        this.name = source["name"];
 	        this.type = source["type"];
+	        this.rowCount = source["rowCount"];
 	        this.columns = this.convertValues(source["columns"], ColumnInfo);
 	    }
 	
