@@ -21,12 +21,16 @@ import {
   SlidersHorizontal,
   BarChart2,
   Pin,
+  Quote,
+  List,
 } from 'lucide-react';
 import { useConnectionStore } from '../../store/useConnectionStore';
 import { useQueryStore } from '../../store/useQueryStore';
 import { useUIStore } from '../../store/useUIStore';
 import { ChartVisualizer } from './ChartVisualizer';
 import { ColumnProfilerModal } from './ColumnProfilerModal';
+import { CopyColumnModal } from './CopyColumnModal';
+import { ContextMenu, ContextMenuItem } from '../ui/ContextMenu';
 
 export const DataGridPanel: React.FC = () => {
   const {
@@ -57,6 +61,49 @@ export const DataGridPanel: React.FC = () => {
   const [pinnedCols, setPinnedCols] = useState<Record<string, boolean>>({});
   const [showColPicker, setShowColPicker] = useState<boolean>(false);
   const [profilingCol, setProfilingCol] = useState<{ name: string; index: number } | null>(null);
+
+  // Column Copy Modal & Context Menu State
+  const [copyModalOpen, setCopyModalOpen] = useState<boolean>(false);
+  const [copyColIdx, setCopyColIdx] = useState<number>(0);
+  const [headerMenuColIdx, setHeaderMenuColIdx] = useState<number | null>(null);
+  const [contextMenuState, setContextMenuState] = useState<{ x: number; y: number; colName: string; colIdx: number } | null>(null);
+
+  // Header Click Action Mode ('copy' = select & copy all column values, 'sort' = sort column)
+  const [headerClickMode, setHeaderClickMode] = useState<'copy' | 'sort'>('copy');
+  const [selectedColumnIdx, setSelectedColumnIdx] = useState<number | null>(null);
+
+  const handleQuickCopyColumnSQLIn = (colIdx: number, colName: string) => {
+    if (!lastResult || !lastResult.rows) return;
+    const rawValues = processedRows.map((r) => (r ? r[colIdx] : null));
+    const formatted = rawValues
+      .filter((v) => v !== null && v !== undefined)
+      .map((v) => {
+        const s = typeof v === 'object' ? JSON.stringify(v) : String(v);
+        return `'${s.replace(/'/g, "''")}'`;
+      })
+      .join(', ');
+    navigator.clipboard.writeText(formatted);
+    showToast(`Selected & copied ${rawValues.length} values from column "${colName}" as SQL IN list`, 'success');
+  };
+
+  const handleHeaderClick = (colIdx: number, colName: string) => {
+    if (headerClickMode === 'copy') {
+      setSelectedColumnIdx(colIdx);
+      handleQuickCopyColumnSQLIn(colIdx, colName);
+    } else {
+      handleSort(colIdx);
+    }
+  };
+
+  const handleQuickCopyColumnPlain = (colIdx: number, colName: string) => {
+    if (!lastResult || !lastResult.rows) return;
+    const rawValues = processedRows.map((r) => (r ? r[colIdx] : null));
+    const formatted = rawValues
+      .map((v) => (v === null || v === undefined ? 'NULL' : String(v)))
+      .join(', ');
+    navigator.clipboard.writeText(formatted);
+    showToast(`Copied ${colName} values (comma separated)`, 'success');
+  };
 
   const togglePinCol = (colName: string) => {
     setPinnedCols((prev) => {
@@ -364,6 +411,53 @@ export const DataGridPanel: React.FC = () => {
               >
                 <Copy className="w-3 h-3 text-sky-400" />
                 <span className="hidden md:inline">Copy</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  setCopyColIdx(visibleColIndices[0] ?? 0);
+                  setCopyModalOpen(true);
+                }}
+                className="flex items-center gap-1 h-6 px-2 text-[11px] text-slate-300 hover:text-white bg-[#151c2d] hover:bg-[#1b2438] rounded border border-[#1b2333] transition-colors"
+                title="Copy column values with custom formatting (SQL IN list, single quotes, delimiters)"
+              >
+                <Quote className="w-3 h-3 text-indigo-400" />
+                <span className="hidden md:inline">Copy Column</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  const nextMode = headerClickMode === 'copy' ? 'sort' : 'copy';
+                  setHeaderClickMode(nextMode);
+                  showToast(
+                    nextMode === 'copy'
+                      ? 'Header click mode: Select & Copy Column'
+                      : 'Header click mode: Sort Column',
+                    'info'
+                  );
+                }}
+                className={`flex items-center gap-1 h-6 px-2 text-[11px] rounded border transition-colors ${
+                  headerClickMode === 'copy'
+                    ? 'bg-indigo-600/20 text-indigo-300 border-indigo-500/30 hover:bg-indigo-600/30'
+                    : 'bg-[#151c2d] text-slate-300 border-[#1b2333] hover:text-white'
+                }`}
+                title={
+                  headerClickMode === 'copy'
+                    ? 'Clicking column header selects & copies all values. Click to switch to Sort mode.'
+                    : 'Clicking column header sorts column. Click to switch to Select & Copy mode.'
+                }
+              >
+                {headerClickMode === 'copy' ? (
+                  <>
+                    <Quote className="w-3 h-3 text-indigo-400" />
+                    <span className="hidden lg:inline">Header: Copy</span>
+                  </>
+                ) : (
+                  <>
+                    <ArrowUpDown className="w-3 h-3 text-emerald-400" />
+                    <span className="hidden lg:inline">Header: Sort</span>
+                  </>
+                )}
               </button>
 
               {/* Columns Visibility Picker */}
@@ -708,33 +802,74 @@ export const DataGridPanel: React.FC = () => {
                       {visibleColIndices.map((idx) => {
                         const col = lastResult.columns[idx];
                         const isPinned = !!pinnedCols[col];
+                        const isSelectedCol = selectedColumnIdx === idx;
+
                         return (
                           <th
                             key={idx}
+                            onContextMenu={(e) => {
+                              e.preventDefault();
+                              setContextMenuState({ x: e.clientX, y: e.clientY, colName: col, colIdx: idx });
+                            }}
                             className={`px-3 py-2 text-[11px] font-bold border-r border-[#1b2333]/50 select-none whitespace-nowrap group/th hover:bg-[#161e31] transition-colors ${
-                              isPinned ? 'bg-[#12192c] text-sky-300 border-r-2 border-indigo-500/40' : 'text-indigo-300'
+                              isSelectedCol
+                                ? 'bg-[#182138] text-indigo-200 border-b-2 border-indigo-400'
+                                : isPinned
+                                ? 'bg-[#12192c] text-sky-300 border-r-2 border-indigo-500/40'
+                                : 'text-indigo-300'
                             }`}
                           >
                             <div className="flex items-center justify-between gap-2">
                               <div
-                                onClick={() => handleSort(idx)}
-                                className="flex items-center gap-1.5 cursor-pointer flex-1"
-                                title="Click to sort"
+                                onClick={() => handleHeaderClick(idx, col)}
+                                className="flex items-center gap-1.5 cursor-pointer flex-1 min-w-0"
+                                title={
+                                  headerClickMode === 'copy'
+                                    ? `Click to select & copy all values in "${col}" (Right-click for options)`
+                                    : `Click to sort column "${col}" (Right-click for options)`
+                                }
                               >
                                 {isPinned && (
                                   <span className="w-1.5 h-1.5 rounded-full bg-sky-400 shrink-0" />
                                 )}
-                                <span>{col}</span>
-                                {sortColIdx === idx ? (
-                                  <span className="text-emerald-400 text-[10px]">
-                                    {sortDirection === 'asc' ? '▲' : '▼'}
-                                  </span>
-                                ) : (
-                                  <ArrowUpDown className="w-2.5 h-2.5 text-slate-600 opacity-50 group-hover/th:opacity-100" />
-                                )}
+                                <span className="truncate">{col}</span>
                               </div>
 
-                              <div className="flex items-center gap-1">
+                              <div className="flex items-center gap-1 shrink-0">
+                                {/* Dedicated Sort Button */}
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleSort(idx);
+                                  }}
+                                  className={`p-0.5 rounded transition-all ${
+                                    sortColIdx === idx
+                                      ? 'text-emerald-400 opacity-100'
+                                      : 'opacity-0 group-hover/th:opacity-100 text-slate-500 hover:text-indigo-300'
+                                  }`}
+                                  title="Sort Column (Ascending / Descending)"
+                                >
+                                  {sortColIdx === idx ? (
+                                    <span className="text-[10px] font-bold">
+                                      {sortDirection === 'asc' ? '▲' : '▼'}
+                                    </span>
+                                  ) : (
+                                    <ArrowUpDown className="w-2.5 h-2.5" />
+                                  )}
+                                </button>
+
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setSelectedColumnIdx(idx);
+                                    handleQuickCopyColumnSQLIn(idx, col);
+                                  }}
+                                  className="opacity-0 group-hover/th:opacity-100 p-0.5 rounded hover:bg-indigo-500/20 text-slate-500 hover:text-indigo-300 transition-all"
+                                  title="Copy column as SQL IN list ('val1', 'val2')"
+                                >
+                                  <Quote className="w-3 h-3" />
+                                </button>
+
                                 <button
                                   onClick={(e) => {
                                     e.stopPropagation();
@@ -782,6 +917,7 @@ export const DataGridPanel: React.FC = () => {
                           const cell = row ? row[colIdx] : null;
                           const col = lastResult?.columns?.[colIdx] || '';
                           const isPinned = !!pinnedCols[col];
+                          const isSelectedCol = selectedColumnIdx === colIdx;
                           const cellKey = `${rowIdx}-${colIdx}`;
                           const isNull = cell === null || cell === undefined;
                           const cellStr = isNull ? 'NULL' : typeof cell === 'object' ? JSON.stringify(cell) : String(cell);
@@ -790,8 +926,12 @@ export const DataGridPanel: React.FC = () => {
                             <td
                               key={colIdx}
                               onClick={() => handleCopyCell(cell, cellKey)}
-                              className={`px-3 py-1.5 border-r whitespace-nowrap max-w-xs truncate cursor-pointer relative group ${
-                                isPinned ? 'bg-[#0f1422]/90 border-[#1b253b] border-r-2 border-indigo-500/30' : 'border-[#1b2333]/40'
+                              className={`px-3 py-1.5 border-r whitespace-nowrap max-w-xs truncate cursor-pointer relative group transition-colors ${
+                                isSelectedCol
+                                  ? 'bg-indigo-500/15 text-indigo-100 font-semibold border-x border-indigo-500/30'
+                                  : isPinned
+                                  ? 'bg-[#0f1422]/90 border-[#1b253b] border-r-2 border-indigo-500/30'
+                                  : 'border-[#1b2333]/40'
                               } ${
                                 isNull ? 'text-slate-600 italic' : 'text-slate-200'
                               }`}
@@ -831,6 +971,59 @@ export const DataGridPanel: React.FC = () => {
           </>
         )}
       </div>
+
+      {/* Header Context Menu */}
+      {contextMenuState && (
+        <ContextMenu
+          x={contextMenuState.x}
+          y={contextMenuState.y}
+          onClose={() => setContextMenuState(null)}
+          items={[
+            {
+              id: 'copy-sql-in',
+              label: "Copy SQL IN List ('val1', 'val2')",
+              icon: <Quote className="w-3.5 h-3.5 text-indigo-400" />,
+              action: () => handleQuickCopyColumnSQLIn(contextMenuState.colIdx, contextMenuState.colName),
+            },
+            {
+              id: 'copy-plain',
+              label: 'Copy Comma Separated (val1, val2)',
+              icon: <Copy className="w-3.5 h-3.5 text-sky-400" />,
+              action: () => handleQuickCopyColumnPlain(contextMenuState.colIdx, contextMenuState.colName),
+            },
+            {
+              id: 'copy-options',
+              label: 'Custom Copy Options...',
+              icon: <SlidersHorizontal className="w-3.5 h-3.5 text-amber-400" />,
+              action: () => {
+                setCopyColIdx(contextMenuState.colIdx);
+                setCopyModalOpen(true);
+              },
+            },
+            {
+              id: 'pin-unpin',
+              label: pinnedCols[contextMenuState.colName] ? 'Unpin Column' : 'Pin Column to Front',
+              icon: <Pin className="w-3.5 h-3.5 text-sky-400" />,
+              action: () => togglePinCol(contextMenuState.colName),
+            },
+            {
+              id: 'profile',
+              label: 'Inspect Column Stats',
+              icon: <BarChart2 className="w-3.5 h-3.5 text-emerald-400" />,
+              action: () => setProfilingCol({ name: contextMenuState.colName, index: contextMenuState.colIdx }),
+            },
+          ]}
+        />
+      )}
+
+      {/* Column Copy Modal */}
+      <CopyColumnModal
+        isOpen={copyModalOpen}
+        onClose={() => setCopyModalOpen(false)}
+        columns={lastResult?.columns || []}
+        rows={processedRows}
+        defaultColumnIndex={copyColIdx}
+      />
 
       {/* Column Profiler Modal */}
       <ColumnProfilerModal

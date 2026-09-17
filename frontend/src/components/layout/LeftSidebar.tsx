@@ -63,6 +63,8 @@ export const LeftSidebar: React.FC = () => {
     setSettingsModalOpen,
     setGitSyncModalOpen,
     setShortcutsModalOpen,
+    leftSidebarWidth,
+    setLeftSidebarWidth,
   } = useUIStore();
   const { profiles, schemaTables, setConnectionModalOpen } = useConnectionStore();
 
@@ -76,6 +78,29 @@ export const LeftSidebar: React.FC = () => {
   useEffect(() => {
     fetchCollections();
   }, []);
+
+  const handleResizeMouseDown = (e: React.MouseEvent) => {
+    e.preventDefault();
+    const startX = e.clientX;
+    const startWidth = leftSidebarWidth;
+
+    const handleMouseMove = (moveEvent: MouseEvent) => {
+      const deltaX = moveEvent.clientX - startX;
+      setLeftSidebarWidth(startWidth + deltaX);
+    };
+
+    const handleMouseUp = () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+      document.body.style.userSelect = '';
+      document.body.style.cursor = '';
+    };
+
+    document.body.style.userSelect = 'none';
+    document.body.style.cursor = 'col-resize';
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+  };
 
   const handleCreateCollection = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -107,7 +132,17 @@ export const LeftSidebar: React.FC = () => {
   };
 
   return (
-    <div className="w-56 h-full bg-[#0d121c] border-r border-[#1b2333] flex flex-col select-none text-slate-300 shrink-0">
+    <div
+      style={{ width: `${leftSidebarWidth}px` }}
+      className="h-full bg-[#0d121c] border-r border-[#1b2333] flex flex-col select-none text-slate-300 shrink-0 relative group/sidebar"
+    >
+      {/* Resizer Handle Bar */}
+      <div
+        onMouseDown={handleResizeMouseDown}
+        onDoubleClick={() => setLeftSidebarWidth(260)}
+        className="absolute right-0 top-0 bottom-0 w-1.5 cursor-col-resize hover:bg-indigo-500/50 active:bg-indigo-500 z-30 transition-colors group-hover/sidebar:opacity-100"
+        title="Drag to resize left panel (Double click to reset)"
+      />
       {/* App Branding Header with QueryBox Logo */}
       <div className="p-3.5 border-b border-[#1b2333] flex items-center justify-between bg-[#0a0e17]">
         <QueryBoxLogo size={30} showText={true} />

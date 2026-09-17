@@ -40,12 +40,35 @@ export const QueryList: React.FC<QueryListProps> = ({
     formatActiveQuery,
   } = useQueryStore();
   const { collections } = useCollectionStore();
-  const { showToast } = useUIStore();
+  const { showToast, queryListWidth, setQueryListWidth } = useUIStore();
 
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; query: Query } | null>(null);
   const [queryToDelete, setQueryToDelete] = useState<Query | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [dialectFilter, setDialectFilter] = useState<'all' | SQLDialect>('all');
+
+  const handleResizeMouseDown = (e: React.MouseEvent) => {
+    e.preventDefault();
+    const startX = e.clientX;
+    const startWidth = queryListWidth;
+
+    const handleMouseMove = (moveEvent: MouseEvent) => {
+      const deltaX = moveEvent.clientX - startX;
+      setQueryListWidth(startWidth + deltaX);
+    };
+
+    const handleMouseUp = () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+      document.body.style.userSelect = '';
+      document.body.style.cursor = '';
+    };
+
+    document.body.style.userSelect = 'none';
+    document.body.style.cursor = 'col-resize';
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+  };
 
   const filteredQueries = useMemo(() => {
     if (dialectFilter === 'all') return queries;
@@ -79,7 +102,17 @@ export const QueryList: React.FC<QueryListProps> = ({
   };
 
   return (
-    <div className="w-72 h-full bg-[#090d16] border-r border-[#1b2333] flex flex-col overflow-hidden shrink-0 select-none">
+    <div
+      style={{ width: `${queryListWidth}px` }}
+      className="h-full bg-[#090d16] border-r border-[#1b2333] flex flex-col overflow-hidden shrink-0 select-none relative group/querylist"
+    >
+      {/* Resizer Handle Bar */}
+      <div
+        onMouseDown={handleResizeMouseDown}
+        onDoubleClick={() => setQueryListWidth(280)}
+        className="absolute right-0 top-0 bottom-0 w-1.5 cursor-col-resize hover:bg-indigo-500/50 active:bg-indigo-500 z-30 transition-colors group-hover/querylist:opacity-100"
+        title="Drag to resize queries panel (Double click to reset)"
+      />
       {/* Header & Quick Search Bar - Always Visible */}
       <div className="p-2.5 border-b border-[#1b2333] space-y-2 bg-[#0c101a] shrink-0">
         <div className="flex items-center justify-between text-xs font-semibold text-slate-400 px-1">
