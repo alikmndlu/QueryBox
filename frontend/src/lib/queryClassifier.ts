@@ -50,8 +50,8 @@ export function checkQueryMutation(rawSQL: string): QueryMutationCheck {
       isMutating: true,
       operationType: 'DROP',
       hasWhereClause: true,
-      warningTitle: 'Blocked: DROP Statement',
-      warningMessage: 'QueryBox is in strict Read-Only mode. DROP statements cannot be executed.',
+      warningTitle: 'Execute DROP Statement?',
+      warningMessage: 'This query will permanently DROP database schema elements. This action cannot be reversed.',
       severity: 'danger',
     };
   }
@@ -61,8 +61,8 @@ export function checkQueryMutation(rawSQL: string): QueryMutationCheck {
       isMutating: true,
       operationType: 'TRUNCATE',
       hasWhereClause: true,
-      warningTitle: 'Blocked: TRUNCATE Statement',
-      warningMessage: 'QueryBox is in strict Read-Only mode. TRUNCATE statements cannot be executed.',
+      warningTitle: 'Execute TRUNCATE Statement?',
+      warningMessage: 'This query will wipe all rows from the target table. Are you sure you want to proceed?',
       severity: 'danger',
     };
   }
@@ -73,9 +73,11 @@ export function checkQueryMutation(rawSQL: string): QueryMutationCheck {
       isMutating: true,
       operationType: 'DELETE',
       hasWhereClause: hasWhere,
-      warningTitle: 'Blocked: DELETE Statement',
-      warningMessage: 'QueryBox is in strict Read-Only mode. DELETE operations cannot be executed.',
-      severity: 'danger',
+      warningTitle: hasWhere ? 'Confirm DELETE Execution' : 'DANGER: DELETE Without WHERE Clause!',
+      warningMessage: hasWhere
+        ? 'You are about to delete matching records from the database table.'
+        : 'ATTENTION: This DELETE statement has NO WHERE clause and will remove ALL records in the target table!',
+      severity: hasWhere ? 'warning' : 'danger',
     };
   }
 
@@ -85,9 +87,11 @@ export function checkQueryMutation(rawSQL: string): QueryMutationCheck {
       isMutating: true,
       operationType: 'UPDATE',
       hasWhereClause: hasWhere,
-      warningTitle: 'Blocked: UPDATE Statement',
-      warningMessage: 'QueryBox is in strict Read-Only mode. UPDATE operations cannot be executed.',
-      severity: 'danger',
+      warningTitle: hasWhere ? 'Confirm UPDATE Execution' : 'DANGER: UPDATE Without WHERE Clause!',
+      warningMessage: hasWhere
+        ? 'You are about to modify database records with an UPDATE statement.'
+        : 'ATTENTION: This UPDATE statement has NO WHERE clause and will update ALL records in the target table!',
+      severity: hasWhere ? 'warning' : 'danger',
     };
   }
 
@@ -97,9 +101,9 @@ export function checkQueryMutation(rawSQL: string): QueryMutationCheck {
       isMutating: true,
       operationType: 'INSERT',
       hasWhereClause: true,
-      warningTitle: 'Blocked: INSERT Statement',
-      warningMessage: 'QueryBox is in strict Read-Only mode. INSERT operations cannot be executed.',
-      severity: 'danger',
+      warningTitle: 'Confirm INSERT Execution',
+      warningMessage: 'You are about to insert new row(s) into the database table.',
+      severity: 'warning',
     };
   }
 
@@ -109,9 +113,9 @@ export function checkQueryMutation(rawSQL: string): QueryMutationCheck {
       isMutating: true,
       operationType: 'ALTER',
       hasWhereClause: true,
-      warningTitle: 'Blocked: ALTER Statement',
-      warningMessage: 'QueryBox is in strict Read-Only mode. Schema alterations cannot be executed.',
-      severity: 'danger',
+      warningTitle: 'Confirm ALTER TABLE Execution',
+      warningMessage: 'This statement will alter table schemas or constraints in your database.',
+      severity: 'warning',
     };
   }
 
@@ -121,9 +125,9 @@ export function checkQueryMutation(rawSQL: string): QueryMutationCheck {
       isMutating: true,
       operationType: 'CREATE',
       hasWhereClause: true,
-      warningTitle: 'Blocked: CREATE Statement',
-      warningMessage: 'QueryBox is in strict Read-Only mode. Schema creation statements cannot be executed.',
-      severity: 'danger',
+      warningTitle: 'Confirm CREATE Execution',
+      warningMessage: 'You are creating new database objects (table, index, or view).',
+      severity: 'warning',
     };
   }
 
@@ -137,3 +141,4 @@ export function checkQueryMutation(rawSQL: string): QueryMutationCheck {
     severity: 'warning',
   };
 }
+

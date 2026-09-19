@@ -28,7 +28,7 @@
   }
 
   code, pre, .font-mono {
-    font-family: 'JetBrains Mono', 'Vazirmatn', Consolas, Monaco, monospace !important;
+    font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', Consolas, Monaco, monospace !important;
   }
 
   ::selection {

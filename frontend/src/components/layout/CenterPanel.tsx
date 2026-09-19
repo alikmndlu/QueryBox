@@ -27,7 +27,8 @@ import { SnippetMenu } from '../editor/SnippetMenu';
 import { DataGridPanel } from '../datagrid/DataGridPanel';
 import { ErrorBoundary } from '../ui/ErrorBoundary';
 import { substituteParameters } from '../../lib/paramExtractor';
-import { checkQueryMutation } from '../../lib/queryClassifier';
+import { checkQueryMutation, QueryMutationCheck } from '../../lib/queryClassifier';
+import { ConfirmExecutionModal } from '../editor/ConfirmExecutionModal';
 import { SQLDialect } from '../../types';
 import { Button } from '../ui/button';
 import { QueryBoxLogo } from '../ui/QueryBoxLogo';
@@ -92,6 +93,11 @@ export const CenterPanel: React.FC = () => {
   const [paramValues, setParamValues] = useState<Record<string, string>>({});
   const [selectedSQL, setSelectedSQL] = useState('');
 
+  // Execution Confirmation Guard State
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [pendingSQL, setPendingSQL] = useState('');
+  const [pendingMutationCheck, setPendingMutationCheck] = useState<QueryMutationCheck | null>(null);
+
   const executeWithMutationGuard = (targetSQL?: string) => {
     const raw = (targetSQL !== undefined ? targetSQL : (selectedSQL.trim() ? selectedSQL : draftSQL)).trim();
     if (!raw) {
@@ -100,17 +106,30 @@ export const CenterPanel: React.FC = () => {
     }
     const finalSQL = substituteParameters(raw, paramValues);
     const check = checkQueryMutation(finalSQL);
+
     if (check.isMutating) {
-      showToast(
-        `Execution blocked: QueryBox is in strict Read-Only mode. Modifying operations (${check.operationType}) are permanently disabled.`,
-        'error'
-      );
+      // Require user confirmation for mutating queries (INSERT, UPDATE, DELETE, DROP, ALTER, TRUNCATE, etc.)
+      setPendingSQL(finalSQL);
+      setPendingMutationCheck(check);
+      setShowConfirmModal(true);
       return;
     }
+
     if (selectedSQL.trim() && !targetSQL) {
       showToast(`Running selected SQL (${raw.split('\n').length} lines)...`);
     }
     executeQuery(finalSQL, queryLimit);
+  };
+
+  const handleConfirmExecution = () => {
+    if (pendingSQL) {
+      if (selectedSQL.trim()) {
+        showToast(`Executing mutating query...`);
+      }
+      executeQuery(pendingSQL, queryLimit);
+      setPendingSQL('');
+      setPendingMutationCheck(null);
+    }
   };
 
   const handleExecute = (overrideSQL?: string) => executeWithMutationGuard(overrideSQL);
@@ -479,6 +498,21 @@ export const CenterPanel: React.FC = () => {
           <span>⌘⇧C Copy</span>
         </div>
       </div>
+
+      {/* Safety Execution Confirmation Modal for DML/DDL queries */}
+      <ConfirmExecutionModal
+        open={showConfirmModal}
+        onClose={() => {
+          setShowConfirmModal(false);
+          setPendingSQL('');
+          setPendingMutationCheck(null);
+        }}
+        onConfirm={handleConfirmExecution}
+        sql={pendingSQL}
+        mutationCheck={pendingMutationCheck}
+        connectionName={profiles.find((p) => p.id === activeProfileId)?.name}
+        databaseName={activeDatabase || undefined}
+      />
 
       {/* shadcn AlertDialog for Delete Query in CenterPanel */}
       <AlertDialog open={showDeleteAlert} onOpenChange={setShowDeleteAlert}>

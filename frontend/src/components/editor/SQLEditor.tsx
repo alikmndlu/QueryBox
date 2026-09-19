@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useMemo } from 'react';
 import Editor, { OnMount } from '@monaco-editor/react';
 import { useSettingsStore } from '../../store/useSettingsStore';
 import { useQueryStore } from '../../store/useQueryStore';
@@ -50,15 +50,69 @@ export const SQLEditor: React.FC<SQLEditorProps> = ({
   onExecute,
   onSelectionChange,
 }) => {
+  const containerRef = useRef<HTMLDivElement>(null);
   const editorRef = useRef<any>(null);
   const monacoRef = useRef<any>(null);
+  const selectionRafRef = useRef<number | null>(null);
+
   const settings = useSettingsStore((state) => state.settings);
   const draftDialect = useQueryStore((state) => state.draftDialect);
   const formatActiveQuery = useQueryStore((state) => state.formatActiveQuery);
+  const schemaTables = useConnectionStore((state) => state.schemaTables);
+
+  // Pre-calculate cached completion suggestions to prevent high Garbage Collection load & typing lag
+  const cachedCompletions = useMemo(() => {
+    const tableItems: any[] = [];
+    const columnItems: any[] = [];
+    const tableColumnMap: Record<string, any[]> = {};
+
+    (schemaTables || []).forEach((tbl) => {
+      tableItems.push({
+        label: tbl.name,
+        kind: 5, // CompletionItemKind.Class
+        detail: tbl.schema ? `[Table] ${tbl.schema}.${tbl.name}` : `[Table] ${tbl.name}`,
+        documentation: `Table (${tbl.columns?.length || 0} columns)`,
+        insertText: tbl.name,
+      });
+
+      const colsForTable: any[] = [];
+      tbl.columns?.forEach((col) => {
+        const colItem = {
+          label: col.name,
+          kind: 3, // CompletionItemKind.Field
+          detail: `[Column] ${tbl.name}.${col.name} : ${col.dataType}`,
+          documentation: `${tbl.name}.${col.name} (${col.dataType}${col.isPrimaryKey ? ' - PK' : ''}${col.isNullable ? ' - Nullable' : ''})`,
+          insertText: col.name,
+        };
+        colsForTable.push(colItem);
+        columnItems.push(colItem);
+
+        columnItems.push({
+          label: `${tbl.name}.${col.name}`,
+          kind: 9, // CompletionItemKind.Property
+          detail: `[Qualified] ${col.dataType}`,
+          insertText: `${tbl.name}.${col.name}`,
+        });
+      });
+
+      tableColumnMap[tbl.name.toLowerCase()] = colsForTable;
+    });
+
+    return { tableItems, columnItems, tableColumnMap };
+  }, [schemaTables]);
 
   const handleEditorDidMount: OnMount = (editor, monaco) => {
     editorRef.current = editor;
     monacoRef.current = monaco;
+
+    // Fix Cursor Misalignment: Force Monaco font re-measurement after WebFonts load
+    if (typeof document !== 'undefined' && (document as any).fonts) {
+      (document as any).fonts.ready.then(() => {
+        monaco.editor.remeasureFonts();
+      });
+    }
+    setTimeout(() => monaco.editor.remeasureFonts(), 150);
+    setTimeout(() => monaco.editor.remeasureFonts(), 600);
 
     // Define custom dark slate theme for QueryBox
     monaco.editor.defineTheme('querybox-dark', {
@@ -66,11 +120,18 @@ export const SQLEditor: React.FC<SQLEditorProps> = ({
       inherit: true,
       rules: [
         { token: 'keyword', foreground: '818cf8', fontStyle: 'bold' },
-        { token: 'string', foreground: '34d399' },
-        { token: 'number', foreground: 'f43f5e' },
+        { token: 'string', foreground: 'fbbf24' },
+        { token: 'string.sql', foreground: 'fbbf24' },
+        { token: 'string.quote', foreground: 'fbbf24' },
+        { token: 'string.invalid', foreground: 'fbbf24' },
+        { token: 'invalid', foreground: 'fbbf24' },
+        { token: 'delimiter.quote', foreground: 'fbbf24' },
+        { token: 'delimiter.single', foreground: 'fbbf24' },
+        { token: 'number', foreground: 'f472b6' },
         { token: 'comment', foreground: '64748b', fontStyle: 'italic' },
         { token: 'operator', foreground: '38bdf8' },
         { token: 'identifier', foreground: 'f8fafc' },
+        { token: 'identifier.quote', foreground: '38bdf8' },
       ],
       colors: {
         'editor.background': '#080b11',
@@ -87,11 +148,18 @@ export const SQLEditor: React.FC<SQLEditorProps> = ({
     const activeTheme = settings.theme === 'light' ? 'vs' : 'querybox-dark';
     monaco.editor.setTheme(activeTheme);
 
-    // Register custom SQL IntelliSense provider (keywords, functions, schema tables & columns)
+    // Register high-performance SQL IntelliSense completion provider
     if (!sqlCompletionDisposable) {
       sqlCompletionDisposable = monaco.languages.registerCompletionItemProvider('sql', {
         triggerCharacters: [' ', '.', '(', ','],
         provideCompletionItems: (model: any, position: any) => {
+          const lineUntilPosition = model.getValueInRange({
+            startLineNumber: position.lineNumber,
+            startColumn: 1,
+            endLineNumber: position.lineNumber,
+            endColumn: position.column,
+          });
+
           const word = model.getWordUntilPosition(position);
           const range = {
             startLineNumber: position.lineNumber,
@@ -101,18 +169,62 @@ export const SQLEditor: React.FC<SQLEditorProps> = ({
           };
 
           const suggestions: any[] = [];
+          const { tableItems, columnItems, tableColumnMap } = (editorRef.current as any)?._cachedCompletions || {
+            tableItems: [],
+            columnItems: [],
+            tableColumnMap: {},
+          };
 
-          // Keywords
+          // Dot notation e.g. "users." -> suggest columns for table "users"
+          const dotMatch = lineUntilPosition.match(/([\w]+)\.$/);
+          if (dotMatch) {
+            const tableName = dotMatch[1].toLowerCase();
+            const cols = tableColumnMap[tableName];
+            if (cols) {
+              cols.forEach((col: any, idx: number) => {
+                suggestions.push({
+                  ...col,
+                  sortText: `0_${idx}`,
+                  range,
+                });
+              });
+              return { suggestions };
+            }
+          }
+
+          // Check if context is after FROM / JOIN / INTO / UPDATE / TABLE (boost tables)
+          const isTableContext = /\b(FROM|JOIN|INTO|UPDATE|TABLE|TRUNCATE)\s+[\w\.]*$/i.test(lineUntilPosition);
+
+          // 1. Pre-cached Tables
+          tableItems.forEach((item: any) => {
+            suggestions.push({
+              ...item,
+              sortText: isTableContext ? `0_${item.label}` : `1_${item.label}`,
+              range,
+            });
+          });
+
+          // 2. Pre-cached Columns
+          columnItems.forEach((item: any) => {
+            suggestions.push({
+              ...item,
+              sortText: `2_${item.label}`,
+              range,
+            });
+          });
+
+          // 3. Keywords
           SQL_KEYWORDS.forEach((kw) => {
             suggestions.push({
               label: kw,
               kind: monaco.languages.CompletionItemKind.Keyword,
               insertText: kw,
+              sortText: `3_${kw}`,
               range,
             });
           });
 
-          // Functions
+          // 4. Functions
           SQL_FUNCTIONS.forEach((fn) => {
             suggestions.push({
               label: fn.label,
@@ -120,39 +232,8 @@ export const SQLEditor: React.FC<SQLEditorProps> = ({
               insertText: fn.insertText,
               insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
               detail: fn.detail,
+              sortText: `3_${fn.label}`,
               range,
-            });
-          });
-
-          // Tables and columns from live introspected schema
-          const schemaTables = useConnectionStore.getState().schemaTables;
-          schemaTables.forEach((tbl) => {
-            suggestions.push({
-              label: tbl.name,
-              kind: monaco.languages.CompletionItemKind.Class,
-              detail: tbl.schema ? `[Table] ${tbl.schema}.${tbl.name}` : `[Table] ${tbl.name}`,
-              documentation: `Table in schema (${tbl.columns?.length || 0} columns)`,
-              insertText: tbl.name,
-              range,
-            });
-
-            tbl.columns?.forEach((col) => {
-              suggestions.push({
-                label: col.name,
-                kind: monaco.languages.CompletionItemKind.Field,
-                detail: `[Column] ${tbl.name}.${col.name} : ${col.dataType}`,
-                documentation: `${tbl.name}.${col.name} (${col.dataType}${col.isPrimaryKey ? ' - Primary Key' : ''}${col.isNullable ? ' - Nullable' : ''})`,
-                insertText: col.name,
-                range,
-              });
-
-              suggestions.push({
-                label: `${tbl.name}.${col.name}`,
-                kind: monaco.languages.CompletionItemKind.Property,
-                detail: `[Column] ${col.dataType}`,
-                insertText: `${tbl.name}.${col.name}`,
-                range,
-              });
             });
           });
 
@@ -175,18 +256,21 @@ export const SQLEditor: React.FC<SQLEditorProps> = ({
       }
     });
 
-    // Track selection changes and notify parent component
+    // Optimized selection listener using requestAnimationFrame to eliminate typing lag
     editor.onDidChangeCursorSelection((e: any) => {
-      const model = editor.getModel();
-      if (model && e.selection && !e.selection.isEmpty()) {
-        const selText = model.getValueInRange(e.selection).trim();
-        if (onSelectionChange) onSelectionChange(selText);
-      } else {
-        if (onSelectionChange) onSelectionChange('');
-      }
+      if (selectionRafRef.current) cancelAnimationFrame(selectionRafRef.current);
+      selectionRafRef.current = requestAnimationFrame(() => {
+        const model = editor.getModel();
+        if (model && e.selection && !e.selection.isEmpty()) {
+          const selText = model.getValueInRange(e.selection).trim();
+          if (onSelectionChange) onSelectionChange(selText);
+        } else {
+          if (onSelectionChange) onSelectionChange('');
+        }
+      });
     });
 
-    // Add keyboard shortcuts inside Monaco Editor
+    // Keyboard shortcuts inside Monaco Editor
     editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => {
       const currentVal = editor.getValue();
       onChange(currentVal);
@@ -215,6 +299,25 @@ export const SQLEditor: React.FC<SQLEditorProps> = ({
     });
   };
 
+  // Sync cached completion items ref for instant access inside provider
+  useEffect(() => {
+    if (editorRef.current) {
+      (editorRef.current as any)._cachedCompletions = cachedCompletions;
+    }
+  }, [cachedCompletions]);
+
+  // Handle Container Resizing (e.g. sidebar open/close) to keep editor canvas & cursor aligned
+  useEffect(() => {
+    if (!containerRef.current) return;
+    const observer = new ResizeObserver(() => {
+      if (editorRef.current) {
+        editorRef.current.layout();
+      }
+    });
+    observer.observe(containerRef.current);
+    return () => observer.disconnect();
+  }, []);
+
   // Update theme dynamically when settings change
   useEffect(() => {
     if (monacoRef.current) {
@@ -224,7 +327,7 @@ export const SQLEditor: React.FC<SQLEditorProps> = ({
   }, [settings.theme]);
 
   return (
-    <div className="w-full h-full relative overflow-hidden bg-[#080b11]">
+    <div ref={containerRef} className="w-full h-full relative overflow-hidden bg-[#080b11]">
       <Editor
         height="100%"
         defaultLanguage="sql"
@@ -235,6 +338,8 @@ export const SQLEditor: React.FC<SQLEditorProps> = ({
         theme={settings.theme === 'light' ? 'vs' : 'querybox-dark'}
         options={{
           fontSize: settings.fontSize || 13,
+          lineHeight: 21,
+          letterSpacing: 0,
           tabSize: settings.tabSize || 2,
           wordWrap: settings.wordWrap || 'on',
           minimap: { enabled: settings.showMinimap },
@@ -247,6 +352,8 @@ export const SQLEditor: React.FC<SQLEditorProps> = ({
           bracketPairColorization: { enabled: true },
           autoClosingBrackets: 'always',
           fontFamily: "'JetBrains Mono', 'Fira Code', 'Cascadia Code', Consolas, Monaco, monospace",
+          fontLigatures: false,
+          fixedOverflowWidgets: true,
           padding: { top: 12, bottom: 12 },
         }}
       />
