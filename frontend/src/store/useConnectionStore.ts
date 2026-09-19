@@ -257,6 +257,9 @@ export const useConnectionStore = create<ConnectionState>((set, get) => ({
         executionTimeMs: result?.executionTimeMs || 0,
         error: result?.error,
         isDestructive: result?.isDestructive,
+        profileId: activeProfileId,
+        profileName: activeProfile?.name || 'Active Connection',
+        databaseName: targetDb || activeProfile?.database || 'default',
       };
       set({ lastResult: safeResult, isExecuting: false });
       const dbLabel = targetDb ? ` on ${targetDb}` : '';

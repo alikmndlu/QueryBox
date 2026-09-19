@@ -83,6 +83,9 @@ export interface QueryResult {
   error?: string;
   plan?: string;
   isDestructive?: boolean;
+  profileId?: string;
+  profileName?: string;
+  databaseName?: string;
 }
 
 export type ExportCodeLanguage = 'go' | 'typescript' | 'python' | 'rust' | 'php';

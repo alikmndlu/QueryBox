@@ -1550,8 +1550,8 @@ export const DataGridPanel: React.FC = () => {
         mutations={mutations}
         generatedSQL={generatedDMLScript}
         tableName={inferredTableName}
-        connectionName={activeProfile?.name}
-        databaseName={activeProfile?.database}
+        connectionName={lastResult?.profileName || activeProfile?.name}
+        databaseName={lastResult?.databaseName || activeProfile?.database}
         hasPrimaryKey={hasPrimaryKey}
       />
     </div>
