@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Star,
   Clock,
@@ -15,6 +15,12 @@ import {
   Database,
   FolderSync,
   Keyboard,
+  ChevronRight,
+  ChevronDown,
+  Copy,
+  Check,
+  FileText,
+  Sparkles,
 } from 'lucide-react';
 import { useQueryStore } from '../../store/useQueryStore';
 import { useCollectionStore } from '../../store/useCollectionStore';
@@ -22,7 +28,7 @@ import { useUIStore } from '../../store/useUIStore';
 import { useConnectionStore } from '../../store/useConnectionStore';
 import { ContextMenu } from '../ui/ContextMenu';
 import { SchemaExplorer } from '../schema/SchemaExplorer';
-import { Collection } from '../../types';
+import { Collection, Query } from '../../types';
 import { QueryBoxLogo } from '../ui/QueryBoxLogo';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
@@ -41,9 +47,15 @@ export const LeftSidebar: React.FC = () => {
   const {
     quickFilter,
     setQuickFilter,
+    searchText,
     setSearchText,
     createNewQuery,
     queries,
+    activeQuery,
+    setActiveQuery,
+    toggleFavorite,
+    deleteQuery,
+    duplicateQuery,
   } = useQueryStore();
 
   const {
@@ -65,6 +77,7 @@ export const LeftSidebar: React.FC = () => {
     setShortcutsModalOpen,
     leftSidebarWidth,
     setLeftSidebarWidth,
+    showToast,
   } = useUIStore();
   const { profiles, schemaTables, setConnectionModalOpen } = useConnectionStore();
 
@@ -74,6 +87,9 @@ export const LeftSidebar: React.FC = () => {
   const [editingColName, setEditingColName] = useState('');
   const [colContextMenu, setColContextMenu] = useState<{ x: number; y: number; col: Collection } | null>(null);
   const [colToDelete, setColToDelete] = useState<Collection | null>(null);
+  const [expandedCols, setExpandedCols] = useState<Record<string, boolean>>({});
+  const [queryContextMenu, setQueryContextMenu] = useState<{ x: number; y: number; query: Query } | null>(null);
+  const [queryToDelete, setQueryToDelete] = useState<Query | null>(null);
 
   useEffect(() => {
     fetchCollections();
@@ -130,6 +146,48 @@ export const LeftSidebar: React.FC = () => {
       setColToDelete(null);
     }
   };
+
+  const handleQueryContextMenu = (e: React.MouseEvent, query: Query) => {
+    e.preventDefault();
+    setQueryContextMenu({ x: e.clientX, y: e.clientY, query });
+  };
+
+  const handleConfirmDeleteQuery = async () => {
+    if (queryToDelete) {
+      await deleteQuery(queryToDelete.id);
+      setQueryToDelete(null);
+    }
+  };
+
+  const toggleExpandCol = (colId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setExpandedCols((prev) => ({ ...prev, [colId]: !prev[colId] }));
+  };
+
+  const filteredQueries = useMemo(() => {
+    let list = [...queries];
+
+    if (searchText.trim()) {
+      const q = searchText.toLowerCase();
+      list = list.filter(
+        (item) => item.title.toLowerCase().includes(q) || item.sqlContent.toLowerCase().includes(q)
+      );
+    }
+
+    if (selectedCollectionId) {
+      list = list.filter((item) => item.collectionId === selectedCollectionId);
+    } else if (quickFilter === 'favorites') {
+      list = list.filter((item) => item.isFavorite);
+    } else if (quickFilter === 'recent') {
+      list = [...list].sort(
+        (a, b) => new Date(b.updatedAt || 0).getTime() - new Date(a.updatedAt || 0).getTime()
+      );
+    } else if (quickFilter === 'uncategorized') {
+      list = list.filter((item) => !item.collectionId);
+    }
+
+    return list;
+  }, [queries, searchText, selectedCollectionId, quickFilter]);
 
   return (
     <div
@@ -323,6 +381,8 @@ export const LeftSidebar: React.FC = () => {
             {collections.map((col) => {
               const isSelected = selectedCollectionId === col.id;
               const isEditing = editingColId === col.id;
+              const isExpanded = !!expandedCols[col.id] || isSelected;
+              const colQueries = queries.filter((q) => q.collectionId === col.id);
 
               return (
                 <div key={col.id} className="group relative">
@@ -342,56 +402,191 @@ export const LeftSidebar: React.FC = () => {
                       />
                     </div>
                   ) : (
-                    <button
-                      onClick={() => {
-                        setSearchText('');
-                        setQuickFilter('all');
-                        selectCollection(col.id);
-                      }}
-                      onContextMenu={(e) => handleColContextMenu(e, col)}
-                      className={`w-full h-8 px-2.5 rounded-md text-xs font-medium flex items-center justify-between transition-colors ${
-                        isSelected
-                          ? 'bg-indigo-600/15 text-indigo-300 font-semibold border border-indigo-500/30'
-                          : 'hover:bg-[#161c2b] text-slate-400 hover:text-slate-200'
-                      }`}
-                    >
-                      <div className="flex items-center gap-2 overflow-hidden">
-                        <Folder className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
-                        <span className="truncate">{col.name}</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-[#1b2333] text-slate-400 group-hover:hidden">
-                          {col.itemCount}
-                        </span>
-                        <div className="hidden group-hover:flex items-center gap-0.5">
+                    <div>
+                      <button
+                        onClick={() => {
+                          setSearchText('');
+                          setQuickFilter('all');
+                          selectCollection(col.id);
+                          setExpandedCols((prev) => ({ ...prev, [col.id]: !prev[col.id] }));
+                        }}
+                        onContextMenu={(e) => handleColContextMenu(e, col)}
+                        className={`w-full h-8 px-2.5 rounded-md text-xs font-medium flex items-center justify-between transition-colors ${
+                          isSelected
+                            ? 'bg-indigo-600/20 text-indigo-300 font-semibold border border-indigo-500/30'
+                            : 'hover:bg-[#161c2b] text-slate-400 hover:text-slate-200'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2 overflow-hidden">
                           <span
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setEditingColId(col.id);
-                              setEditingColName(col.name);
-                            }}
-                            className="p-1 rounded hover:bg-[#1b2333] text-slate-400 hover:text-slate-200"
-                            title="Rename"
+                            onClick={(e) => toggleExpandCol(col.id, e)}
+                            className="p-0.5 rounded hover:bg-[#1b2333] text-slate-500 hover:text-slate-300"
                           >
-                            <Edit2 className="w-3 h-3" />
+                            {isExpanded ? (
+                              <ChevronDown className="w-3 h-3" />
+                            ) : (
+                              <ChevronRight className="w-3 h-3" />
+                            )}
                           </span>
-                          <span
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setColToDelete(col);
-                            }}
-                            className="p-1 rounded hover:bg-[#1b2333] text-rose-400 hover:text-rose-300"
-                            title="Delete"
-                          >
-                            <Trash2 className="w-3 h-3" />
-                          </span>
+                          <Folder className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+                          <span className="truncate">{col.name}</span>
                         </div>
-                      </div>
-                    </button>
+                        <div className="flex items-center gap-1">
+                          <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-[#1b2333] text-slate-400 group-hover:hidden">
+                            {colQueries.length}
+                          </span>
+                          <div className="hidden group-hover:flex items-center gap-0.5">
+                            <span
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setEditingColId(col.id);
+                                setEditingColName(col.name);
+                              }}
+                              className="p-1 rounded hover:bg-[#1b2333] text-slate-400 hover:text-slate-200"
+                              title="Rename Collection"
+                            >
+                              <Edit2 className="w-3 h-3" />
+                            </span>
+                            <span
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setColToDelete(col);
+                              }}
+                              className="p-1 rounded hover:bg-[#1b2333] text-rose-400 hover:text-rose-300"
+                              title="Delete Collection"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </span>
+                          </div>
+                        </div>
+                      </button>
+
+                      {/* Nested Queries Under Expanded Collection */}
+                      {isExpanded && colQueries.length > 0 && (
+                        <div className="pl-4 pr-1 py-0.5 space-y-0.5">
+                          {colQueries.map((q) => {
+                            const isQueryActive = activeQuery?.id === q.id;
+                            return (
+                              <div
+                                key={q.id}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setActiveQuery(q);
+                                }}
+                                onContextMenu={(e) => handleQueryContextMenu(e, q)}
+                                className={`group/item flex items-center justify-between px-2 py-1.5 rounded-md text-xs cursor-pointer transition-all ${
+                                  isQueryActive
+                                    ? 'bg-[#151c2d] text-indigo-300 font-semibold border-l-2 border-indigo-500'
+                                    : 'hover:bg-[#131926] text-slate-400 hover:text-slate-200'
+                                }`}
+                              >
+                                <div className="flex items-center gap-1.5 truncate">
+                                  <FileText className="w-3 h-3 text-indigo-400/80 shrink-0" />
+                                  <span className="truncate text-[11px]">{q.title || 'Untitled Query'}</span>
+                                </div>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    toggleFavorite(q.id);
+                                  }}
+                                  className={`p-0.5 rounded hover:scale-110 transition-transform ${
+                                    q.isFavorite ? 'text-amber-400' : 'text-slate-600 opacity-0 group-hover/item:opacity-100'
+                                  }`}
+                                >
+                                  <Star className={`w-3 h-3 ${q.isFavorite ? 'fill-amber-400' : ''}`} />
+                                </button>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
                   )}
                 </div>
               );
             })}
+          </div>
+        </div>
+
+        {/* Dedicated Matching Queries Section */}
+        <div className="pt-2 border-t border-[#1a2336]/60">
+          <div className="px-2 py-1 flex items-center justify-between text-[11px] font-semibold tracking-wider text-slate-400 uppercase">
+            <span className="truncate">
+              {selectedCollectionId
+                ? `${collections.find((c) => c.id === selectedCollectionId)?.name || 'Collection'} (${filteredQueries.length})`
+                : quickFilter === 'favorites'
+                ? `Favorites (${filteredQueries.length})`
+                : quickFilter === 'recent'
+                ? `Recent (${filteredQueries.length})`
+                : quickFilter === 'uncategorized'
+                ? `Uncategorized (${filteredQueries.length})`
+                : `All Queries (${filteredQueries.length})`}
+            </span>
+            <button
+              onClick={() => createNewQuery(selectedCollectionId)}
+              className="p-1 rounded hover:bg-[#1b2333] text-indigo-400 hover:text-indigo-300 transition-colors"
+              title="New Query"
+            >
+              <Plus className="w-3.5 h-3.5" />
+            </button>
+          </div>
+
+          <div className="mt-1 space-y-1">
+            {filteredQueries.length === 0 ? (
+              <div className="px-3 py-4 text-center text-xs text-slate-500 italic border border-dashed border-[#1e293b] rounded-lg my-1">
+                No saved queries found
+              </div>
+            ) : (
+              filteredQueries.map((query) => {
+                const isActive = activeQuery?.id === query.id;
+                const dialect = query.dialect || 'postgresql';
+                const dialectBadgeClass =
+                  dialect === 'postgresql'
+                    ? 'text-indigo-400 bg-indigo-500/10 border-indigo-500/20'
+                    : dialect === 'mysql'
+                    ? 'text-sky-400 bg-sky-500/10 border-sky-500/20'
+                    : dialect === 'sqlite'
+                    ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20'
+                    : 'text-amber-400 bg-amber-500/10 border-amber-500/20';
+
+                return (
+                  <div
+                    key={query.id}
+                    onClick={() => setActiveQuery(query)}
+                    onContextMenu={(e) => handleQueryContextMenu(e, query)}
+                    className={`group flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs cursor-pointer transition-all border ${
+                      isActive
+                        ? 'bg-[#151c2d] text-slate-100 border-indigo-500/50 shadow-sm font-semibold'
+                        : 'hover:bg-[#131926] text-slate-300 hover:text-slate-100 border-transparent'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2 min-w-0 flex-1">
+                      <span
+                        className={`text-[9px] uppercase font-mono px-1 py-0.2 rounded border leading-none font-bold shrink-0 ${dialectBadgeClass}`}
+                      >
+                        {dialect === 'postgresql' ? 'PG' : dialect === 'mysql' ? 'MY' : dialect === 'sqlite' ? 'SQL' : 'MS'}
+                      </span>
+                      <span className="truncate text-xs">{query.title || 'Untitled Query'}</span>
+                    </div>
+
+                    <div className="flex items-center gap-1 shrink-0 ml-1">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleFavorite(query.id);
+                        }}
+                        className={`p-1 rounded hover:scale-110 transition-transform ${
+                          query.isFavorite ? 'text-amber-400' : 'text-slate-600 hover:text-amber-400 opacity-0 group-hover:opacity-100'
+                        }`}
+                        title="Toggle Favorite"
+                      >
+                        <Star className={`w-3.5 h-3.5 ${query.isFavorite ? 'fill-amber-400' : ''}`} />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })
+            )}
           </div>
         </div>
       </div>
@@ -445,6 +640,59 @@ export const LeftSidebar: React.FC = () => {
         </button>
       </div>
 
+      {/* Query Right-Click Context Menu */}
+      {queryContextMenu && (
+        <ContextMenu
+          x={queryContextMenu.x}
+          y={queryContextMenu.y}
+          onClose={() => setQueryContextMenu(null)}
+          items={[
+            {
+              id: 'open-query',
+              label: 'Open Query',
+              icon: <FileText className="w-3.5 h-3.5 text-indigo-400" />,
+              action: () => {
+                setActiveQuery(queryContextMenu.query);
+              },
+            },
+            {
+              id: 'copy-query-sql',
+              label: 'Copy SQL',
+              icon: <Copy className="w-3.5 h-3.5 text-sky-400" />,
+              action: () => {
+                navigator.clipboard.writeText(queryContextMenu.query.sqlContent);
+                showToast(`Copied "${queryContextMenu.query.title}" SQL to clipboard`, 'success');
+              },
+            },
+            {
+              id: 'duplicate-query',
+              label: 'Duplicate Query',
+              icon: <Edit2 className="w-3.5 h-3.5 text-slate-400" />,
+              action: () => {
+                duplicateQuery(queryContextMenu.query.id);
+              },
+            },
+            {
+              id: 'favorite-query',
+              label: queryContextMenu.query.isFavorite ? 'Remove Favorite' : 'Add to Favorites',
+              icon: <Star className={`w-3.5 h-3.5 ${queryContextMenu.query.isFavorite ? 'fill-amber-400 text-amber-400' : 'text-slate-400'}`} />,
+              action: () => {
+                toggleFavorite(queryContextMenu.query.id);
+              },
+            },
+            {
+              id: 'delete-query',
+              label: 'Delete Query',
+              icon: <Trash2 className="w-3.5 h-3.5" />,
+              danger: true,
+              action: () => {
+                setQueryToDelete(queryContextMenu.query);
+              },
+            },
+          ]}
+        />
+      )}
+
       {/* Collection Right-Click Context Menu */}
       {colContextMenu && (
         <ContextMenu
@@ -483,7 +731,7 @@ export const LeftSidebar: React.FC = () => {
         />
       )}
 
-      {/* shadcn AlertDialog for Delete Collection Confirmation */}
+      {/* AlertDialog for Delete Collection Confirmation */}
       <AlertDialog open={!!colToDelete} onOpenChange={(open) => !open && setColToDelete(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -497,6 +745,25 @@ export const LeftSidebar: React.FC = () => {
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction variant="destructive" onClick={handleConfirmDeleteCollection}>
               Delete Collection
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* AlertDialog for Delete Query Confirmation */}
+      <AlertDialog open={!!queryToDelete} onOpenChange={(open) => !open && setQueryToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Query?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete <span className="font-semibold text-slate-200">"{queryToDelete?.title}"</span>?
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction variant="destructive" onClick={handleConfirmDeleteQuery}>
+              Delete Query
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
