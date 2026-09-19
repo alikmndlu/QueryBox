@@ -21,6 +21,7 @@ import {
   Check,
   FileText,
   Sparkles,
+  BarChart3,
 } from 'lucide-react';
 import { useQueryStore } from '../../store/useQueryStore';
 import { useCollectionStore } from '../../store/useCollectionStore';
@@ -78,6 +79,8 @@ export const LeftSidebar: React.FC = () => {
     leftSidebarWidth,
     setLeftSidebarWidth,
     showToast,
+    dashboardOpen,
+    setDashboardOpen,
   } = useUIStore();
   const { profiles, schemaTables, setConnectionModalOpen } = useConnectionStore();
 
@@ -273,12 +276,32 @@ export const LeftSidebar: React.FC = () => {
           <div className="space-y-0.5">
           <button
             onClick={() => {
+              setDashboardOpen(true);
+            }}
+            className={`w-full h-8 px-2.5 rounded-md text-xs font-medium flex items-center justify-between transition-colors ${
+              dashboardOpen
+                ? 'bg-emerald-600/20 text-emerald-300 font-semibold border border-emerald-500/30'
+                : 'hover:bg-[#161c2b] text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            <div className="flex items-center gap-2.5">
+              <BarChart3 className="w-3.5 h-3.5 text-emerald-400" />
+              <span>Live Dashboard</span>
+            </div>
+            <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-300 font-bold border border-emerald-500/30 uppercase">
+              KPI
+            </span>
+          </button>
+
+          <button
+            onClick={() => {
+              setDashboardOpen(false);
               selectCollection(null);
               setSearchText('');
               setQuickFilter('all');
             }}
             className={`w-full h-8 px-2.5 rounded-md text-xs font-medium flex items-center justify-between transition-colors ${
-              quickFilter === 'all' && !selectedCollectionId
+              quickFilter === 'all' && !selectedCollectionId && !dashboardOpen
                 ? 'bg-indigo-600/15 text-indigo-300 font-semibold border border-indigo-500/30'
                 : 'hover:bg-[#161c2b] text-slate-400 hover:text-slate-200'
             }`}

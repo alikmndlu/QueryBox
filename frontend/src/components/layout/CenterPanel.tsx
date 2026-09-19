@@ -186,29 +186,6 @@ export const CenterPanel: React.FC = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [draftSQL, selectedSQL, paramValues, activeProfileId, queryLimit]);
 
-  if (!activeQuery) {
-    return (
-      <div className="flex-1 h-full bg-[#080b11] flex flex-col min-w-0 overflow-hidden select-none">
-        {tabIds.length > 0 && <TabBar />}
-        <div className="flex-1 flex flex-col items-center justify-center p-8 text-center">
-          <QueryBoxLogo size={56} showText={false} className="mb-4" />
-          <h2 className="text-xl font-bold text-white tracking-tight">QueryBox</h2>
-          <p className="text-xs text-slate-400 max-w-md mt-2 leading-relaxed">
-            Your personal offline SQL query library. Select an existing query or create a new query to start editing, organizing, and formatting.
-          </p>
-          <Button
-            onClick={() => createNewQuery()}
-            variant="default"
-            size="default"
-            className="mt-5"
-          >
-            Create New Query (⌘N)
-          </Button>
-        </div>
-      </div>
-    );
-  }
-
   const handleCopy = () => {
     navigator.clipboard.writeText(draftSQL);
     setCopied(true);
@@ -239,13 +216,14 @@ export const CenterPanel: React.FC = () => {
           </Button>
 
           <button
-            onClick={() => toggleFavorite(activeQuery.id)}
+            onClick={() => activeQuery && toggleFavorite(activeQuery.id)}
+            disabled={!activeQuery}
             className={`p-1 hover:scale-110 transition-transform shrink-0 ${
-              activeQuery.isFavorite ? 'text-amber-400' : 'text-slate-500 hover:text-amber-400'
+              activeQuery?.isFavorite ? 'text-amber-400' : 'text-slate-500 hover:text-amber-400'
             }`}
             title="Toggle Favorite"
           >
-            <Star className={`w-4 h-4 ${activeQuery.isFavorite ? 'fill-amber-400' : ''}`} />
+            <Star className={`w-4 h-4 ${activeQuery?.isFavorite ? 'fill-amber-400' : ''}`} />
           </button>
 
           <input
@@ -495,10 +473,11 @@ export const CenterPanel: React.FC = () => {
 
                 <button
                   onClick={() => {
-                    duplicateQuery(activeQuery.id);
+                    if (activeQuery) duplicateQuery(activeQuery.id);
                     setShowMenu(false);
                   }}
-                  className="w-full px-3 py-1.5 hover:bg-[#182030] flex items-center gap-2 text-left transition-colors"
+                  disabled={!activeQuery}
+                  className="w-full px-3 py-1.5 hover:bg-[#182030] flex items-center gap-2 text-left transition-colors disabled:opacity-40"
                 >
                   <Edit3 className="w-3.5 h-3.5 text-indigo-400" />
                   <span>Duplicate Query</span>
@@ -507,9 +486,10 @@ export const CenterPanel: React.FC = () => {
                 <button
                   onClick={() => {
                     setShowMenu(false);
-                    setShowDeleteAlert(true);
+                    if (activeQuery) setShowDeleteAlert(true);
                   }}
-                  className="w-full px-3 py-1.5 hover:bg-rose-500/10 text-rose-400 hover:text-rose-300 flex items-center gap-2 text-left transition-colors"
+                  disabled={!activeQuery}
+                  className="w-full px-3 py-1.5 hover:bg-rose-500/10 text-rose-400 hover:text-rose-300 flex items-center gap-2 text-left transition-colors disabled:opacity-40"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
                   <span>Delete Query</span>
@@ -521,18 +501,20 @@ export const CenterPanel: React.FC = () => {
       </div>
 
       {/* Dynamic Parameter / Variable Bar */}
-      <ParameterBar
-        sql={draftSQL}
-        paramValues={paramValues}
-        onChangeParam={(k, v) => setParamValues((prev) => ({ ...prev, [k]: v }))}
-        onClearParams={() => setParamValues({})}
-      />
+      {activeQuery && !dashboardOpen && (
+        <ParameterBar
+          sql={draftSQL}
+          paramValues={paramValues}
+          onChangeParam={(k, v) => setParamValues((prev) => ({ ...prev, [k]: v }))}
+          onClearParams={() => setParamValues({})}
+        />
+      )}
 
       {/* Editor or Dashboard Main Content */}
       <div className="flex-1 relative overflow-hidden bg-[#090d16]">
         {dashboardOpen ? (
           <DashboardPanel />
-        ) : (
+        ) : activeQuery ? (
           <SQLEditor
             value={draftSQL}
             onChange={handleSQLEditorChange}
@@ -551,11 +533,39 @@ export const CenterPanel: React.FC = () => {
               handleExecute(overrideSQL);
             }}
           />
+        ) : (
+          <div className="flex-1 h-full flex flex-col items-center justify-center p-8 text-center select-none bg-[#080b11]">
+            <QueryBoxLogo size={56} showText={false} className="mb-4" />
+            <h2 className="text-xl font-bold text-white tracking-tight">QueryBox</h2>
+            <p className="text-xs text-slate-400 max-w-md mt-2 leading-relaxed">
+              Your personal offline SQL query library. Select an existing query or create a new query to start editing, or open the Live KPI Dashboard.
+            </p>
+            <div className="flex items-center gap-3 mt-6">
+              <Button
+                onClick={() => createNewQuery()}
+                variant="default"
+                size="default"
+                className="bg-indigo-600 hover:bg-indigo-500 text-white font-semibold"
+              >
+                <Plus className="w-4 h-4 mr-1.5" />
+                Create New Query (⌘N)
+              </Button>
+              <Button
+                onClick={() => setDashboardOpen(true)}
+                variant="ghost"
+                size="default"
+                className="bg-[#131926] hover:bg-[#182133] border border-[#1e293b] text-emerald-300 hover:text-white font-semibold gap-1.5"
+              >
+                <BarChart3 className="w-4 h-4 text-emerald-400" />
+                Open Live Dashboard
+              </Button>
+            </div>
+          </div>
         )}
       </div>
 
       {/* Data Grid Results & Explain Panel */}
-      {!dashboardOpen && (
+      {!dashboardOpen && activeQuery && (
         <ErrorBoundary fallbackTitle="Results Grid encountered an error">
           <DataGridPanel />
         </ErrorBoundary>
@@ -633,7 +643,7 @@ export const CenterPanel: React.FC = () => {
             <AlertDialogAction
               variant="destructive"
               onClick={() => {
-                deleteQuery(activeQuery.id);
+                if (activeQuery) deleteQuery(activeQuery.id);
                 setShowDeleteAlert(false);
               }}
             >
