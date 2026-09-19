@@ -21,6 +21,8 @@ interface UIState {
   diffVersion: any | null;
   shortcutsModalOpen: boolean;
   updateModalOpen: boolean;
+  erdModalOpen: boolean;
+  erdDatabaseName: string | null;
   sidebarTab: 'queries' | 'schema';
   toasts: ToastNotice[];
   toggleLeftSidebar: () => void;
@@ -37,6 +39,7 @@ interface UIState {
   setDiffModalOpen: (open: boolean, version?: any | null) => void;
   setShortcutsModalOpen: (open: boolean) => void;
   setUpdateModalOpen: (open: boolean) => void;
+  setErdModalOpen: (open: boolean, dbName?: string | null) => void;
   showToast: (message: string, type?: 'success' | 'info' | 'error') => void;
   removeToast: (id: string) => void;
 }
@@ -69,6 +72,8 @@ export const useUIStore = create<UIState>((set, get) => ({
   diffVersion: null,
   shortcutsModalOpen: false,
   updateModalOpen: false,
+  erdModalOpen: false,
+  erdDatabaseName: null,
   toasts: [],
 
   toggleLeftSidebar: () => set((state) => ({ leftSidebarOpen: !state.leftSidebarOpen })),
@@ -104,6 +109,7 @@ export const useUIStore = create<UIState>((set, get) => ({
   setDiffModalOpen: (open, version = null) => set({ diffModalOpen: open, diffVersion: version }),
   setShortcutsModalOpen: (open) => set({ shortcutsModalOpen: open }),
   setUpdateModalOpen: (open) => set({ updateModalOpen: open }),
+  setErdModalOpen: (open, dbName = null) => set({ erdModalOpen: open, erdDatabaseName: dbName }),
 
   showToast: (message, type = 'success') => {
     const id = Math.random().toString(36).substring(2, 9);

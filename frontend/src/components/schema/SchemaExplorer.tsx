@@ -14,6 +14,7 @@ import {
   X,
   Hash,
   Check,
+  Network,
 } from 'lucide-react';
 import { useConnectionStore } from '../../store/useConnectionStore';
 import { useQueryStore } from '../../store/useQueryStore';
@@ -335,6 +336,19 @@ export const SchemaExplorer: React.FC = () => {
                       </span>
                     )}
 
+                    {/* ERD Diagram Button */}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        useUIStore.getState().setErdModalOpen(true, dbName);
+                      }}
+                      className="px-1.5 py-0.5 rounded text-[10px] font-mono font-medium bg-purple-500/15 hover:bg-purple-500/30 text-purple-300 border border-purple-500/30 flex items-center gap-1 transition-all"
+                      title={`View ERD Schema Diagram for ${dbName}`}
+                    >
+                      <Network className="w-3 h-3 text-purple-400" />
+                      <span>ERD</span>
+                    </button>
+
                     {!isDbActive && (
                       <button
                         onClick={(e) => {
@@ -409,30 +423,6 @@ export const SchemaExplorer: React.FC = () => {
                               </div>
 
                               <div className="flex items-center gap-1">
-                                {/* DDL Action */}
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleGenerateDDL(dbName, table);
-                                  }}
-                                  className="opacity-0 group-hover/tbl:opacity-100 p-1 rounded hover:bg-violet-500/20 text-slate-400 hover:text-violet-300 transition-all"
-                                  title="Generate CREATE TABLE (DDL)"
-                                >
-                                  <Code2 className="w-3 h-3" />
-                                </button>
-
-                                {/* Count Query Action */}
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleQueryCount(dbName, table);
-                                  }}
-                                  className="opacity-0 group-hover/tbl:opacity-100 p-1 rounded hover:bg-sky-500/20 text-slate-400 hover:text-sky-300 transition-all"
-                                  title={`Count rows in ${table.name}`}
-                                >
-                                  <Hash className="w-3 h-3" />
-                                </button>
-
                                 {/* SELECT Action */}
                                 <button
                                   onClick={(e) => {

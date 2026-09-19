@@ -11,6 +11,7 @@ import { DiffViewerModal } from './components/editor/DiffViewerModal';
 import { GitSyncModal } from './components/sync/GitSyncModal';
 import { ShortcutsModal } from './components/help/ShortcutsModal';
 import { UpdateModal } from './components/settings/UpdateModal';
+import { ERDDiagramModal } from './components/schema/ERDDiagramModal';
 import { ToastContainer } from './components/ui/ToastContainer';
 import { TooltipProvider } from './components/ui/tooltip';
 
@@ -149,6 +150,7 @@ export const App: React.FC = () => {
         <DiffViewerModal />
         <GitSyncModal />
         <UpdateModal />
+        <ERDDiagramModal />
         <ToastContainer />
       </div>
     </TooltipProvider>
