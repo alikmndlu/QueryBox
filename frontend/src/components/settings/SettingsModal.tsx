@@ -39,7 +39,7 @@ export const SettingsModal: React.FC = () => {
             <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider flex items-center justify-between">
               <div className="flex items-center gap-1.5">
                 <Sliders className="w-3.5 h-3.5 text-indigo-400" />
-                <span>Theme Presets / تم‌های جذاب برنامه</span>
+                <span>Theme Presets</span>
               </div>
               <span className="text-[10px] font-normal text-slate-500">8 Custom Color Themes</span>
             </div>
@@ -48,8 +48,8 @@ export const SettingsModal: React.FC = () => {
               {[
                 {
                   id: 'querybox-dark',
-                  name: 'کوئری‌باکس دارک',
-                  sub: 'Midnight Slate (پیش‌فرض)',
+                  name: 'QueryBox Dark',
+                  sub: 'Midnight Slate (Default)',
                   badge: 'Slate',
                   bg: '#080b11',
                   border: '#6366f1',
@@ -57,7 +57,7 @@ export const SettingsModal: React.FC = () => {
                 },
                 {
                   id: 'onedark',
-                  name: 'کوانتوم ون‌دارک',
+                  name: 'Quantum One Dark',
                   sub: 'Atom / VS Code Pro',
                   badge: 'One Dark',
                   bg: '#1e222a',
@@ -66,7 +66,7 @@ export const SettingsModal: React.FC = () => {
                 },
                 {
                   id: 'dracula',
-                  name: 'دراکولا نیون',
+                  name: 'Dracula Neon',
                   sub: 'Vibrant Neon Dark',
                   badge: 'Dracula',
                   bg: '#282a36',
@@ -75,7 +75,7 @@ export const SettingsModal: React.FC = () => {
                 },
                 {
                   id: 'github-dark',
-                  name: 'گیتهاب نایت',
+                  name: 'GitHub Night',
                   sub: 'Official GitHub Dimmed',
                   badge: 'GitHub',
                   bg: '#22272e',
@@ -84,7 +84,7 @@ export const SettingsModal: React.FC = () => {
                 },
                 {
                   id: 'cyberpunk',
-                  name: 'سایبرپانک نیون',
+                  name: 'Cyberpunk Neon',
                   sub: 'Electric Glowing Neon',
                   badge: 'Cyberpunk',
                   bg: '#120e24',
@@ -93,7 +93,7 @@ export const SettingsModal: React.FC = () => {
                 },
                 {
                   id: 'monokai',
-                  name: 'مونوکای پرو',
+                  name: 'Monokai Pro',
                   sub: 'Pro Contrast Gold',
                   badge: 'Monokai',
                   bg: '#2d2a2e',
@@ -102,7 +102,7 @@ export const SettingsModal: React.FC = () => {
                 },
                 {
                   id: 'nord',
-                  name: 'نورد آركتيك',
+                  name: 'Nord Arctic',
                   sub: 'Cool Arctic Ice Blue',
                   badge: 'Nord',
                   bg: '#2e3440',
@@ -111,7 +111,7 @@ export const SettingsModal: React.FC = () => {
                 },
                 {
                   id: 'light',
-                  name: 'دی‌لایت روشن',
+                  name: 'Daylight Light',
                   sub: 'Clean Light Vision',
                   badge: 'Light',
                   bg: '#f8fafc',
