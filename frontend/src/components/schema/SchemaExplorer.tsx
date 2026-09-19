@@ -440,12 +440,8 @@ export const SchemaExplorer: React.FC = () => {
                                   title={`${table.rowCount?.toLocaleString() ?? 0} records (${table.columns.length} columns)`}
                                 >
                                   {table.rowCount !== undefined && table.rowCount !== null
-                                    ? table.rowCount >= 1_000_000
-                                      ? `${(table.rowCount / 1_000_000).toFixed(1)}M rows`
-                                      : table.rowCount >= 1_000
-                                      ? `${(table.rowCount / 1_000).toFixed(1)}k rows`
-                                      : `${table.rowCount} rows`
-                                    : '0 rows'}
+                                    ? table.rowCount.toLocaleString()
+                                    : '0'}
                                 </span>
                               </div>
                             </div>
