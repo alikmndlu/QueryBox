@@ -54,6 +54,7 @@ export const SQLEditor: React.FC<SQLEditorProps> = ({
   const editorRef = useRef<any>(null);
   const monacoRef = useRef<any>(null);
   const selectionRafRef = useRef<number | null>(null);
+  const isProgrammaticUpdateRef = useRef<boolean>(false);
 
   const settings = useSettingsStore((state) => state.settings);
   const draftDialect = useQueryStore((state) => state.draftDialect);
@@ -490,12 +491,17 @@ export const SQLEditor: React.FC<SQLEditorProps> = ({
     }
   }, [settings.theme]);
 
-  // Sync editor buffer value when value prop changes (e.g. switching queries)
+  // Sync editor buffer value smoothly when value prop changes (e.g. switching queries)
   useEffect(() => {
     if (editorRef.current) {
       const currentEditorValue = editorRef.current.getValue();
       if (value !== undefined && value !== currentEditorValue) {
+        isProgrammaticUpdateRef.current = true;
         editorRef.current.setValue(value);
+        editorRef.current.setPosition({ lineNumber: 1, column: 1 });
+        setTimeout(() => {
+          isProgrammaticUpdateRef.current = false;
+        }, 60);
       }
     }
   }, [value]);
@@ -507,7 +513,10 @@ export const SQLEditor: React.FC<SQLEditorProps> = ({
         defaultLanguage="sql"
         language="sql"
         value={value}
-        onChange={(val) => onChange(val || '')}
+        onChange={(val) => {
+          if (isProgrammaticUpdateRef.current) return;
+          onChange(val || '');
+        }}
         onMount={handleEditorDidMount}
         theme={resolveMonacoTheme(settings.theme)}
         options={{

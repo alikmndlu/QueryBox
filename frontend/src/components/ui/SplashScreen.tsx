@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { QueryBoxLogo } from './QueryBoxLogo';
-import { Terminal, Sparkles, ShieldCheck, Database, Cpu, Zap } from 'lucide-react';
+import { Sparkles, ShieldCheck, Database, Cpu, Zap, Lock, Gauge } from 'lucide-react';
 
 interface SplashScreenProps {
   onComplete?: () => void;
 }
 
-const TAGLINE_TO_TYPE = "SELECT * FROM universe WHERE performance = 'MAX' AND privacy = 100;";
+const CATCHY_TAGLINE = "Elevate Your Databases. Fast, Offline, Absolute Control.";
 
 export const SplashScreen: React.FC<SplashScreenProps> = ({ onComplete }) => {
   const [typedText, setTypedText] = useState('');
@@ -15,17 +15,17 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({ onComplete }) => {
   const [isFadingOut, setIsFadingOut] = useState(false);
   const [isVisible, setIsVisible] = useState(true);
 
-  // Typewriter effect pacing logic
+  // Typewriter effect pacing for catchy tagline
   useEffect(() => {
     let charIndex = 0;
     const typingInterval = setInterval(() => {
-      if (charIndex < TAGLINE_TO_TYPE.length) {
-        setTypedText(TAGLINE_TO_TYPE.slice(0, charIndex + 1));
+      if (charIndex < CATCHY_TAGLINE.length) {
+        setTypedText(CATCHY_TAGLINE.slice(0, charIndex + 1));
         charIndex++;
       } else {
         clearInterval(typingInterval);
       }
-    }, 42);
+    }, 45);
 
     return () => clearInterval(typingInterval);
   }, []);
@@ -35,31 +35,31 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({ onComplete }) => {
     const t1 = setTimeout(() => {
       setProgress(25);
       setStatusText('Initializing Go Native Engine...');
-    }, 200);
+    }, 250);
 
     const t2 = setTimeout(() => {
       setProgress(55);
       setStatusText('Loading Encrypted Local SQLite Storage...');
-    }, 900);
+    }, 1000);
 
     const t3 = setTimeout(() => {
       setProgress(85);
       setStatusText('Mounting Monaco SQL Compiler & Visualizer...');
-    }, 1800);
+    }, 2000);
 
     const t4 = setTimeout(() => {
       setProgress(100);
-      setStatusText('System Ready. Launching Workbench...');
-    }, 2800);
+      setStatusText('System Ready. Welcome to QueryBox.');
+    }, 3000);
 
     const t5 = setTimeout(() => {
       setIsFadingOut(true);
-    }, 3600);
+    }, 3800);
 
     const t6 = setTimeout(() => {
       setIsVisible(false);
       onComplete?.();
-    }, 4300);
+    }, 4500);
 
     return () => {
       clearTimeout(t1);
@@ -113,26 +113,18 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({ onComplete }) => {
               SQL Workbench • Pro Edition
             </span>
             <span className="text-[9px] font-mono px-1.5 py-0.2 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-bold uppercase">
-              v1.3.5
+              v1.4.0
             </span>
           </div>
         </div>
 
-        {/* Dynamic Typewriter Code Terminal Bar */}
-        <div className="w-full bg-[#070a14] border border-[#1d2844] rounded-xl p-3 mb-5 text-left font-mono text-xs shadow-inner relative overflow-hidden">
-          <div className="flex items-center justify-between pb-1.5 mb-1.5 border-b border-[#162035] text-[10px] text-slate-500">
-            <div className="flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-rose-500/80" />
-              <span className="w-2 h-2 rounded-full bg-amber-500/80" />
-              <span className="w-2 h-2 rounded-full bg-emerald-500/80" />
-              <span className="ml-1 text-slate-400 font-bold">console.sql</span>
-            </div>
-            <Terminal className="w-3.5 h-3.5 text-indigo-400" />
-          </div>
-          <div className="text-emerald-300 flex items-center min-h-[22px] break-all leading-relaxed">
-            <span className="text-indigo-400 mr-2 font-bold select-none">&gt;</span>
-            <span className="text-slate-100">{typedText}</span>
-            <span className="inline-block w-2 h-4 bg-sky-400 ml-1 animate-pulse" />
+        {/* Catchy Typewriter Tagline Block */}
+        <div className="w-full bg-[#070a14]/90 border border-[#1d2844] rounded-2xl p-4 mb-6 text-center shadow-inner relative overflow-hidden group">
+          <div className="text-xs font-semibold text-slate-200 tracking-wide min-h-[36px] flex items-center justify-center leading-relaxed">
+            <span className="bg-gradient-to-r from-slate-100 via-sky-200 to-indigo-200 bg-clip-text text-transparent font-sans">
+              {typedText}
+            </span>
+            <span className="inline-block w-2 h-4 bg-indigo-400 ml-1.5 animate-pulse rounded-sm" />
           </div>
         </div>
 
@@ -161,10 +153,13 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({ onComplete }) => {
         {/* Footer Hardware & Security Badges */}
         <div className="mt-5 pt-3 border-t border-[#17223c]/80 w-full flex items-center justify-between text-[10px] font-mono text-slate-500">
           <span className="flex items-center gap-1">
-            <Sparkles className="w-3 h-3 text-indigo-400" />
-            <span>100% Offline &amp; Encrypted</span>
+            <Lock className="w-3 h-3 text-indigo-400" />
+            <span>100% Local Privacy</span>
           </span>
-          <span className="text-slate-400 font-semibold">Local-First</span>
+          <span className="flex items-center gap-1 text-slate-400 font-semibold">
+            <Gauge className="w-3 h-3 text-emerald-400" />
+            <span>Go Engine</span>
+          </span>
         </div>
 
       </div>

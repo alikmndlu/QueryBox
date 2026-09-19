@@ -133,21 +133,8 @@ export const useQueryStore = create<QueryState>((set, get) => ({
     if (!query.isTemporary) {
       // Touch query last_used timestamp asynchronously
       API.touchQuery(query.id).catch(() => {});
-      // Load version history
+      // Load version history asynchronously
       get().fetchVersionHistory(query.id);
-
-      // Fetch latest full query from database to guarantee sqlContent is up-to-date
-      API.getQuery(query.id).then((fullQuery) => {
-        if (fullQuery && get().activeQuery?.id === fullQuery.id) {
-          set({
-            activeQuery: fullQuery,
-            draftSQL: fullQuery.sqlContent || '',
-            draftTitle: fullQuery.title || '',
-            draftCollectionId: fullQuery.collectionId,
-            draftDialect: fullQuery.dialect || 'postgresql',
-          });
-        }
-      }).catch(() => {});
     }
     // Ensure tab is tracked
     useTabStore.getState().openTab(query.id);
