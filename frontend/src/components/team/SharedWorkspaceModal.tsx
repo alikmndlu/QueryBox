@@ -43,7 +43,7 @@ export const SharedWorkspaceModal: React.FC<SharedWorkspaceModalProps> = ({ isOp
     a.download = `querybox_team_workspace_${Date.now()}.json`;
     a.click();
     URL.revokeObjectURL(url);
-    showToast('پکیج کالکشن‌های تیمی با موفقیت خروجی گرفته شد!');
+    showToast('Team workspace bundle exported successfully!');
   };
 
   const handleImportTeamPackage = () => {
@@ -54,21 +54,21 @@ export const SharedWorkspaceModal: React.FC<SharedWorkspaceModalProps> = ({ isOp
         parsed.queries.forEach((q: any) => {
           useQueryStore.getState().createNewQuery(q.collectionId || null, q);
         });
-        showToast(`تعداد ${parsed.queries.length} کوئری تیمی همگام‌سازی شد!`);
+        showToast(`Synced ${parsed.queries.length} team queries into workspace!`);
         setImportJsonText('');
         onClose();
       } else {
-        showToast('فرمت پکیج تیمی معتبر نیست', 'error');
+        showToast('Invalid team bundle JSON format', 'error');
       }
     } catch (err: any) {
-      showToast('خطا در خواندن فایل پکیج تیمی', 'error');
+      showToast('Error parsing team workspace bundle', 'error');
     }
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-lg bg-[#0d121c] border-[#1c263c] text-slate-100 shadow-2xl p-0 overflow-hidden select-none">
-        <div className="p-4 border-b border-[#1c263c] bg-[#090d16] flex items-center justify-between">
+        <div className="p-4 border-b border-[#1c263c] bg-[#090a14] flex items-center justify-between">
           <DialogHeader>
             <div className="flex items-center gap-2.5">
               <div className="p-2 rounded-lg bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
@@ -76,10 +76,10 @@ export const SharedWorkspaceModal: React.FC<SharedWorkspaceModalProps> = ({ isOp
               </div>
               <div>
                 <DialogTitle className="text-sm font-semibold text-white">
-                  Shared Team Workspaces (سینک کالکشن‌های تیمی)
+                  Shared Team Workspaces
                 </DialogTitle>
                 <DialogDescription className="text-xs text-slate-400 mt-0.5">
-                  اشتراک‌گذاری پکیج کوئری‌های آماده و کالکشن‌ها با اعضای تیم
+                  Share and sync query collections and snippets with teammates
                 </DialogDescription>
               </div>
             </div>
@@ -92,10 +92,10 @@ export const SharedWorkspaceModal: React.FC<SharedWorkspaceModalProps> = ({ isOp
             <div>
               <div className="font-semibold text-slate-200 flex items-center gap-1.5">
                 <Share2 className="w-4 h-4 text-indigo-400" />
-                <span>خروجی پکیج تیمی (Export Workspace Bundle)</span>
+                <span>Export Workspace Bundle</span>
               </div>
               <p className="text-[11px] text-slate-400 mt-0.5">
-                شامل {collections.length} کالکشن و {queries.length} کوئری آماده جهت ارسال به همکاران.
+                Includes {collections.length} collections and {queries.length} saved queries ready for sharing.
               </p>
             </div>
             <button
@@ -103,7 +103,7 @@ export const SharedWorkspaceModal: React.FC<SharedWorkspaceModalProps> = ({ isOp
               className="px-3 py-1.5 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-500 rounded-lg shadow-md flex items-center gap-1.5 shrink-0"
             >
               <Download className="w-3.5 h-3.5" />
-              <span>خروجی .json</span>
+              <span>Export .json</span>
             </button>
           </div>
 
@@ -111,13 +111,13 @@ export const SharedWorkspaceModal: React.FC<SharedWorkspaceModalProps> = ({ isOp
           <div className="space-y-2">
             <label className="block font-semibold text-slate-200 flex items-center gap-1.5">
               <Upload className="w-4 h-4 text-emerald-400" />
-              <span>ورود پکیج کوئری‌های تیمی (Import Team Bundle)</span>
+              <span>Import Team Workspace Bundle</span>
             </label>
             <textarea
               value={importJsonText}
               onChange={(e) => setImportJsonText(e.target.value)}
               rows={4}
-              placeholder="محتوای JSON پکیج دریافت شده از همکاران را اینجا قرار دهید..."
+              placeholder="Paste JSON workspace bundle content received from teammates here..."
               className="w-full bg-[#080b11] border border-[#1e2942] rounded-xl p-3 text-xs text-emerald-300 font-mono focus:outline-none focus:border-indigo-500"
             />
             <button
@@ -126,7 +126,7 @@ export const SharedWorkspaceModal: React.FC<SharedWorkspaceModalProps> = ({ isOp
               className="w-full py-2 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 rounded-xl shadow-md flex items-center justify-center gap-1.5"
             >
               <CheckCircle2 className="w-4 h-4" />
-              <span>همگام‌سازی و افزودن کوئری‌های تیمی</span>
+              <span>Sync & Import Team Queries</span>
             </button>
           </div>
         </div>

@@ -69,9 +69,9 @@ export class AIService {
     }
 
     return {
-      text: `اجرای کوئری با خطا مواجه شد. کوئری اصلاح‌شده پیشنهادی بر اساس اسکیما:`,
+      text: `Query execution failed. Proposed fixed SQL query based on active schema:`,
       sql: fixedSQL,
-      explanation: `بررسی اسکیما نشان می‌دهد خطا به علت نحوه نگارش یا نام اشتباه ستون رخ داده است.`,
+      explanation: `Schema check indicates a potential column name or syntax issue in the query.`,
     };
   }
 
@@ -81,8 +81,8 @@ export class AIService {
   public static async explainQueryOrTable(target: string): Promise<AIServiceResponse> {
     const schemaContext = this.buildSchemaContext();
     return {
-      text: `تحلیل اسکیما و کوئری:`,
-      explanation: `ساختار این دیتابیس شامل جدول‌های تعریف‌شده همراه با روابط کلید اصلی و خارجی است.\n\n` + schemaContext,
+      text: `Database Schema & Query Analysis:`,
+      explanation: `Schema analysis for target database tables and foreign key relationships:\n\n` + schemaContext,
     };
   }
 
@@ -107,32 +107,32 @@ export class AIService {
     const pkCol = firstTableCols.find((c) => c.isPrimaryKey)?.name || colNames[0] || 'id';
 
     let generatedSQL = `SELECT * FROM ${targetTable} LIMIT 50;`;
-    let explanationText = `کوئری استخراج اطلاعات بر اساس اسکیما و جدول ${targetTable} تولید شد.`;
+    let explanationText = `Generated data extraction query based on target table "${targetTable}".`;
 
-    if (lowerPrompt.includes('count') || lowerPrompt.includes('تعداد') || lowerPrompt.includes('چند تا')) {
+    if (lowerPrompt.includes('count') || lowerPrompt.includes('total') || lowerPrompt.includes('how many')) {
       generatedSQL = `SELECT COUNT(*) AS total_count FROM ${targetTable};`;
-      explanationText = `کوئری شمارش مجموع ردیف‌های جدول ${targetTable}.`;
-    } else if (lowerPrompt.includes('top') || lowerPrompt.includes('بیشترین') || lowerPrompt.includes('برتر')) {
+      explanationText = `Total row count aggregation query for table "${targetTable}".`;
+    } else if (lowerPrompt.includes('top') || lowerPrompt.includes('highest') || lowerPrompt.includes('best')) {
       const orderCol = colNames.find((c) => c.includes('amount') || c.includes('price') || c.includes('total') || c.includes('created') || c.includes('id')) || pkCol;
       generatedSQL = `SELECT * FROM ${targetTable} ORDER BY ${orderCol} DESC LIMIT 10;`;
-      explanationText = `۱۰ ردیف برتر جدول ${targetTable} بر اساس ${orderCol} (به صورت نزولی).`;
-    } else if (lowerPrompt.includes('join') || lowerPrompt.includes('ارتباط') || lowerPrompt.includes('مشتری') && lowerPrompt.includes('سفارش')) {
+      explanationText = `Top 10 records from table "${targetTable}" sorted by ${orderCol} (descending).`;
+    } else if (lowerPrompt.includes('join') || lowerPrompt.includes('relation') || lowerPrompt.includes('customer') && lowerPrompt.includes('order')) {
       const t1 = schemaTables[0]?.name || 'users';
       const t2 = schemaTables[1]?.name || 'orders';
       generatedSQL = `SELECT t1.*, t2.* \nFROM ${t1} t1 \nJOIN ${t2} t2 ON t1.id = t2.${t1.slice(0, -1)}_id \nLIMIT 50;`;
-      explanationText = `کوئری ترکیب (JOIN) بین جدول‌های ${t1} و ${t2}.`;
-    } else if (lowerPrompt.includes('group') || lowerPrompt.includes('دسته‌بندی') || lowerPrompt.includes('مجموع')) {
+      explanationText = `JOIN aggregation query between tables "${t1}" and "${t2}".`;
+    } else if (lowerPrompt.includes('group') || lowerPrompt.includes('category') || lowerPrompt.includes('sum')) {
       const groupCol = colNames[1] || pkCol;
       generatedSQL = `SELECT ${groupCol}, COUNT(*) AS count_items \nFROM ${targetTable} \nGROUP BY ${groupCol} \nORDER BY count_items DESC;`;
-      explanationText = `کوئری دسته‌بندی و مجموع ردیف‌ها بر اساس ستون ${groupCol}.`;
+      explanationText = `GROUP BY aggregation query grouped by column "${groupCol}".`;
     }
 
-    const note = apiError ? `\n(توجه: اتصال به AI آنلاین امکان‌پذیر نبود، بنابراین از موتور هوشمند محلی QueryBox استفاده شد)` : '';
+    const note = apiError ? `\n(Note: Online AI API was unreachable; fall-backed to QueryBox Smart Offline Engine)` : '';
 
     return {
       text: explanationText + note,
       sql: generatedSQL,
-      explanation: `این کوئری بر اساس ساختار واقعی جدول \`${targetTable}\` استخراج شده است.`,
+      explanation: `Generated query based on actual structure of table "${targetTable}".`,
     };
   }
 

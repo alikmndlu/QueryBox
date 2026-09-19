@@ -128,15 +128,6 @@ export const App: React.FC = () => {
         {/* Left Navigation Sidebar */}
         {leftSidebarOpen && <LeftSidebar />}
 
-        {/* Query List Panel - Active in Queries Mode */}
-        {sidebarTab === 'queries' && (
-          <QueryList
-            queries={queries}
-            activeQueryId={activeQuery ? activeQuery.id : null}
-            onSelectQuery={(q) => setActiveQuery(q)}
-          />
-        )}
-
         {/* Center Main SQL Editor */}
         <CenterPanel />
 

@@ -43,7 +43,7 @@ export const useAIStore = create<AIState>()(
         {
           id: 'welcome',
           sender: 'assistant',
-          text: 'سلام! من دستیار هوشمند QueryBox هستم. چطور می‌توانم در ساخت کوئری، تحلیل اسکیما یا بهینه‌سازی دیتابیس به شما کمک کنم؟',
+          text: 'Hello! I am QueryBox AI Copilot. How can I help you generate SQL queries, explain database schemas, or optimize query performance?',
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         },
       ],
@@ -73,7 +73,7 @@ export const useAIStore = create<AIState>()(
             {
               id: 'welcome',
               sender: 'assistant',
-              text: 'گفتگو بازنشانی شد. کوئری جدید خود را بپرسید!',
+              text: 'Conversation reset. Ask your SQL question or request a query generation!',
               timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
             },
           ],
