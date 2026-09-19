@@ -10,12 +10,11 @@ import {
   Table as TableIcon,
   Key,
   Link as LinkIcon,
-  Layers,
-  Database,
+  LayoutGrid,
 } from 'lucide-react';
 import { useConnectionStore } from '../../store/useConnectionStore';
 import { useUIStore } from '../../store/useUIStore';
-import { TableInfo, ColumnInfo } from '../../types';
+import { TableInfo } from '../../types';
 import { Button } from '../ui/button';
 
 interface TablePos {
@@ -39,12 +38,18 @@ export const ERDDiagramModal: React.FC = () => {
   const rawTables: TableInfo[] = (databaseTables && databaseTables[targetDb]) || [];
 
   const [search, setSearch] = useState('');
-  const [zoom, setZoom] = useState(1);
+  const [zoom, setZoom] = useState(0.85);
+  const [pan, setPan] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [positions, setPositions] = useState<Record<string, TablePos>>({});
   const [selectedTable, setSelectedTable] = useState<string | null>(null);
   const [selectedColumn, setSelectedColumn] = useState<{ table: string; column: string } | null>(null);
+
+  // Canvas Panning & Table Dragging Interaction Refs
+  const [isPanning, setIsPanning] = useState(false);
   const [draggedTable, setDraggedTable] = useState<string | null>(null);
+  const panStartRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
   const dragOffsetRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+  const canvasContainerRef = useRef<HTMLDivElement>(null);
 
   // Load schema if not already fetched
   useEffect(() => {
@@ -58,17 +63,13 @@ export const ERDDiagramModal: React.FC = () => {
     const rels: Relationship[] = [];
     if (!rawTables || rawTables.length === 0) return rels;
 
-    const tableNames = new Set(rawTables.map((t) => t.name.toLowerCase()));
-
     rawTables.forEach((table) => {
       table.columns.forEach((col) => {
         const colLower = col.name.toLowerCase();
 
-        // 1. Check for explicit foreign keys or naming convention like user_id -> users
         if (colLower.endsWith('_id') && colLower.length > 3) {
-          const targetBase = colLower.slice(0, -3); // e.g. "user"
-          // Plural / singular matching (user -> users, category -> categories, product -> products)
-          let matchedTarget = rawTables.find((t) => {
+          const targetBase = colLower.slice(0, -3);
+          const matchedTarget = rawTables.find((t) => {
             const tName = t.name.toLowerCase();
             return (
               tName === targetBase ||
@@ -97,27 +98,83 @@ export const ERDDiagramModal: React.FC = () => {
     return rels;
   }, [rawTables]);
 
-  // Calculate automatic grid layout positions for tables
-  useEffect(() => {
-    if (!rawTables || rawTables.length === 0) return;
-    const initialPos: Record<string, TablePos> = {};
-    const colsCount = Math.ceil(Math.sqrt(rawTables.length * 1.5));
-    const cardWidth = 280;
-    const cardHeight = 320;
+  // Smart Automatic Grid Layout Algorithm
+  const calculateSmartLayout = (tables: TableInfo[]) => {
+    if (!tables || tables.length === 0) return {};
+    const posMap: Record<string, TablePos> = {};
+    const colsCount = Math.max(3, Math.ceil(Math.sqrt(tables.length * 1.6)));
+    const cardWidth = 270;
     const gapX = 80;
-    const gapY = 80;
+    const gapY = 70;
 
-    rawTables.forEach((table, index) => {
+    tables.forEach((table, index) => {
       const col = index % colsCount;
       const row = Math.floor(index / colsCount);
-      initialPos[table.name] = {
+      posMap[table.name] = {
         x: 60 + col * (cardWidth + gapX),
-        y: 60 + row * (cardHeight + gapY),
+        y: 60 + row * (320 + gapY),
       };
     });
 
-    setPositions(initialPos);
-  }, [rawTables]);
+    return posMap;
+  };
+
+  // Center & Fit Canvas View to Screen
+  const fitToScreen = (posMap?: Record<string, TablePos>) => {
+    const currentPositions = posMap || positions;
+    const tableKeys = Object.keys(currentPositions);
+    if (tableKeys.length === 0) return;
+
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    tableKeys.forEach((key) => {
+      const p = currentPositions[key];
+      if (p.x < minX) minX = p.x;
+      if (p.y < minY) minY = p.y;
+      if (p.x + 280 > maxX) maxX = p.x + 280;
+      if (p.y + 340 > maxY) maxY = p.y + 340;
+    });
+
+    const contentWidth = Math.max(800, maxX - minX + 140);
+    const contentHeight = Math.max(600, maxY - minY + 140);
+    const viewportWidth = canvasContainerRef.current?.clientWidth || window.innerWidth;
+    const viewportHeight = canvasContainerRef.current?.clientHeight || window.innerHeight;
+
+    const scaleX = viewportWidth / contentWidth;
+    const scaleY = viewportHeight / contentHeight;
+    const fitZoom = Math.max(0.4, Math.min(1.0, Math.min(scaleX, scaleY) * 0.9));
+
+    setZoom(fitZoom);
+    setPan({
+      x: (viewportWidth - contentWidth * fitZoom) / 2 - minX * fitZoom + 40,
+      y: (viewportHeight - contentHeight * fitZoom) / 2 - minY * fitZoom + 40,
+    });
+  };
+
+  // Auto-arrange layout and fit view on initial open
+  useEffect(() => {
+    if (erdModalOpen && rawTables && rawTables.length > 0) {
+      const initialPos = calculateSmartLayout(rawTables);
+      setPositions(initialPos);
+      setTimeout(() => fitToScreen(initialPos), 50);
+    }
+  }, [erdModalOpen, rawTables.length]);
+
+  // Handle Ctrl + Mouse Wheel Zooming
+  useEffect(() => {
+    const container = canvasContainerRef.current;
+    if (!container) return;
+
+    const handleWheel = (e: WheelEvent) => {
+      if (e.ctrlKey || e.metaKey) {
+        e.preventDefault();
+        const delta = e.deltaY < 0 ? 0.08 : -0.08;
+        setZoom((z) => Math.max(0.25, Math.min(2.5, z + delta)));
+      }
+    };
+
+    container.addEventListener('wheel', handleWheel, { passive: false });
+    return () => container.removeEventListener('wheel', handleWheel);
+  }, [erdModalOpen]);
 
   if (!erdModalOpen) return null;
 
@@ -129,30 +186,57 @@ export const ERDDiagramModal: React.FC = () => {
       )
     : rawTables;
 
-  // Mouse Dragging Handlers for Table Nodes
-  const handleMouseDown = (e: React.MouseEvent, tableName: string) => {
+  // Mouse Panning & Node Dragging Handlers
+  const handleCanvasMouseDown = (e: React.MouseEvent) => {
+    const target = e.target as HTMLElement;
+    const tableCard = target.closest('.table-card-node');
+
+    if (!tableCard) {
+      setIsPanning(true);
+      panStartRef.current = {
+        x: e.clientX - pan.x,
+        y: e.clientY - pan.y,
+      };
+      setSelectedTable(null);
+      setSelectedColumn(null);
+    }
+  };
+
+  const handleTableMouseDown = (e: React.MouseEvent, tableName: string) => {
     e.stopPropagation();
     setSelectedTable(tableName);
     setDraggedTable(tableName);
     const pos = positions[tableName] || { x: 0, y: 0 };
     dragOffsetRef.current = {
-      x: e.clientX / zoom - pos.x,
-      y: e.clientY / zoom - pos.y,
+      x: (e.clientX - pan.x) / zoom - pos.x,
+      y: (e.clientY - pan.y) / zoom - pos.y,
     };
   };
 
   const handleMouseMove = (e: React.MouseEvent) => {
-    if (!draggedTable) return;
-    const newX = Math.max(10, e.clientX / zoom - dragOffsetRef.current.x);
-    const newY = Math.max(10, e.clientY / zoom - dragOffsetRef.current.y);
+    if (draggedTable) {
+      // Table node position drag
+      const newX = Math.max(10, (e.clientX - pan.x) / zoom - dragOffsetRef.current.x);
+      const newY = Math.max(10, (e.clientY - pan.y) / zoom - dragOffsetRef.current.y);
 
-    setPositions((prev) => ({
-      ...prev,
-      [draggedTable]: { x: newX, y: newY },
-    }));
+      setPositions((prev) => ({
+        ...prev,
+        [draggedTable]: { x: newX, y: newY },
+      }));
+      return;
+    }
+
+    if (isPanning) {
+      // Canvas background drag pan
+      setPan({
+        x: e.clientX - panStartRef.current.x,
+        y: e.clientY - panStartRef.current.y,
+      });
+    }
   };
 
   const handleMouseUp = () => {
+    setIsPanning(false);
     setDraggedTable(null);
   };
 
@@ -210,16 +294,45 @@ export const ERDDiagramModal: React.FC = () => {
           </div>
         </div>
 
-        {/* Right: Controls & Close */}
+        {/* Right: Layout, Zoom & Close Actions */}
         <div className="flex items-center gap-2">
+          {/* Smart Auto Layout & Fit View Actions */}
+          <Button
+            onClick={() => {
+              const newPos = calculateSmartLayout(rawTables);
+              setPositions(newPos);
+              fitToScreen(newPos);
+            }}
+            variant="outline"
+            size="sm"
+            className="h-8 text-xs bg-[#111622] border-[#1c2538] hover:bg-[#161d2d] text-indigo-300 gap-1.5"
+            title="Auto-arrange tables into clean grid (چیدمان هوشمند جداول)"
+          >
+            <LayoutGrid className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Auto Layout</span>
+          </Button>
+
+          <Button
+            onClick={() => fitToScreen()}
+            variant="outline"
+            size="sm"
+            className="h-8 text-xs bg-[#111622] border-[#1c2538] hover:bg-[#161d2d] text-slate-300 gap-1.5"
+            title="Fit Diagram to Screen View"
+          >
+            <Maximize2 className="w-3.5 h-3.5 text-emerald-400" />
+            <span className="hidden sm:inline">Fit View</span>
+          </Button>
+
+          <span className="w-px h-4 bg-[#1c2538] mx-0.5" />
+
           {/* Zoom Actions */}
           <div className="flex items-center bg-[#111622] border border-[#1c2538] rounded-lg p-0.5">
             <Button
-              onClick={() => setZoom((z) => Math.max(0.4, z - 0.15))}
+              onClick={() => setZoom((z) => Math.max(0.25, z - 0.15))}
               variant="ghost"
               size="iconSm"
               className="h-7 w-7 text-slate-400 hover:text-slate-200"
-              title="Zoom Out"
+              title="Zoom Out (Or Ctrl+Wheel Down)"
             >
               <ZoomOut className="w-3.5 h-3.5" />
             </Button>
@@ -227,21 +340,21 @@ export const ERDDiagramModal: React.FC = () => {
               {Math.round(zoom * 100)}%
             </span>
             <Button
-              onClick={() => setZoom((z) => Math.min(2.0, z + 0.15))}
+              onClick={() => setZoom((z) => Math.min(2.5, z + 0.15))}
               variant="ghost"
               size="iconSm"
               className="h-7 w-7 text-slate-400 hover:text-slate-200"
-              title="Zoom In"
+              title="Zoom In (Or Ctrl+Wheel Up)"
             >
               <ZoomIn className="w-3.5 h-3.5" />
             </Button>
             <span className="w-px h-4 bg-[#1c2538] mx-0.5" />
             <Button
-              onClick={() => setZoom(1.0)}
+              onClick={() => fitToScreen()}
               variant="ghost"
               size="iconSm"
               className="h-7 w-7 text-slate-400 hover:text-slate-200"
-              title="Reset Zoom"
+              title="Reset Zoom & Pan"
             >
               <RotateCcw className="w-3.5 h-3.5" />
             </Button>
@@ -251,22 +364,23 @@ export const ERDDiagramModal: React.FC = () => {
             onClick={() => setErdModalOpen(false)}
             variant="ghost"
             size="iconSm"
-            className="h-8 w-8 text-slate-400 hover:text-white hover:bg-rose-500/20"
+            className="h-8 w-8 text-slate-400 hover:text-white hover:bg-rose-500/20 ml-1"
           >
             <X className="w-4 h-4" />
           </Button>
         </div>
       </div>
 
-      {/* Main ERD Canvas Area */}
+      {/* Main Interactive ERD Canvas Area */}
       <div
+        ref={canvasContainerRef}
+        onMouseDown={handleCanvasMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
-        onClick={() => {
-          setSelectedTable(null);
-          setSelectedColumn(null);
-        }}
-        className="flex-1 relative overflow-auto bg-[#070912] cursor-grab active:cursor-grabbing select-none"
+        onMouseLeave={handleMouseUp}
+        className={`flex-1 relative overflow-hidden bg-[#070912] select-none ${
+          isPanning ? 'cursor-grabbing' : 'cursor-grab'
+        }`}
         style={{
           backgroundImage:
             'radial-gradient(circle, rgba(255,255,255,0.06) 1px, transparent 1px)',
@@ -274,10 +388,12 @@ export const ERDDiagramModal: React.FC = () => {
         }}
       >
         <div
-          className="relative min-w-[2400px] min-h-[1800px] transition-transform duration-75 origin-top-left"
-          style={{ transform: `scale(${zoom})` }}
+          className="relative min-w-[3200px] min-h-[2400px] transition-transform duration-75 origin-top-left"
+          style={{
+            transform: `translate3d(${pan.x}px, ${pan.y}px, 0) scale(${zoom})`,
+          }}
         >
-          {/* SVG Relationship Connecting Lines */}
+          {/* SVG Relationship Connecting Lines Layer */}
           <svg className="absolute inset-0 w-full h-full pointer-events-none z-10">
             <defs>
               <marker
@@ -309,7 +425,6 @@ export const ERDDiagramModal: React.FC = () => {
               const toPos = positions[rel.toTable];
               if (!fromPos || !toPos) return null;
 
-              // Compute start & end coordinates for connection bezier curve
               const cardWidth = 260;
               const cardHeaderHeight = 40;
               const x1 = fromPos.x + cardWidth / 2;
@@ -351,11 +466,11 @@ export const ERDDiagramModal: React.FC = () => {
             return (
               <div
                 key={table.name}
-                onMouseDown={(e) => handleMouseDown(e, table.name)}
+                onMouseDown={(e) => handleTableMouseDown(e, table.name)}
                 style={{
                   transform: `translate3d(${pos.x}px, ${pos.y}px, 0)`,
                 }}
-                className={`absolute w-64 rounded-xl border shadow-2xl transition-shadow bg-[#0d1220]/95 backdrop-blur-md z-20 overflow-hidden group ${
+                className={`table-card-node absolute w-64 rounded-xl border shadow-2xl transition-shadow bg-[#0d1220]/95 backdrop-blur-md z-20 overflow-hidden group ${
                   isSelected
                     ? 'border-indigo-500 ring-2 ring-indigo-500/30 shadow-indigo-500/20'
                     : 'border-[#1e293b] hover:border-indigo-500/60'
@@ -426,3 +541,4 @@ export const ERDDiagramModal: React.FC = () => {
     </div>
   );
 };
+
