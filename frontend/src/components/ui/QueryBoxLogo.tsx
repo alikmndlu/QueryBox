@@ -158,7 +158,7 @@ export const QueryBoxLogo: React.FC<QueryBoxLogoProps> = ({
               Query<span className="bg-gradient-to-r from-indigo-400 via-sky-400 to-indigo-300 bg-clip-text text-transparent">Box</span>
             </span>
             <span className="text-[9px] font-mono font-bold px-1.5 py-0.2 rounded bg-indigo-500/10 text-indigo-300 border border-indigo-500/30">
-              v1.0
+              v1.2
             </span>
           </div>
           <span className="text-[10px] font-mono text-slate-400 tracking-wider uppercase">

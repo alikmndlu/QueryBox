@@ -278,14 +278,16 @@ export const LeftSidebar: React.FC = () => {
             onClick={() => {
               setDashboardOpen(true);
             }}
-            className={`w-full h-8 px-2.5 rounded-md text-xs font-medium flex items-center justify-between transition-colors ${
+            className={`w-full h-8.5 px-2.5 rounded-lg text-xs font-medium flex items-center justify-between transition-all group ${
               dashboardOpen
-                ? 'bg-emerald-600/20 text-emerald-300 font-semibold border border-emerald-500/30'
+                ? 'bg-emerald-600/20 text-emerald-300 font-semibold border border-emerald-500/40 shadow-sm'
                 : 'hover:bg-[#161c2b] text-slate-400 hover:text-slate-200'
             }`}
           >
-            <div className="flex items-center gap-2.5">
-              <BarChart3 className="w-3.5 h-3.5 text-emerald-400" />
+            <div className="flex items-center gap-2">
+              <div className="p-1 rounded-md bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 group-hover:scale-105 transition-transform">
+                <BarChart3 className="w-3.5 h-3.5" strokeWidth={2} />
+              </div>
               <span>Live Dashboard</span>
             </div>
             <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-300 font-bold border border-emerald-500/30 uppercase">
@@ -300,14 +302,16 @@ export const LeftSidebar: React.FC = () => {
               setSearchText('');
               setQuickFilter('all');
             }}
-            className={`w-full h-8 px-2.5 rounded-md text-xs font-medium flex items-center justify-between transition-colors ${
+            className={`w-full h-8.5 px-2.5 rounded-lg text-xs font-medium flex items-center justify-between transition-all group ${
               quickFilter === 'all' && !selectedCollectionId && !dashboardOpen
-                ? 'bg-indigo-600/15 text-indigo-300 font-semibold border border-indigo-500/30'
+                ? 'bg-indigo-600/15 text-indigo-300 font-semibold border border-indigo-500/40 shadow-sm'
                 : 'hover:bg-[#161c2b] text-slate-400 hover:text-slate-200'
             }`}
           >
-            <div className="flex items-center gap-2.5">
-              <HardDrive className="w-3.5 h-3.5 text-indigo-400" />
+            <div className="flex items-center gap-2">
+              <div className="p-1 rounded-md bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 group-hover:scale-105 transition-transform">
+                <HardDrive className="w-3.5 h-3.5" strokeWidth={2} />
+              </div>
               <span>All Queries</span>
             </div>
             <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-[#1b2333] text-slate-400">
@@ -321,14 +325,16 @@ export const LeftSidebar: React.FC = () => {
               setSearchText('');
               setQuickFilter('favorites');
             }}
-            className={`w-full h-8 px-2.5 rounded-md text-xs font-medium flex items-center justify-between transition-colors ${
+            className={`w-full h-8.5 px-2.5 rounded-lg text-xs font-medium flex items-center justify-between transition-all group ${
               quickFilter === 'favorites'
-                ? 'bg-indigo-600/15 text-indigo-300 font-semibold border border-indigo-500/30'
+                ? 'bg-indigo-600/15 text-indigo-300 font-semibold border border-indigo-500/40 shadow-sm'
                 : 'hover:bg-[#161c2b] text-slate-400 hover:text-slate-200'
             }`}
           >
-            <div className="flex items-center gap-2.5">
-              <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400/20" />
+            <div className="flex items-center gap-2">
+              <div className="p-1 rounded-md bg-amber-500/10 text-amber-400 border border-amber-500/20 group-hover:scale-105 transition-transform">
+                <Star className="w-3.5 h-3.5 fill-amber-400/20" strokeWidth={2} />
+              </div>
               <span>Favorites</span>
             </div>
           </button>
@@ -339,14 +345,16 @@ export const LeftSidebar: React.FC = () => {
               setSearchText('');
               setQuickFilter('recent');
             }}
-            className={`w-full h-8 px-2.5 rounded-md text-xs font-medium flex items-center justify-between transition-colors ${
+            className={`w-full h-8.5 px-2.5 rounded-lg text-xs font-medium flex items-center justify-between transition-all group ${
               quickFilter === 'recent'
-                ? 'bg-indigo-600/15 text-indigo-300 font-semibold border border-indigo-500/30'
+                ? 'bg-indigo-600/15 text-indigo-300 font-semibold border border-indigo-500/40 shadow-sm'
                 : 'hover:bg-[#161c2b] text-slate-400 hover:text-slate-200'
             }`}
           >
-            <div className="flex items-center gap-2.5">
-              <Clock className="w-3.5 h-3.5 text-emerald-400" />
+            <div className="flex items-center gap-2">
+              <div className="p-1 rounded-md bg-sky-500/10 text-sky-400 border border-sky-500/20 group-hover:scale-105 transition-transform">
+                <Clock className="w-3.5 h-3.5" strokeWidth={2} />
+              </div>
               <span>Recently Used</span>
             </div>
           </button>
@@ -357,14 +365,16 @@ export const LeftSidebar: React.FC = () => {
               setSearchText('');
               setQuickFilter('uncategorized');
             }}
-            className={`w-full h-8 px-2.5 rounded-md text-xs font-medium flex items-center justify-between transition-colors ${
+            className={`w-full h-8.5 px-2.5 rounded-lg text-xs font-medium flex items-center justify-between transition-all group ${
               quickFilter === 'uncategorized'
-                ? 'bg-indigo-600/15 text-indigo-300 font-semibold border border-indigo-500/30'
+                ? 'bg-indigo-600/15 text-indigo-300 font-semibold border border-indigo-500/40 shadow-sm'
                 : 'hover:bg-[#161c2b] text-slate-400 hover:text-slate-200'
             }`}
           >
-            <div className="flex items-center gap-2.5">
-              <Inbox className="w-3.5 h-3.5 text-slate-400" />
+            <div className="flex items-center gap-2">
+              <div className="p-1 rounded-md bg-slate-500/10 text-slate-400 border border-slate-500/20 group-hover:scale-105 transition-transform">
+                <Inbox className="w-3.5 h-3.5" strokeWidth={2} />
+              </div>
               <span>Uncategorized</span>
             </div>
           </button>
