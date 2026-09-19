@@ -490,6 +490,16 @@ export const SQLEditor: React.FC<SQLEditorProps> = ({
     }
   }, [settings.theme]);
 
+  // Sync editor buffer value when value prop changes (e.g. switching queries)
+  useEffect(() => {
+    if (editorRef.current) {
+      const currentEditorValue = editorRef.current.getValue();
+      if (value !== undefined && value !== currentEditorValue) {
+        editorRef.current.setValue(value);
+      }
+    }
+  }, [value]);
+
   return (
     <div ref={containerRef} className="w-full h-full relative overflow-hidden bg-[#080b11]">
       <Editor

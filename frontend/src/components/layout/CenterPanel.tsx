@@ -516,6 +516,7 @@ export const CenterPanel: React.FC = () => {
           <DashboardPanel />
         ) : activeQuery ? (
           <SQLEditor
+            key={activeQuery.id}
             value={draftSQL}
             onChange={handleSQLEditorChange}
             onSelectionChange={setSelectedSQL}
