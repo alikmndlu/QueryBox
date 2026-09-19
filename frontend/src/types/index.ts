@@ -150,5 +150,24 @@ export interface UpdateResult {
   openedInstaller: boolean;
 }
 
+export interface CellEdit {
+  rowIndex: number;
+  colIndex: number;
+  colName: string;
+  oldValue: any;
+  newValue: any;
+}
+
+export interface InsertedRow {
+  tempId: string;
+  values: Record<number, any>;
+}
+
+export interface PendingGridMutations {
+  edits: Record<string, CellEdit>;
+  insertedRows: InsertedRow[];
+  deletedRowIndices: number[];
+}
+
 
 

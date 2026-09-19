@@ -23,6 +23,13 @@ import {
   Pin,
   Quote,
   List,
+  PlusCircle,
+  Edit3,
+  RotateCcw,
+  ShieldAlert,
+  Check,
+  AlertTriangle,
+  Save,
 } from 'lucide-react';
 import { useConnectionStore } from '../../store/useConnectionStore';
 import { useQueryStore } from '../../store/useQueryStore';
@@ -32,6 +39,9 @@ import { ColumnProfilerModal } from './ColumnProfilerModal';
 import { CopyColumnModal } from './CopyColumnModal';
 import { CellDetailModal } from './CellDetailModal';
 import { ContextMenu, ContextMenuItem } from '../ui/ContextMenu';
+import { ApplyMutationsModal } from './ApplyMutationsModal';
+import { generateDMLScript } from '../../lib/dmlGenerator';
+import { PendingGridMutations, CellEdit, InsertedRow } from '../../types';
 
 export const DataGridPanel: React.FC = () => {
   const {
@@ -69,6 +79,128 @@ export const DataGridPanel: React.FC = () => {
     rowIndex: 0,
     value: null,
   });
+
+  // Pending Mutations & Inline Cell Editing State
+  const [mutations, setMutations] = useState<PendingGridMutations>({
+    edits: {},
+    insertedRows: [],
+    deletedRowIndices: [],
+  });
+
+  const [editingCell, setEditingCell] = useState<{
+    rowIndex: number;
+    colIndex: number;
+    isInserted?: boolean;
+    tempId?: string;
+  } | null>(null);
+
+  const [editInputValue, setEditInputValue] = useState<string>('');
+  const [showApplyModal, setShowApplyModal] = useState<boolean>(false);
+
+  // Reset mutations when a new query result arrives
+  useEffect(() => {
+    setMutations({ edits: {}, insertedRows: [], deletedRowIndices: [] });
+    setEditingCell(null);
+  }, [lastResult]);
+
+  // Infer target table name for SQL generation
+  const inferredTableName = useMemo(() => {
+    const activeQuery = useQueryStore.getState().activeQuery;
+    const sql = activeQuery?.sqlContent || '';
+    const match = sql.match(/FROM\s+([\w\.]+)/i);
+    if (match) return match[1].replace(/["`]/g, '');
+    if (activeQuery?.title && !activeQuery.title.startsWith('Untitled')) return activeQuery.title;
+    return 'records';
+  }, [lastResult]);
+
+  // Check if primary key exists
+  const hasPrimaryKey = useMemo(() => {
+    if (!lastResult || !lastResult.columns) return false;
+    return lastResult.columns.some(
+      (c) => c.toLowerCase() === 'id' || c.toLowerCase().endsWith('_id') || c.toLowerCase().endsWith('_pk')
+    );
+  }, [lastResult]);
+
+  // Handle cell edit save
+  const handleSaveCellEdit = (rowIndex: number, colIndex: number, colName: string, oldValue: any, newValue: any) => {
+    setEditingCell(null);
+    const strOld = oldValue === null || oldValue === undefined ? '' : String(oldValue);
+    if (strOld === newValue) return;
+
+    const editKey = `${rowIndex}_${colIndex}`;
+    setMutations((prev) => {
+      const updated = { ...prev.edits };
+      updated[editKey] = {
+        rowIndex,
+        colIndex,
+        colName,
+        oldValue,
+        newValue,
+      };
+      return { ...prev, edits: updated };
+    });
+  };
+
+  // Handle inserted row cell edit save
+  const handleSaveInsertedCellEdit = (tempId: string, colIndex: number, newValue: any) => {
+    setEditingCell(null);
+    setMutations((prev) => ({
+      ...prev,
+      insertedRows: prev.insertedRows.map((r) =>
+        r.tempId === tempId ? { ...r, values: { ...r.values, [colIndex]: newValue } } : r
+      ),
+    }));
+  };
+
+  // Add draft new row
+  const handleAddRow = () => {
+    const tempId = `ins_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+    const newRow: InsertedRow = { tempId, values: {} };
+    setMutations((prev) => ({
+      ...prev,
+      insertedRows: [...prev.insertedRows, newRow],
+    }));
+    showToast('Added draft new row. Double-click cells to enter values.', 'info');
+  };
+
+  // Toggle row deletion
+  const handleToggleRowDelete = (rowIndex: number) => {
+    setMutations((prev) => {
+      const isDeleted = prev.deletedRowIndices.includes(rowIndex);
+      const updatedDeletes = isDeleted
+        ? prev.deletedRowIndices.filter((i) => i !== rowIndex)
+        : [...prev.deletedRowIndices, rowIndex];
+      return { ...prev, deletedRowIndices: updatedDeletes };
+    });
+  };
+
+  // Revert all pending mutations
+  const handleRevertAllMutations = () => {
+    setMutations({ edits: {}, insertedRows: [], deletedRowIndices: [] });
+    setEditingCell(null);
+    showToast('Reverted all pending cell & row changes', 'info');
+  };
+
+  // Generate DML SQL Script
+  const generatedDMLScript = useMemo(() => {
+    if (!lastResult || !lastResult.columns) return '';
+    return generateDMLScript({
+      tableName: inferredTableName,
+      columns: lastResult.columns,
+      rawRows: lastResult.rows || [],
+      mutations,
+    });
+  }, [lastResult, inferredTableName, mutations]);
+
+  // Execute applied mutations transaction
+  const handleConfirmApplyMutations = async () => {
+    setShowApplyModal(false);
+    if (!generatedDMLScript || generatedDMLScript.startsWith('--')) return;
+
+    showToast('Executing mutation transaction on database...', 'info');
+    await executeQuery(generatedDMLScript);
+    setMutations({ edits: {}, insertedRows: [], deletedRowIndices: [] });
+  };
 
   const handleColResizeMouseDown = (colIdx: number, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -530,6 +662,15 @@ export const DataGridPanel: React.FC = () => {
               >
                 <Quote className="w-3 h-3 text-indigo-400" />
                 <span className="hidden md:inline">Copy Column</span>
+              </button>
+
+              <button
+                onClick={handleAddRow}
+                className="flex items-center gap-1 h-6 px-2 text-[11px] text-emerald-300 hover:text-white bg-emerald-600/20 hover:bg-emerald-600/30 rounded border border-emerald-500/30 transition-colors text-right"
+                title="Insert new row into table (+ افزودن ردیف جدید)"
+              >
+                <PlusCircle className="w-3 h-3 text-emerald-400" />
+                <span className="hidden md:inline">Insert Row</span>
               </button>
 
               <button
@@ -1026,17 +1167,89 @@ export const DataGridPanel: React.FC = () => {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-[#1b2333]/40">
+                      {/* 1. Draft Inserted Rows */}
+                      {mutations.insertedRows.map((insRow) => (
+                        <tr key={insRow.tempId} className="bg-emerald-950/20 border-l-2 border-emerald-500 hover:bg-emerald-950/30 transition-colors">
+                          <td className="px-2 py-1.5 text-[10px] font-bold text-emerald-400 border-r border-[#1b2333]/40 text-center select-none font-mono">
+                            + New
+                          </td>
+                          {visibleColIndices.map((colIdx) => {
+                            const val = insRow.values[colIdx];
+                            const isEditing = editingCell?.tempId === insRow.tempId && editingCell?.colIndex === colIdx;
+                            const displayStr = val === undefined || val === null ? 'NULL' : String(val);
+
+                            return (
+                              <td
+                                key={colIdx}
+                                style={{
+                                  width: colWidths[colIdx] ? `${colWidths[colIdx]}px` : undefined,
+                                  minWidth: '70px',
+                                  maxWidth: colWidths[colIdx] ? `${colWidths[colIdx]}px` : '360px',
+                                }}
+                                onDoubleClick={() => {
+                                  setEditingCell({ rowIndex: -1, colIndex: colIdx, isInserted: true, tempId: insRow.tempId });
+                                  setEditInputValue(val === undefined || val === null ? '' : String(val));
+                                }}
+                                className="px-3 py-1.5 border-r border-[#1b2333]/40 whitespace-nowrap truncate cursor-pointer text-emerald-200"
+                                title="Double-click to set value for draft row"
+                              >
+                                {isEditing ? (
+                                  <input
+                                    type="text"
+                                    value={editInputValue}
+                                    onChange={(e) => setEditInputValue(e.target.value)}
+                                    onKeyDown={(e) => {
+                                      if (e.key === 'Enter') handleSaveInsertedCellEdit(insRow.tempId, colIdx, editInputValue);
+                                      else if (e.key === 'Escape') setEditingCell(null);
+                                    }}
+                                    onBlur={() => handleSaveInsertedCellEdit(insRow.tempId, colIdx, editInputValue)}
+                                    autoFocus
+                                    className="w-full bg-[#080b11] border border-emerald-500 rounded px-1.5 py-0.5 text-xs text-emerald-200 focus:outline-none font-mono"
+                                  />
+                                ) : (
+                                  <span>{displayStr}</span>
+                                )}
+                              </td>
+                            );
+                          })}
+                        </tr>
+                      ))}
+
+                      {/* 2. Existing Result Rows */}
                       {paginatedRows.map((row, idx) => {
                         const actualRowIdx = pageSize > 0 ? (currentPage - 1) * pageSize + idx : idx;
+                        const isDeleted = mutations.deletedRowIndices.includes(actualRowIdx);
+
                         return (
                           <tr
                             key={actualRowIdx}
-                            className={`hover:bg-[#151f33]/80 transition-colors ${
-                              actualRowIdx % 2 === 0 ? 'bg-[#090d15]' : 'bg-[#0c111c]'
+                            className={`group/row transition-colors ${
+                              isDeleted
+                                ? 'bg-rose-950/20 text-rose-300 opacity-65 line-through'
+                                : actualRowIdx % 2 === 0
+                                ? 'bg-[#090d15] hover:bg-[#151f33]/80'
+                                : 'bg-[#0c111c] hover:bg-[#151f33]/80'
                             }`}
                           >
-                            <td className="px-3 py-1.5 text-[10px] text-slate-600 border-r border-[#1b2333]/40 text-center select-none font-mono">
-                              {actualRowIdx + 1}
+                            <td className="px-2 py-1.5 text-[10px] text-slate-600 border-r border-[#1b2333]/40 text-center select-none font-mono">
+                              <div className="flex items-center justify-between gap-1 px-1">
+                                <span>{actualRowIdx + 1}</span>
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleToggleRowDelete(actualRowIdx);
+                                  }}
+                                  className={`p-0.5 rounded transition-all ${
+                                    isDeleted
+                                      ? 'text-rose-400 bg-rose-500/20'
+                                      : 'opacity-0 group-hover/row:opacity-100 text-slate-500 hover:text-rose-400'
+                                  }`}
+                                  title={isDeleted ? 'Unmark row deletion' : 'Mark row for deletion'}
+                                >
+                                  <Trash2 className="w-3 h-3" />
+                                </button>
+                              </div>
                             </td>
                             {visibleColIndices.map((colIdx) => {
                               const cell = row ? row[colIdx] : null;
@@ -1044,6 +1257,11 @@ export const DataGridPanel: React.FC = () => {
                               const isPinned = !!pinnedCols[col];
                               const isSelectedCol = selectedColumnIdx === colIdx;
                               const cellKey = `${actualRowIdx}-${colIdx}`;
+                              const editKey = `${actualRowIdx}_${colIdx}`;
+                              const cellEdit = mutations.edits[editKey];
+                              const isEditingThisCell =
+                                editingCell?.rowIndex === actualRowIdx && editingCell?.colIndex === colIdx && !editingCell.isInserted;
+
                               const isNull = cell === null || cell === undefined;
                               const cellStr = isNull ? 'NULL' : typeof cell === 'object' ? JSON.stringify(cell) : String(cell);
 
@@ -1055,32 +1273,65 @@ export const DataGridPanel: React.FC = () => {
                                     minWidth: '70px',
                                     maxWidth: colWidths[colIdx] ? `${colWidths[colIdx]}px` : '360px',
                                   }}
-                                  onClick={() => handleCopyCell(cell, cellKey)}
+                                  onClick={() => !isEditingThisCell && handleCopyCell(cell, cellKey)}
                                   onDoubleClick={(e) => {
                                     e.stopPropagation();
-                                    setCellDetailState({
-                                      isOpen: true,
-                                      columnName: col,
-                                      rowIndex: actualRowIdx,
-                                      value: cell,
-                                    });
+                                    if (e.shiftKey) {
+                                      setCellDetailState({
+                                        isOpen: true,
+                                        columnName: col,
+                                        rowIndex: actualRowIdx,
+                                        value: cell,
+                                      });
+                                    } else {
+                                      setEditingCell({ rowIndex: actualRowIdx, colIndex: colIdx });
+                                      setEditInputValue(cellEdit ? cellEdit.newValue : isNull ? '' : cellStr);
+                                    }
                                   }}
                                   className={`px-3 py-1.5 border-r whitespace-nowrap truncate cursor-pointer relative group transition-colors ${
-                                    isSelectedCol
+                                    cellEdit
+                                      ? 'bg-amber-500/15 border-l-2 border-l-amber-400 text-amber-200 font-semibold'
+                                      : isSelectedCol
                                       ? 'bg-indigo-500/15 text-indigo-100 font-semibold border-x border-indigo-500/30'
                                       : isPinned
                                       ? 'bg-[#0f1422]/90 border-[#1b253b] border-r-2 border-indigo-500/30'
                                       : 'border-[#1b2333]/40'
-                                  } ${
-                                    isNull ? 'text-slate-600 italic' : 'text-slate-200'
-                                  }`}
-                                  title={isNull ? 'NULL (Double click to view full detail, single click to copy)' : `${cellStr} (Double click to view full detail, single click to copy)`}
+                                  } ${isNull && !cellEdit ? 'text-slate-600 italic' : ''}`}
+                                  title={
+                                    cellEdit
+                                      ? `Edited: ${cellEdit.oldValue} -> ${cellEdit.newValue}`
+                                      : 'Double-click to edit cell (Hold Shift+Double click for detail viewer)'
+                                  }
                                 >
-                                  <span>{cellStr}</span>
-                                  {copiedCell === cellKey && (
-                                    <span className="absolute right-1 top-1 bg-emerald-500 text-slate-950 font-bold px-1 py-0.2 rounded text-[9px] shadow">
-                                      Copied
-                                    </span>
+                                  {isEditingThisCell ? (
+                                    <input
+                                      type="text"
+                                      value={editInputValue}
+                                      onChange={(e) => setEditInputValue(e.target.value)}
+                                      onKeyDown={(e) => {
+                                        if (e.key === 'Enter') handleSaveCellEdit(actualRowIdx, colIdx, col, cell, editInputValue);
+                                        else if (e.key === 'Escape') setEditingCell(null);
+                                      }}
+                                      onBlur={() => handleSaveCellEdit(actualRowIdx, colIdx, col, cell, editInputValue)}
+                                      autoFocus
+                                      className="w-full bg-[#080b11] border border-amber-500 rounded px-1.5 py-0.5 text-xs text-amber-200 focus:outline-none font-mono shadow-inner"
+                                    />
+                                  ) : cellEdit ? (
+                                    <div className="flex items-center justify-between gap-1">
+                                      <span className="text-amber-300 font-semibold">{cellEdit.newValue}</span>
+                                      <span className="text-[9px] font-mono px-1 rounded bg-amber-500/20 text-amber-400 shrink-0">
+                                        Edited
+                                      </span>
+                                    </div>
+                                  ) : (
+                                    <>
+                                      <span>{cellStr}</span>
+                                      {copiedCell === cellKey && (
+                                        <span className="absolute right-1 top-1 bg-emerald-500 text-slate-950 font-bold px-1 py-0.2 rounded text-[9px] shadow">
+                                          Copied
+                                        </span>
+                                      )}
+                                    </>
                                   )}
                                 </td>
                               );
@@ -1236,6 +1487,72 @@ export const DataGridPanel: React.FC = () => {
         columnName={cellDetailState.columnName}
         rowIndex={cellDetailState.rowIndex}
         value={cellDetailState.value}
+      />
+
+      {/* Sticky Pending Mutations Diff Bar */}
+      {(() => {
+        const totalPendingEdits = Object.keys(mutations.edits).length;
+        const totalInsertedRows = mutations.insertedRows.length;
+        const totalDeletedRows = mutations.deletedRowIndices.length;
+        const totalMutations = totalPendingEdits + totalInsertedRows + totalDeletedRows;
+
+        if (totalMutations === 0) return null;
+
+        return (
+          <div className="bg-[#121927] border-t border-amber-500/40 px-4 py-2 flex items-center justify-between gap-3 shrink-0 z-30 shadow-2xl">
+            <div className="flex items-center gap-3 text-xs">
+              <div className="flex items-center gap-1.5 font-medium text-amber-300">
+                <AlertTriangle className="w-4 h-4 text-amber-400 animate-pulse" />
+                <span>تغییرات در انتظار اعمال ({totalMutations}):</span>
+              </div>
+              <div className="flex items-center gap-2">
+                {totalPendingEdits > 0 && (
+                  <span className="px-2 py-0.5 rounded-full text-[11px] font-mono bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                    {totalPendingEdits} ویرایش سلول
+                  </span>
+                )}
+                {totalInsertedRows > 0 && (
+                  <span className="px-2 py-0.5 rounded-full text-[11px] font-mono bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                    {totalInsertedRows} ردیف جدید
+                  </span>
+                )}
+                {totalDeletedRows > 0 && (
+                  <span className="px-2 py-0.5 rounded-full text-[11px] font-mono bg-rose-500/20 text-rose-300 border border-rose-500/30">
+                    {totalDeletedRows} ردیف حذفی
+                  </span>
+                )}
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleRevertAllMutations}
+                className="px-3 py-1 text-xs font-medium text-slate-300 hover:text-white bg-[#1a2336] hover:bg-[#232f48] rounded border border-[#2e3b57] transition-colors"
+              >
+                انصراف و بازنشانی
+              </button>
+              <button
+                onClick={() => setShowApplyModal(true)}
+                className="px-3.5 py-1 text-xs font-medium text-white bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 rounded shadow-md shadow-emerald-950/40 flex items-center gap-1.5 transition-all"
+              >
+                <Save className="w-3.5 h-3.5" />
+                <span>اعمال تغییرات (Apply Changes)</span>
+              </button>
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* Safety Transaction Confirmation Modal */}
+      <ApplyMutationsModal
+        isOpen={showApplyModal}
+        onClose={() => setShowApplyModal(false)}
+        onConfirm={handleConfirmApplyMutations}
+        mutations={mutations}
+        generatedSQL={generatedDMLScript}
+        tableName={inferredTableName}
+        connectionName={activeProfile?.name}
+        databaseName={activeProfile?.database}
+        hasPrimaryKey={hasPrimaryKey}
       />
     </div>
   );
