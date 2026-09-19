@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useMemo } from 'react';
-import Editor, { OnMount } from '@monaco-editor/react';
+import Editor, { OnMount, BeforeMount } from '@monaco-editor/react';
 import { useSettingsStore } from '../../store/useSettingsStore';
 import { useQueryStore } from '../../store/useQueryStore';
 import { useConnectionStore } from '../../store/useConnectionStore';
@@ -42,6 +42,195 @@ const SQL_FUNCTIONS = [
   { label: 'ROW_NUMBER', insertText: 'ROW_NUMBER() OVER (ORDER BY ${1:id})', detail: 'ROW_NUMBER() window function' },
 ];
 
+const registerMonacoThemes = (monaco: any) => {
+  const commonStringRules = [
+    { token: 'string', foreground: 'fbbf24' },
+    { token: 'string.sql', foreground: 'fbbf24' },
+    { token: 'string.quote', foreground: 'fbbf24' },
+    { token: 'string.invalid', foreground: 'fbbf24' },
+    { token: 'invalid', foreground: 'fbbf24' },
+    { token: 'delimiter.quote', foreground: 'fbbf24' },
+    { token: 'delimiter.single', foreground: 'fbbf24' },
+  ];
+
+  // 1. Midnight Slate (QueryBox Dark Default) - High Contrast Light Slate Text
+  monaco.editor.defineTheme('querybox-dark', {
+    base: 'vs-dark',
+    inherit: true,
+    rules: [
+      { token: '', foreground: 'f8fafc' },
+      { token: 'keyword', foreground: '818cf8', fontStyle: 'bold' },
+      { token: 'number', foreground: 'f472b6' },
+      { token: 'comment', foreground: '64748b', fontStyle: 'italic' },
+      { token: 'operator', foreground: '38bdf8' },
+      { token: 'identifier', foreground: 'f8fafc' },
+      { token: 'identifier.quote', foreground: '38bdf8' },
+      { token: 'delimiter', foreground: '94a3b8' },
+      ...commonStringRules,
+    ],
+    colors: {
+      'editor.background': '#080b11',
+      'editor.foreground': '#f8fafc',
+      'editorCursor.foreground': '#6366f1',
+      'editor.lineHighlightBackground': '#0f1422',
+      'editorLineNumber.foreground': '#334155',
+      'editorLineNumber.activeForeground': '#94a3b8',
+      'editor.selectionBackground': '#312e81',
+      'editor.inactiveSelectionBackground': '#1e1b4b',
+    },
+  });
+
+  // 2. One Dark Pro
+  monaco.editor.defineTheme('onedark', {
+    base: 'vs-dark',
+    inherit: true,
+    rules: [
+      { token: '', foreground: 'abb2bf' },
+      { token: 'keyword', foreground: 'c678dd', fontStyle: 'bold' },
+      { token: 'string', foreground: '98c379' },
+      { token: 'string.sql', foreground: '98c379' },
+      { token: 'number', foreground: 'd19a66' },
+      { token: 'comment', foreground: '5c6370', fontStyle: 'italic' },
+      { token: 'operator', foreground: '56b6c2' },
+      { token: 'identifier', foreground: 'abb2bf' },
+    ],
+    colors: {
+      'editor.background': '#1e222a',
+      'editor.foreground': '#abb2bf',
+      'editorCursor.foreground': '#528bff',
+      'editor.lineHighlightBackground': '#2c313a',
+      'editorLineNumber.foreground': '#4b5263',
+      'editorLineNumber.activeForeground': '#abb2bf',
+      'editor.selectionBackground': '#3e4451',
+    },
+  });
+
+  // 3. Dracula Neon Dark
+  monaco.editor.defineTheme('dracula', {
+    base: 'vs-dark',
+    inherit: true,
+    rules: [
+      { token: '', foreground: 'f8f8f2' },
+      { token: 'keyword', foreground: 'ff79c6', fontStyle: 'bold' },
+      { token: 'string', foreground: 'f1fa8c' },
+      { token: 'string.sql', foreground: 'f1fa8c' },
+      { token: 'number', foreground: 'bd93f9' },
+      { token: 'comment', foreground: '6272a4', fontStyle: 'italic' },
+      { token: 'operator', foreground: '8be9fd' },
+      { token: 'identifier', foreground: 'f8f8f2' },
+    ],
+    colors: {
+      'editor.background': '#282a36',
+      'editor.foreground': '#f8f8f2',
+      'editorCursor.foreground': '#f8f8f0',
+      'editor.lineHighlightBackground': '#44475a',
+      'editorLineNumber.foreground': '#6272a4',
+      'editorLineNumber.activeForeground': '#f8f8f2',
+      'editor.selectionBackground': '#44475a',
+    },
+  });
+
+  // 4. GitHub Dark Dimmed
+  monaco.editor.defineTheme('github-dark', {
+    base: 'vs-dark',
+    inherit: true,
+    rules: [
+      { token: '', foreground: 'adbac7' },
+      { token: 'keyword', foreground: 'f47067', fontStyle: 'bold' },
+      { token: 'string', foreground: '96d0ff' },
+      { token: 'string.sql', foreground: '96d0ff' },
+      { token: 'number', foreground: '6cb6ff' },
+      { token: 'comment', foreground: '768390', fontStyle: 'italic' },
+      { token: 'operator', foreground: 'f47067' },
+      { token: 'identifier', foreground: 'adbac7' },
+    ],
+    colors: {
+      'editor.background': '#22272e',
+      'editor.foreground': '#adbac7',
+      'editorCursor.foreground': '#6cb6ff',
+      'editor.lineHighlightBackground': '#2d333b',
+      'editorLineNumber.foreground': '#636e7b',
+      'editorLineNumber.activeForeground': '#adbac7',
+      'editor.selectionBackground': '#373e47',
+    },
+  });
+
+  // 5. Monokai Pro
+  monaco.editor.defineTheme('monokai', {
+    base: 'vs-dark',
+    inherit: true,
+    rules: [
+      { token: '', foreground: 'fcfcfa' },
+      { token: 'keyword', foreground: 'ff6188', fontStyle: 'bold' },
+      { token: 'string', foreground: 'ffd866' },
+      { token: 'string.sql', foreground: 'ffd866' },
+      { token: 'number', foreground: 'ab9df2' },
+      { token: 'comment', foreground: '727072', fontStyle: 'italic' },
+      { token: 'operator', foreground: '78dce8' },
+      { token: 'identifier', foreground: 'fcfcfa' },
+    ],
+    colors: {
+      'editor.background': '#2d2a2e',
+      'editor.foreground': '#fcfcfa',
+      'editorCursor.foreground': '#ffd866',
+      'editor.lineHighlightBackground': '#403c40',
+      'editorLineNumber.foreground': '#5b595c',
+      'editorLineNumber.activeForeground': '#fcfcfa',
+      'editor.selectionBackground': '#403c40',
+    },
+  });
+
+  // 6. Cyberpunk Neon Glow
+  monaco.editor.defineTheme('cyberpunk', {
+    base: 'vs-dark',
+    inherit: true,
+    rules: [
+      { token: '', foreground: '00f0ff' },
+      { token: 'keyword', foreground: 'ff0055', fontStyle: 'bold' },
+      { token: 'string', foreground: 'ffe600' },
+      { token: 'string.sql', foreground: 'ffe600' },
+      { token: 'number', foreground: '00ff99' },
+      { token: 'comment', foreground: '715b9b', fontStyle: 'italic' },
+      { token: 'operator', foreground: '00f0ff' },
+      { token: 'identifier', foreground: '00f0ff' },
+    ],
+    colors: {
+      'editor.background': '#120e24',
+      'editor.foreground': '#00f0ff',
+      'editorCursor.foreground': '#ff0055',
+      'editor.lineHighlightBackground': '#211842',
+      'editorLineNumber.foreground': '#4e3b74',
+      'editorLineNumber.activeForeground': '#00f0ff',
+      'editor.selectionBackground': '#3a1f6c',
+    },
+  });
+
+  // 7. Nord Oceanic
+  monaco.editor.defineTheme('nord', {
+    base: 'vs-dark',
+    inherit: true,
+    rules: [
+      { token: '', foreground: 'd8dee9' },
+      { token: 'keyword', foreground: '81a1c1', fontStyle: 'bold' },
+      { token: 'string', foreground: 'a3be8c' },
+      { token: 'string.sql', foreground: 'a3be8c' },
+      { token: 'number', foreground: 'b48ead' },
+      { token: 'comment', foreground: '616e88', fontStyle: 'italic' },
+      { token: 'operator', foreground: '88c0d0' },
+      { token: 'identifier', foreground: 'd8dee9' },
+    ],
+    colors: {
+      'editor.background': '#2e3440',
+      'editor.foreground': '#d8dee9',
+      'editorCursor.foreground': '#88c0d0',
+      'editor.lineHighlightBackground': '#3b4252',
+      'editorLineNumber.foreground': '#4c566a',
+      'editorLineNumber.activeForeground': '#d8dee9',
+      'editor.selectionBackground': '#434c5e',
+    },
+  });
+};
+
 export const SQLEditor: React.FC<SQLEditorProps> = ({
   value,
   onChange,
@@ -61,7 +250,6 @@ export const SQLEditor: React.FC<SQLEditorProps> = ({
   const formatActiveQuery = useQueryStore((state) => state.formatActiveQuery);
   const schemaTables = useConnectionStore((state) => state.schemaTables);
 
-  // Pre-calculate cached completion suggestions to prevent high Garbage Collection load & typing lag
   const cachedCompletions = useMemo(() => {
     const tableItems: any[] = [];
     const columnItems: any[] = [];
@@ -70,7 +258,7 @@ export const SQLEditor: React.FC<SQLEditorProps> = ({
     (schemaTables || []).forEach((tbl) => {
       tableItems.push({
         label: tbl.name,
-        kind: 5, // CompletionItemKind.Class
+        kind: 5,
         detail: tbl.schema ? `[Table] ${tbl.schema}.${tbl.name}` : `[Table] ${tbl.name}`,
         documentation: `Table (${tbl.columns?.length || 0} columns)`,
         insertText: tbl.name,
@@ -80,7 +268,7 @@ export const SQLEditor: React.FC<SQLEditorProps> = ({
       tbl.columns?.forEach((col) => {
         const colItem = {
           label: col.name,
-          kind: 3, // CompletionItemKind.Field
+          kind: 3,
           detail: `[Column] ${tbl.name}.${col.name} : ${col.dataType}`,
           documentation: `${tbl.name}.${col.name} (${col.dataType}${col.isPrimaryKey ? ' - PK' : ''}${col.isNullable ? ' - Nullable' : ''})`,
           insertText: col.name,
@@ -90,7 +278,7 @@ export const SQLEditor: React.FC<SQLEditorProps> = ({
 
         columnItems.push({
           label: `${tbl.name}.${col.name}`,
-          kind: 9, // CompletionItemKind.Property
+          kind: 9,
           detail: `[Qualified] ${col.dataType}`,
           insertText: `${tbl.name}.${col.name}`,
         });
@@ -102,11 +290,16 @@ export const SQLEditor: React.FC<SQLEditorProps> = ({
     return { tableItems, columnItems, tableColumnMap };
   }, [schemaTables]);
 
+  const handleBeforeMount: BeforeMount = (monaco) => {
+    registerMonacoThemes(monaco);
+  };
+
   const handleEditorDidMount: OnMount = (editor, monaco) => {
     editorRef.current = editor;
     monacoRef.current = monaco;
 
-    // Fix Cursor Misalignment: Force Monaco font re-measurement after WebFonts load
+    registerMonacoThemes(monaco);
+
     if (typeof document !== 'undefined' && (document as any).fonts) {
       (document as any).fonts.ready.then(() => {
         monaco.editor.remeasureFonts();
@@ -115,195 +308,14 @@ export const SQLEditor: React.FC<SQLEditorProps> = ({
     setTimeout(() => monaco.editor.remeasureFonts(), 150);
     setTimeout(() => monaco.editor.remeasureFonts(), 600);
 
-    // Helper to resolve monaco theme name from settings preset key
     const getThemeName = (key?: string) => {
       if (!key || key === 'dark' || key === 'system') return 'querybox-dark';
       if (key === 'light') return 'vs';
       return key;
     };
 
-    const commonStringRules = [
-      { token: 'string', foreground: 'fbbf24' },
-      { token: 'string.sql', foreground: 'fbbf24' },
-      { token: 'string.quote', foreground: 'fbbf24' },
-      { token: 'string.invalid', foreground: 'fbbf24' },
-      { token: 'invalid', foreground: 'fbbf24' },
-      { token: 'delimiter.quote', foreground: 'fbbf24' },
-      { token: 'delimiter.single', foreground: 'fbbf24' },
-    ];
-
-    // 1. Midnight Slate (QueryBox Dark Default)
-    monaco.editor.defineTheme('querybox-dark', {
-      base: 'vs-dark',
-      inherit: true,
-      rules: [
-        { token: 'keyword', foreground: '818cf8', fontStyle: 'bold' },
-        { token: 'number', foreground: 'f472b6' },
-        { token: 'comment', foreground: '64748b', fontStyle: 'italic' },
-        { token: 'operator', foreground: '38bdf8' },
-        { token: 'identifier', foreground: 'f8fafc' },
-        { token: 'identifier.quote', foreground: '38bdf8' },
-        ...commonStringRules,
-      ],
-      colors: {
-        'editor.background': '#080b11',
-        'editor.foreground': '#f8fafc',
-        'editorCursor.foreground': '#6366f1',
-        'editor.lineHighlightBackground': '#0f1422',
-        'editorLineNumber.foreground': '#334155',
-        'editorLineNumber.activeForeground': '#94a3b8',
-        'editor.selectionBackground': '#312e81',
-        'editor.inactiveSelectionBackground': '#1e1b4b',
-      },
-    });
-
-    // 2. One Dark Pro (Atom / VS Code Signature)
-    monaco.editor.defineTheme('onedark', {
-      base: 'vs-dark',
-      inherit: true,
-      rules: [
-        { token: 'keyword', foreground: 'c678dd', fontStyle: 'bold' },
-        { token: 'string', foreground: '98c379' },
-        { token: 'string.sql', foreground: '98c379' },
-        { token: 'number', foreground: 'd19a66' },
-        { token: 'comment', foreground: '5c6370', fontStyle: 'italic' },
-        { token: 'operator', foreground: '56b6c2' },
-        { token: 'identifier', foreground: 'abb2bf' },
-      ],
-      colors: {
-        'editor.background': '#1e222a',
-        'editor.foreground': '#abb2bf',
-        'editorCursor.foreground': '#528bff',
-        'editor.lineHighlightBackground': '#2c313a',
-        'editorLineNumber.foreground': '#4b5263',
-        'editorLineNumber.activeForeground': '#abb2bf',
-        'editor.selectionBackground': '#3e4451',
-      },
-    });
-
-    // 3. Dracula Neon Dark
-    monaco.editor.defineTheme('dracula', {
-      base: 'vs-dark',
-      inherit: true,
-      rules: [
-        { token: 'keyword', foreground: 'ff79c6', fontStyle: 'bold' },
-        { token: 'string', foreground: 'f1fa8c' },
-        { token: 'string.sql', foreground: 'f1fa8c' },
-        { token: 'number', foreground: 'bd93f9' },
-        { token: 'comment', foreground: '6272a4', fontStyle: 'italic' },
-        { token: 'operator', foreground: '8be9fd' },
-        { token: 'identifier', foreground: 'f8f8f2' },
-      ],
-      colors: {
-        'editor.background': '#282a36',
-        'editor.foreground': '#f8f8f2',
-        'editorCursor.foreground': '#f8f8f0',
-        'editor.lineHighlightBackground': '#44475a',
-        'editorLineNumber.foreground': '#6272a4',
-        'editorLineNumber.activeForeground': '#f8f8f2',
-        'editor.selectionBackground': '#44475a',
-      },
-    });
-
-    // 4. GitHub Dark Dimmed
-    monaco.editor.defineTheme('github-dark', {
-      base: 'vs-dark',
-      inherit: true,
-      rules: [
-        { token: 'keyword', foreground: 'f47067', fontStyle: 'bold' },
-        { token: 'string', foreground: '96d0ff' },
-        { token: 'string.sql', foreground: '96d0ff' },
-        { token: 'number', foreground: '6cb6ff' },
-        { token: 'comment', foreground: '768390', fontStyle: 'italic' },
-        { token: 'operator', foreground: 'f47067' },
-        { token: 'identifier', foreground: 'adbac7' },
-      ],
-      colors: {
-        'editor.background': '#22272e',
-        'editor.foreground': '#adbac7',
-        'editorCursor.foreground': '#6cb6ff',
-        'editor.lineHighlightBackground': '#2d333b',
-        'editorLineNumber.foreground': '#636e7b',
-        'editorLineNumber.activeForeground': '#adbac7',
-        'editor.selectionBackground': '#373e47',
-      },
-    });
-
-    // 5. Monokai Pro
-    monaco.editor.defineTheme('monokai', {
-      base: 'vs-dark',
-      inherit: true,
-      rules: [
-        { token: 'keyword', foreground: 'ff6188', fontStyle: 'bold' },
-        { token: 'string', foreground: 'ffd866' },
-        { token: 'string.sql', foreground: 'ffd866' },
-        { token: 'number', foreground: 'ab9df2' },
-        { token: 'comment', foreground: '727072', fontStyle: 'italic' },
-        { token: 'operator', foreground: '78dce8' },
-        { token: 'identifier', foreground: 'fcfcfa' },
-      ],
-      colors: {
-        'editor.background': '#2d2a2e',
-        'editor.foreground': '#fcfcfa',
-        'editorCursor.foreground': '#ffd866',
-        'editor.lineHighlightBackground': '#403c40',
-        'editorLineNumber.foreground': '#5b595c',
-        'editorLineNumber.activeForeground': '#fcfcfa',
-        'editor.selectionBackground': '#403c40',
-      },
-    });
-
-    // 6. Cyberpunk Neon Glow
-    monaco.editor.defineTheme('cyberpunk', {
-      base: 'vs-dark',
-      inherit: true,
-      rules: [
-        { token: 'keyword', foreground: 'ff0055', fontStyle: 'bold' },
-        { token: 'string', foreground: 'ffe600' },
-        { token: 'string.sql', foreground: 'ffe600' },
-        { token: 'number', foreground: '00ff99' },
-        { token: 'comment', foreground: '715b9b', fontStyle: 'italic' },
-        { token: 'operator', foreground: '00f0ff' },
-        { token: 'identifier', foreground: '00f0ff' },
-      ],
-      colors: {
-        'editor.background': '#120e24',
-        'editor.foreground': '#00f0ff',
-        'editorCursor.foreground': '#ff0055',
-        'editor.lineHighlightBackground': '#211842',
-        'editorLineNumber.foreground': '#4e3b74',
-        'editorLineNumber.activeForeground': '#00f0ff',
-        'editor.selectionBackground': '#3a1f6c',
-      },
-    });
-
-    // 7. Nord Oceanic
-    monaco.editor.defineTheme('nord', {
-      base: 'vs-dark',
-      inherit: true,
-      rules: [
-        { token: 'keyword', foreground: '81a1c1', fontStyle: 'bold' },
-        { token: 'string', foreground: 'a3be8c' },
-        { token: 'string.sql', foreground: 'a3be8c' },
-        { token: 'number', foreground: 'b48ead' },
-        { token: 'comment', foreground: '616e88', fontStyle: 'italic' },
-        { token: 'operator', foreground: '88c0d0' },
-        { token: 'identifier', foreground: 'd8dee9' },
-      ],
-      colors: {
-        'editor.background': '#2e3440',
-        'editor.foreground': '#d8dee9',
-        'editorCursor.foreground': '#88c0d0',
-        'editor.lineHighlightBackground': '#3b4252',
-        'editorLineNumber.foreground': '#4c566a',
-        'editorLineNumber.activeForeground': '#d8dee9',
-        'editor.selectionBackground': '#434c5e',
-      },
-    });
-
     monaco.editor.setTheme(getThemeName(settings.theme));
 
-    // Register high-performance SQL IntelliSense completion provider
     if (!sqlCompletionDisposable) {
       sqlCompletionDisposable = monaco.languages.registerCompletionItemProvider('sql', {
         triggerCharacters: [' ', '.', '(', ','],
@@ -330,7 +342,6 @@ export const SQLEditor: React.FC<SQLEditorProps> = ({
             tableColumnMap: {},
           };
 
-          // Dot notation e.g. "users." -> suggest columns for table "users"
           const dotMatch = lineUntilPosition.match(/([\w]+)\.$/);
           if (dotMatch) {
             const tableName = dotMatch[1].toLowerCase();
@@ -347,10 +358,8 @@ export const SQLEditor: React.FC<SQLEditorProps> = ({
             }
           }
 
-          // Check if context is after FROM / JOIN / INTO / UPDATE / TABLE (boost tables)
           const isTableContext = /\b(FROM|JOIN|INTO|UPDATE|TABLE|TRUNCATE)\s+[\w\.]*$/i.test(lineUntilPosition);
 
-          // 1. Pre-cached Tables
           tableItems.forEach((item: any) => {
             suggestions.push({
               ...item,
@@ -359,7 +368,6 @@ export const SQLEditor: React.FC<SQLEditorProps> = ({
             });
           });
 
-          // 2. Pre-cached Columns
           columnItems.forEach((item: any) => {
             suggestions.push({
               ...item,
@@ -368,7 +376,6 @@ export const SQLEditor: React.FC<SQLEditorProps> = ({
             });
           });
 
-          // 3. Keywords
           SQL_KEYWORDS.forEach((kw) => {
             suggestions.push({
               label: kw,
@@ -379,7 +386,6 @@ export const SQLEditor: React.FC<SQLEditorProps> = ({
             });
           });
 
-          // 4. Functions
           SQL_FUNCTIONS.forEach((fn) => {
             suggestions.push({
               label: fn.label,
@@ -397,7 +403,6 @@ export const SQLEditor: React.FC<SQLEditorProps> = ({
       });
     }
 
-    // Format on paste listener
     editor.onDidPaste(() => {
       const currentSettings = useSettingsStore.getState().settings;
       if (currentSettings.formatOnPaste) {
@@ -411,7 +416,6 @@ export const SQLEditor: React.FC<SQLEditorProps> = ({
       }
     });
 
-    // Optimized selection listener using requestAnimationFrame to eliminate typing lag
     editor.onDidChangeCursorSelection((e: any) => {
       if (selectionRafRef.current) cancelAnimationFrame(selectionRafRef.current);
       selectionRafRef.current = requestAnimationFrame(() => {
@@ -425,7 +429,6 @@ export const SQLEditor: React.FC<SQLEditorProps> = ({
       });
     });
 
-    // Keyboard shortcuts inside Monaco Editor
     editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => {
       const currentVal = editor.getValue();
       onChange(currentVal);
@@ -458,14 +461,12 @@ export const SQLEditor: React.FC<SQLEditorProps> = ({
     });
   };
 
-  // Sync cached completion items ref for instant access inside provider
   useEffect(() => {
     if (editorRef.current) {
       (editorRef.current as any)._cachedCompletions = cachedCompletions;
     }
   }, [cachedCompletions]);
 
-  // Handle Container Resizing (e.g. sidebar open/close, panel drag) via efficient ResizeObserver
   useEffect(() => {
     if (!containerRef.current) return;
     const observer = new ResizeObserver(() => {
@@ -477,28 +478,25 @@ export const SQLEditor: React.FC<SQLEditorProps> = ({
     return () => observer.disconnect();
   }, []);
 
-  // Helper to resolve monaco theme name from settings preset key
   const resolveMonacoTheme = (key?: string) => {
     if (!key || key === 'dark' || key === 'system') return 'querybox-dark';
     if (key === 'light') return 'vs';
     return key;
   };
 
-  // Update theme dynamically when settings change
   useEffect(() => {
     if (monacoRef.current) {
       monacoRef.current.editor.setTheme(resolveMonacoTheme(settings.theme));
     }
   }, [settings.theme]);
 
-  // Sync editor buffer value smoothly when value prop changes (e.g. switching queries)
+  // Sync editor buffer value smoothly when value prop changes
   useEffect(() => {
     if (editorRef.current) {
       const currentEditorValue = editorRef.current.getValue();
       if (value !== undefined && value !== currentEditorValue) {
         isProgrammaticUpdateRef.current = true;
         editorRef.current.setValue(value);
-        editorRef.current.setPosition({ lineNumber: 1, column: 1 });
         setTimeout(() => {
           isProgrammaticUpdateRef.current = false;
         }, 60);
@@ -517,6 +515,7 @@ export const SQLEditor: React.FC<SQLEditorProps> = ({
           if (isProgrammaticUpdateRef.current) return;
           onChange(val || '');
         }}
+        beforeMount={handleBeforeMount}
         onMount={handleEditorDidMount}
         theme={resolveMonacoTheme(settings.theme)}
         options={{
@@ -528,7 +527,7 @@ export const SQLEditor: React.FC<SQLEditorProps> = ({
           minimap: { enabled: settings.showMinimap },
           lineNumbers: settings.lineNumbers === 'on' ? 'on' : 'off',
           scrollBeyondLastLine: false,
-          automaticLayout: false, // Turned off background polling in favor of ResizeObserver
+          automaticLayout: false,
           cursorBlinking: 'smooth',
           cursorSmoothCaretAnimation: 'on',
           renderLineHighlight: 'all',
