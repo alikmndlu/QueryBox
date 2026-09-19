@@ -611,7 +611,7 @@ export const SQLEditor: React.FC<SQLEditorProps> = ({
           renderLineHighlight: 'all',
           bracketPairColorization: { enabled: true },
           autoClosingBrackets: 'always',
-          fontFamily: "'JetBrains Mono', 'Fira Code', 'Cascadia Code', Consolas, Monaco, monospace",
+          fontFamily: "'JetBrains Mono', 'Vazirmatn', 'Fira Code', 'Cascadia Code', Consolas, Monaco, monospace",
           fontLigatures: false,
           fixedOverflowWidgets: true,
           padding: { top: 12, bottom: 12 },

@@ -27,8 +27,8 @@
     -moz-osx-font-smoothing: grayscale;
   }
 
-  code, pre, .font-mono {
-    font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', Consolas, Monaco, monospace !important;
+  code, pre, .font-mono, table, td, th, textarea, input {
+    font-family: 'JetBrains Mono', 'Vazirmatn', 'Fira Code', 'Cascadia Code', Consolas, Monaco, monospace !important;
   }
 
   ::selection {

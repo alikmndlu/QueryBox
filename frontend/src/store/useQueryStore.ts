@@ -209,23 +209,36 @@ export const useQueryStore = create<QueryState>((set, get) => ({
     const defaultSQL = initialData?.sqlContent ?? `SELECT\n    *\nFROM users\nORDER BY created_at DESC;`;
     const defaultTitle = initialData?.title || 'Untitled Query';
 
-    const newQ: Partial<Query> = {
+    const tempId = `temp_${Date.now()}`;
+    const scratchQuery: Query = {
+      id: tempId,
       title: defaultTitle,
       sqlContent: defaultSQL,
       collectionId: initialCollectionId || initialData?.collectionId || null,
       dialect: defaultDialect,
-      isFavorite: initialData?.isFavorite || false,
+      isFavorite: false,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      lastUsedAt: new Date().toISOString(),
+      isTemporary: true,
     };
 
-    const created = await API.createQuery(newQ);
-    await get().fetchQueries();
-    await get().setActiveQuery(created);
-    try {
-      const { useCollectionStore } = await import('./useCollectionStore');
-      useCollectionStore.getState().fetchCollections();
-    } catch {}
-    useUIStore.getState().showToast(`Created query "${created.title}"`);
-    return created;
+    useUIStore.getState().setDashboardOpen(false);
+
+    set((state) => ({
+      scratchQueries: { ...state.scratchQueries, [tempId]: scratchQuery },
+      activeQuery: scratchQuery,
+      draftSQL: scratchQuery.sqlContent,
+      draftTitle: scratchQuery.title,
+      draftCollectionId: scratchQuery.collectionId,
+      draftDialect: scratchQuery.dialect,
+      isDirty: true,
+      saveStatus: 'dirty',
+    }));
+
+    useTabStore.getState().openTab(tempId);
+    useUIStore.getState().showToast(`Opened new query draft (Unsaved)`);
+    return scratchQuery;
   },
 
   saveActiveQuery: async (overrideSQL?: string) => {
