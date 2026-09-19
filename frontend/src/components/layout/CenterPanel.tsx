@@ -17,6 +17,7 @@ import {
   BarChart3,
   Users,
   LayoutGrid,
+  Plus,
 } from 'lucide-react';
 import { useQueryStore } from '../../store/useQueryStore';
 import { useCollectionStore } from '../../store/useCollectionStore';
@@ -295,33 +296,42 @@ export const CenterPanel: React.FC = () => {
 
         {/* Right: Actions Group */}
         <div className="flex items-center gap-1.5 shrink-0">
-          {/* AI Copilot Button */}
+          {/* Prominent New Query Button */}
           <Button
-            onClick={toggleAICopilotOpen}
-            variant="ghost"
+            onClick={() => createNewQuery()}
+            variant="default"
             size="sm"
-            className="h-7 text-xs px-2 text-indigo-300 bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/30 gap-1 font-medium shadow-sm"
-            title="Open QueryBox AI Copilot (Text-to-SQL & Query Optimizer)"
+            className="h-7 text-xs px-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-semibold shadow-sm gap-1"
+            title="Create New SQL Query Tab (Cmd+N)"
           >
-            <Sparkles className="w-3.5 h-3.5 text-indigo-400 animate-pulse" />
-            <span className="hidden lg:inline">AI Copilot</span>
+            <Plus className="w-3.5 h-3.5" />
+            <span>New Query</span>
           </Button>
 
-          {/* Live KPI Dashboard Button */}
-          <Button
-            onClick={() => setDashboardOpen(!dashboardOpen)}
-            variant="ghost"
-            size="sm"
-            className={`h-7 text-xs px-2 border gap-1 font-medium transition-colors ${
-              dashboardOpen
-                ? 'bg-emerald-600/20 text-emerald-300 border-emerald-500/40'
-                : 'text-slate-300 bg-[#131926] hover:bg-[#182133] border-[#1c2538]'
-            }`}
-            title="Toggle Live KPI Dashboard View"
-          >
-            <BarChart3 className="w-3.5 h-3.5 text-emerald-400" />
-            <span className="hidden lg:inline">Dashboard</span>
-          </Button>
+          {/* Distinct View Mode Switcher (Editor vs Live Dashboard) */}
+          <div className="flex items-center bg-[#131926] border border-[#1c2538] rounded-lg p-0.5 text-xs">
+            <button
+              onClick={() => setDashboardOpen(false)}
+              className={`px-2.5 py-1 rounded-md text-[11px] font-medium transition-all ${
+                !dashboardOpen
+                  ? 'bg-indigo-600 text-white font-semibold shadow-sm'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              SQL Editor
+            </button>
+            <button
+              onClick={() => setDashboardOpen(true)}
+              className={`px-2.5 py-1 rounded-md text-[11px] font-medium flex items-center gap-1 transition-all ${
+                dashboardOpen
+                  ? 'bg-emerald-600 text-white font-semibold shadow-sm'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              <BarChart3 className="w-3 h-3 text-emerald-300" />
+              <span>Dashboard</span>
+            </button>
+          </div>
 
           {/* Team Workspaces Button */}
           <Button
@@ -543,9 +553,6 @@ export const CenterPanel: React.FC = () => {
           <DataGridPanel />
         </ErrorBoundary>
       )}
-
-      {/* QueryBox AI Copilot Drawer */}
-      <AICopilotDrawer />
 
       {/* Shared Team Workspace Modal */}
       <SharedWorkspaceModal

@@ -77,10 +77,11 @@ export const TabBar: React.FC = () => {
 
       <button
         onClick={() => createNewQuery()}
-        className="p-1 rounded-md text-slate-400 hover:text-slate-100 hover:bg-[#161c2b] transition-colors ml-1 shrink-0"
+        className="flex items-center gap-1 h-6.5 px-2 text-[11px] font-semibold text-emerald-300 hover:text-white bg-emerald-600/20 hover:bg-emerald-600/30 rounded border border-emerald-500/30 transition-colors ml-1 shrink-0"
         title="New Query Tab (Cmd+N)"
       >
-        <Plus className="w-3.5 h-3.5" />
+        <Plus className="w-3 h-3 text-emerald-400" />
+        <span>New Query</span>
       </button>
     </div>
   );
