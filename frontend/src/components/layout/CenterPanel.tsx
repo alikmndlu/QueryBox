@@ -224,16 +224,16 @@ export const CenterPanel: React.FC = () => {
       {/* Multi-Tab Workspace Bar */}
       <TabBar />
 
-      {/* Unified Minimal Workspace Toolbar */}
-      <div className="h-11 px-3 border-b border-[#1c2538] bg-[#0e1320] flex items-center justify-between gap-2 shrink-0 select-none shadow-sm">
-        {/* Left: Sidebar Toggle, Favorite, Title, Dialect Badge */}
+      {/* Unified Minimalist Workspace Toolbar */}
+      <div className="h-11 px-3 border-b border-[#1a2336] bg-[#0d121e] flex items-center justify-between gap-3 shrink-0 select-none shadow-md">
+        {/* Left: Sidebar Toggle, Favorite, Title, Collection & Dialect */}
         <div className="flex items-center gap-2 min-w-0 flex-1">
           <Button
             onClick={toggleLeftSidebar}
             variant="ghost"
             size="iconSm"
-            className="h-7 w-7 text-slate-400 hover:text-slate-200 hover:bg-[#161f32]"
-            title="Toggle Navigation Sidebar (Cmd+B)"
+            className="h-7.5 w-7.5 text-slate-400 hover:text-slate-200 hover:bg-[#151c2d] border border-transparent hover:border-[#1e293b]"
+            title="Toggle Sidebar (Cmd+B)"
           >
             <Sidebar className="w-4 h-4" />
           </Button>
@@ -259,16 +259,16 @@ export const CenterPanel: React.FC = () => {
               }
             }}
             placeholder="Untitled Query..."
-            className="h-7 px-2 rounded-lg bg-transparent hover:bg-[#131926] focus:bg-[#131926] border border-transparent focus:border-indigo-500/60 text-xs font-semibold text-slate-100 focus:outline-none min-w-[140px] max-w-sm truncate transition-all"
+            className="h-7 px-2.5 rounded-md bg-[#131926] hover:bg-[#161d2d] focus:bg-[#161d2d] border border-[#1e293b] focus:border-indigo-500/80 text-xs font-semibold text-slate-100 focus:outline-none min-w-[130px] max-w-xs truncate transition-all"
           />
 
           {/* Collection Selector */}
-          <div className="flex items-center gap-1 bg-[#131926] border border-[#1c2538] rounded-md px-1.5 h-6.5 shrink-0">
+          <div className="hidden sm:flex items-center gap-1 bg-[#131926] border border-[#1e293b] rounded-md px-2 h-7 shrink-0">
             <Folder className="w-3 h-3 text-indigo-400 shrink-0" />
             <select
               value={draftCollectionId || ''}
               onChange={(e) => updateDraft({ collectionId: e.target.value || null })}
-              className="bg-transparent text-[11px] font-medium text-slate-300 focus:outline-none cursor-pointer max-w-[110px] truncate"
+              className="bg-transparent text-[11px] font-medium text-slate-300 focus:outline-none cursor-pointer max-w-[100px] truncate"
               title="Query Collection"
             >
               <option value="">No Collection</option>
@@ -280,101 +280,61 @@ export const CenterPanel: React.FC = () => {
             </select>
           </div>
 
-          {/* Dialect Pill */}
+          {/* Dialect Badge */}
           <select
             value={draftDialect}
             onChange={(e) => updateDraft({ dialect: e.target.value as SQLDialect })}
-            className="h-6.5 px-2 rounded-md bg-[#131926] border border-[#1c2538] text-[10px] font-mono font-semibold text-indigo-300 focus:outline-none uppercase cursor-pointer"
+            className="h-7 px-2 rounded-md bg-[#131926] border border-[#1e293b] text-[10px] font-mono font-bold text-indigo-300 focus:outline-none uppercase cursor-pointer"
             title="SQL Dialect"
           >
-            <option value="postgresql">Postgres</option>
+            <option value="postgresql">PG</option>
             <option value="mysql">MySQL</option>
             <option value="sqlite">SQLite</option>
-            <option value="sqlserver">SQL Server</option>
+            <option value="sqlserver">MSSQL</option>
           </select>
         </div>
 
-        {/* Right: Actions Group */}
-        <div className="flex items-center gap-1.5 shrink-0">
-          {/* Prominent New Query Button */}
+        {/* Center: View Switcher (SQL Editor vs Live Dashboard) */}
+        <div className="flex items-center bg-[#111726] border border-[#1e293b] rounded-lg p-0.5 text-xs shrink-0 shadow-inner">
+          <button
+            onClick={() => setDashboardOpen(false)}
+            className={`px-3 py-1 rounded-md text-[11px] font-semibold transition-all ${
+              !dashboardOpen
+                ? 'bg-indigo-600 text-white shadow-sm'
+                : 'text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            SQL Editor
+          </button>
+          <button
+            onClick={() => setDashboardOpen(true)}
+            className={`px-3 py-1 rounded-md text-[11px] font-semibold flex items-center gap-1.5 transition-all ${
+              dashboardOpen
+                ? 'bg-emerald-600 text-white shadow-sm'
+                : 'text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            <BarChart3 className="w-3 h-3 text-emerald-300" />
+            <span>Dashboard</span>
+          </button>
+        </div>
+
+        {/* Right: Primary Execution Cluster & Secondary Tools */}
+        <div className="flex items-center gap-2 shrink-0">
+          {/* New Query Button */}
           <Button
             onClick={() => createNewQuery()}
-            variant="default"
-            size="sm"
-            className="h-7 text-xs px-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-semibold shadow-sm gap-1"
-            title="Create New SQL Query Tab (Cmd+N)"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            <span>New Query</span>
-          </Button>
-
-          {/* Distinct View Mode Switcher (Editor vs Live Dashboard) */}
-          <div className="flex items-center bg-[#131926] border border-[#1c2538] rounded-lg p-0.5 text-xs">
-            <button
-              onClick={() => setDashboardOpen(false)}
-              className={`px-2.5 py-1 rounded-md text-[11px] font-medium transition-all ${
-                !dashboardOpen
-                  ? 'bg-indigo-600 text-white font-semibold shadow-sm'
-                  : 'text-slate-400 hover:text-slate-200'
-              }`}
-            >
-              SQL Editor
-            </button>
-            <button
-              onClick={() => setDashboardOpen(true)}
-              className={`px-2.5 py-1 rounded-md text-[11px] font-medium flex items-center gap-1 transition-all ${
-                dashboardOpen
-                  ? 'bg-emerald-600 text-white font-semibold shadow-sm'
-                  : 'text-slate-400 hover:text-slate-200'
-              }`}
-            >
-              <BarChart3 className="w-3 h-3 text-emerald-300" />
-              <span>Dashboard</span>
-            </button>
-          </div>
-
-          {/* Team Workspaces Button */}
-          <Button
-            onClick={() => setTeamWorkspaceModalOpen(true)}
             variant="ghost"
             size="sm"
-            className="h-7 text-xs px-2 text-slate-300 bg-[#131926] hover:bg-[#182133] border border-[#1c2538] gap-1"
-            title="Shared Team Workspaces & Query Bundles"
+            className="h-7.5 text-xs px-2.5 bg-[#131926] hover:bg-[#182133] border border-[#1e293b] text-indigo-300 hover:text-indigo-200 font-medium gap-1.5 transition-all"
+            title="New SQL Query Tab (Cmd+N)"
           >
-            <Users className="w-3.5 h-3.5 text-sky-400" />
-            <span className="hidden xl:inline">Team</span>
+            <Plus className="w-3.5 h-3.5 text-indigo-400" />
+            <span className="hidden lg:inline">New Query</span>
           </Button>
 
-          {/* Format SQL */}
-          <Button
-            onClick={formatActiveQuery}
-            variant="ghost"
-            size="sm"
-            className="h-7 text-xs px-2 text-slate-300 hover:text-indigo-300 hover:bg-[#161f32] gap-1"
-            title="Format SQL (Cmd+Shift+F)"
-          >
-            <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
-            <span className="hidden md:inline">Format</span>
-          </Button>
-
-          <SnippetMenu />
-
-          {/* Primary Action: Copy Ready-to-Use SQL */}
-          <Button
-            onClick={handleCopy}
-            variant="default"
-            size="sm"
-            className="h-7 text-xs px-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-medium shadow-sm gap-1.5"
-            title="Copy SQL (Cmd+Shift+C)"
-          >
-            {copied ? <Check className="w-3.5 h-3.5 text-emerald-300" /> : <Copy className="w-3.5 h-3.5" />}
-            <span>{copied ? 'Copied' : 'Copy SQL'}</span>
-          </Button>
-
-          <span className="w-px h-4 bg-[#1c2538] mx-0.5" />
-
-          {/* Database Execution Controls (Compact & Clean) */}
-          <div className="flex items-center bg-[#131926] border border-[#1c2538] rounded-lg p-0.5 gap-1 shadow-inner">
+          {/* Connection & Run Primary Execution Group */}
+          <div className="flex items-center bg-[#131926] border border-[#1e293b] rounded-lg p-0.5 gap-1 shadow-inner">
             <select
               value={activeProfileId || ''}
               onChange={(e) => {
@@ -384,8 +344,8 @@ export const CenterPanel: React.FC = () => {
                   setActiveProfileId(e.target.value || null);
                 }
               }}
-              className="h-6.5 px-2 rounded-md bg-[#0e1320] text-[11px] font-medium text-slate-200 focus:outline-none cursor-pointer max-w-[125px] truncate border border-transparent hover:border-[#1c2538]"
-              title="Target Connection Profile"
+              className="h-7 px-2 rounded-md bg-[#0a0e17] text-[11px] font-medium text-slate-200 focus:outline-none cursor-pointer max-w-[120px] truncate border border-transparent hover:border-[#1c2538]"
+              title="Target Database Connection"
             >
               <option value="" disabled>No DB</option>
               {profiles.map((p) => (
@@ -396,56 +356,72 @@ export const CenterPanel: React.FC = () => {
               <option value="__manage__">+ Manage DBs...</option>
             </select>
 
+            {/* Primary Action Button: RUN */}
             <Button
               onClick={() => handleExecute()}
               disabled={isExecuting}
               variant="default"
               size="sm"
-              className={`text-white font-semibold shadow-md gap-1.5 text-xs h-6.5 px-2.5 transition-all ${
+              className={`text-white font-bold shadow-md gap-1.5 text-xs h-7 px-3 transition-all ${
                 selectedSQL.trim()
-                  ? 'bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 shadow-amber-600/20'
-                  : 'bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 shadow-emerald-600/20'
+                  ? 'bg-amber-600 hover:bg-amber-500 shadow-amber-600/20'
+                  : 'bg-emerald-600 hover:bg-emerald-500 shadow-emerald-600/20'
               }`}
-              title={selectedSQL.trim() ? "Run Selected Query (Ctrl+Enter)" : "Run Query (Ctrl+Enter)"}
+              title={selectedSQL.trim() ? "Run Selected SQL (Ctrl+Enter)" : "Execute Query (Ctrl+Enter)"}
             >
-              <Play className={`w-3 h-3 fill-white ${isExecuting ? 'animate-spin' : ''}`} />
+              <Play className={`w-3.5 h-3.5 fill-white ${isExecuting ? 'animate-spin' : ''}`} />
               <span>
                 {isExecuting
                   ? 'Running...'
                   : selectedSQL.trim()
-                  ? 'Run Selection'
+                  ? 'Run Selected'
                   : 'Run'}
               </span>
+              <kbd className="hidden xl:inline-block ml-0.5 px-1 py-0.2 rounded bg-black/30 text-[9px] font-mono text-emerald-200 border border-white/10">
+                ⌘↵
+              </kbd>
             </Button>
           </div>
 
-          <span className="w-px h-4 bg-[#1b2333] mx-0.5" />
+          <span className="w-px h-4.5 bg-[#1e293b]" />
 
-          {/* Save Status */}
+          {/* Quick Format & Tools Dropdown Menu */}
+          <Button
+            onClick={formatActiveQuery}
+            variant="ghost"
+            size="sm"
+            className="h-7.5 text-xs px-2 text-slate-300 hover:text-indigo-300 hover:bg-[#151c2d] border border-transparent hover:border-[#1e293b]"
+            title="Format SQL (Cmd+Shift+F)"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
+            <span className="hidden xl:inline">Format</span>
+          </Button>
+
+          {/* Save Status Button */}
           <Button
             onClick={() => saveActiveQuery()}
             disabled={saveStatus === 'saved'}
             variant="ghost"
             size="sm"
-            className={`h-7 text-xs px-2 transition-all ${
+            className={`h-7.5 text-xs px-2 transition-all border border-transparent ${
               saveStatus === 'dirty'
-                ? 'text-amber-400 hover:text-amber-300 hover:bg-amber-500/10 font-medium'
+                ? 'text-amber-400 hover:text-amber-300 hover:bg-amber-500/10 font-semibold'
                 : 'text-slate-500 hover:text-slate-300'
             }`}
             title="Save Query (Cmd+S)"
           >
-            <Save className="w-3.5 h-3.5 mr-1" />
+            <Save className="w-3.5 h-3.5" />
             <span className="hidden lg:inline">{saveStatus === 'saving' ? 'Saving...' : saveStatus === 'dirty' ? 'Save*' : 'Saved'}</span>
           </Button>
 
-          {/* More Options Menu */}
+          {/* Secondary Actions Unified Menu */}
           <div className="relative">
             <Button
               onClick={() => setShowMenu(!showMenu)}
               variant="ghost"
               size="iconSm"
-              className="h-7 w-7 text-slate-400 hover:text-slate-200"
-              title="More Actions"
+              className="h-7.5 w-7.5 text-slate-400 hover:text-slate-200 hover:bg-[#151c2d] border border-transparent hover:border-[#1e293b]"
+              title="Query Tools & Actions"
             >
               <MoreHorizontal className="w-4 h-4" />
             </Button>
@@ -453,56 +429,87 @@ export const CenterPanel: React.FC = () => {
             {showMenu && (
               <div
                 onMouseLeave={() => setShowMenu(false)}
-                className="absolute right-0 mt-1 w-48 py-1 rounded-lg bg-[#111622] border border-[#1b2333] shadow-2xl z-50 text-xs text-slate-300 space-y-0.5 animate-in fade-in-50 zoom-in-95 duration-100"
+                className="absolute right-0 mt-1 w-52 py-1.5 rounded-xl bg-[#111622] border border-[#1e293b] shadow-2xl z-50 text-xs text-slate-300 space-y-0.5 animate-in fade-in-50 zoom-in-95 duration-100"
               >
+                <button
+                  onClick={() => {
+                    handleCopy();
+                    setShowMenu(false);
+                  }}
+                  className="w-full px-3 py-1.5 hover:bg-[#182030] flex items-center justify-between text-left transition-colors"
+                >
+                  <div className="flex items-center gap-2">
+                    <Copy className="w-3.5 h-3.5 text-indigo-400" />
+                    <span>Copy Raw SQL</span>
+                  </div>
+                  {copied && <Check className="w-3.5 h-3.5 text-emerald-400" />}
+                </button>
+
+                <button
+                  onClick={() => {
+                    setTeamWorkspaceModalOpen(true);
+                    setShowMenu(false);
+                  }}
+                  className="w-full px-3 py-1.5 hover:bg-[#182030] flex items-center gap-2 text-left transition-colors"
+                >
+                  <Users className="w-3.5 h-3.5 text-sky-400" />
+                  <span>Team Workspaces</span>
+                </button>
+
+                <div className="h-px bg-[#1e293b] my-1" />
+
                 <button
                   onClick={() => {
                     handleExplain();
                     setShowMenu(false);
                   }}
-                  className="w-full px-3 py-1.5 hover:bg-[#161c2b] flex items-center gap-2 text-left"
+                  className="w-full px-3 py-1.5 hover:bg-[#182030] flex items-center gap-2 text-left transition-colors"
                 >
                   <Activity className="w-3.5 h-3.5 text-amber-400" />
-                  <span>Explain Plan</span>
+                  <span>Explain Query Plan</span>
                 </button>
+
                 <button
                   onClick={() => {
                     handleBenchmark();
                     setShowMenu(false);
                   }}
-                  className="w-full px-3 py-1.5 hover:bg-[#161c2b] flex items-center gap-2 text-left"
+                  className="w-full px-3 py-1.5 hover:bg-[#182030] flex items-center gap-2 text-left transition-colors"
                 >
                   <Timer className="w-3.5 h-3.5 text-violet-400" />
-                  <span>Benchmark Latency</span>
+                  <span>Benchmark Query Latency</span>
                 </button>
-                <div className="h-px bg-[#1b2333] my-1" />
-                <button
-                  onClick={() => {
-                    duplicateQuery(activeQuery.id);
-                    setShowMenu(false);
-                  }}
-                  className="w-full px-3 py-1.5 hover:bg-[#161c2b] flex items-center gap-2 text-left"
-                >
-                  <Edit3 className="w-3.5 h-3.5 text-indigo-400" />
-                  <span>Duplicate Query</span>
-                </button>
+
                 <button
                   onClick={() => {
                     setCopyAsCodeModalOpen(true);
                     setShowMenu(false);
                   }}
-                  className="w-full px-3 py-1.5 hover:bg-[#161c2b] flex items-center gap-2 text-left"
+                  className="w-full px-3 py-1.5 hover:bg-[#182030] flex items-center gap-2 text-left transition-colors"
                 >
                   <Code2 className="w-3.5 h-3.5 text-indigo-400" />
-                  <span>Export as Code...</span>
+                  <span>Export as Code (Python/JS/C#)</span>
                 </button>
-                <div className="h-px bg-[#1b2333] my-1" />
+
+                <div className="h-px bg-[#1e293b] my-1" />
+
+                <button
+                  onClick={() => {
+                    duplicateQuery(activeQuery.id);
+                    setShowMenu(false);
+                  }}
+                  className="w-full px-3 py-1.5 hover:bg-[#182030] flex items-center gap-2 text-left transition-colors"
+                >
+                  <Edit3 className="w-3.5 h-3.5 text-indigo-400" />
+                  <span>Duplicate Query</span>
+                </button>
+
                 <button
                   onClick={() => {
                     setShowMenu(false);
                     setShowDeleteAlert(true);
                   }}
-                  className="w-full px-3 py-1.5 hover:bg-rose-500/10 text-rose-400 hover:text-rose-300 flex items-center gap-2 text-left"
+                  className="w-full px-3 py-1.5 hover:bg-rose-500/10 text-rose-400 hover:text-rose-300 flex items-center gap-2 text-left transition-colors"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
                   <span>Delete Query</span>

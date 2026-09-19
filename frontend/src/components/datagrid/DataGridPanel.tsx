@@ -57,6 +57,7 @@ export const DataGridPanel: React.FC = () => {
 
   const [copiedCell, setCopiedCell] = useState<string | null>(null);
   const [isResizingHeight, setIsResizingHeight] = useState<boolean>(false);
+  const [showExportMenu, setShowExportMenu] = useState<boolean>(false);
 
   // Column Width Resizing & Cell Detail Inspector State
   const [colWidths, setColWidths] = useState<Record<number, number>>({});
@@ -499,43 +500,70 @@ export const DataGridPanel: React.FC = () => {
                 )}
               </div>
 
-              <button
-                onClick={handleExportCSV}
-                className="flex items-center gap-1 h-6 px-2 text-[11px] text-slate-300 hover:text-white bg-[#151c2d] hover:bg-[#1b2438] rounded border border-[#1b2333] transition-colors"
-                title="Export result rows to CSV"
-              >
-                <FileSpreadsheet className="w-3 h-3 text-emerald-400" />
-                <span className="hidden md:inline">CSV</span>
-              </button>
-              <button
-                onClick={handleExportJSON}
-                className="flex items-center gap-1 h-6 px-2 text-[11px] text-slate-300 hover:text-white bg-[#151c2d] hover:bg-[#1b2438] rounded border border-[#1b2333] transition-colors"
-                title="Export result rows to JSON"
-              >
-                <FileJson className="w-3 h-3 text-amber-400" />
-                <span className="hidden md:inline">JSON</span>
-              </button>
-              <button
-                onClick={handleCopyTSV}
-                className="flex items-center gap-1 h-6 px-2 text-[11px] text-slate-300 hover:text-white bg-[#151c2d] hover:bg-[#1b2438] rounded border border-[#1b2333] transition-colors"
-                title="Copy all rows to clipboard as TSV"
-              >
-                <Copy className="w-3 h-3 text-sky-400" />
-                <span className="hidden md:inline">Copy</span>
-              </button>
+              {/* Unified Export & Tools Dropdown */}
+              <div className="relative">
+                <button
+                  onClick={() => setShowExportMenu(!showExportMenu)}
+                  className="flex items-center gap-1 h-6 px-2 text-[11px] text-slate-300 hover:text-white bg-[#151c2d] hover:bg-[#1b2438] rounded border border-[#1b2333] transition-colors"
+                  title="Export & Copy Options"
+                >
+                  <FileSpreadsheet className="w-3 h-3 text-indigo-400" />
+                  <span>Export</span>
+                  <ChevronDown className="w-2.5 h-2.5 text-slate-400" />
+                </button>
 
-              <button
-                onClick={() => {
-                  setCopyColIdx(visibleColIndices[0] ?? 0);
-                  setCopyModalOpen(true);
-                }}
-                className="flex items-center gap-1 h-6 px-2 text-[11px] text-slate-300 hover:text-white bg-[#151c2d] hover:bg-[#1b2438] rounded border border-[#1b2333] transition-colors"
-                title="Copy column values with custom formatting (SQL IN list, single quotes, delimiters)"
-              >
-                <Quote className="w-3 h-3 text-indigo-400" />
-                <span className="hidden md:inline">Copy Column</span>
-              </button>
+                {showExportMenu && (
+                  <div
+                    onMouseLeave={() => setShowExportMenu(false)}
+                    className="absolute right-0 mt-1 w-44 py-1 rounded-lg bg-[#111622] border border-[#1b2333] shadow-xl z-50 text-xs text-slate-300 space-y-0.5 animate-in fade-in-50 zoom-in-95 duration-100"
+                  >
+                    <button
+                      onClick={() => {
+                        handleExportCSV();
+                        setShowExportMenu(false);
+                      }}
+                      className="w-full px-3 py-1.5 hover:bg-[#161c2b] flex items-center gap-2 text-left"
+                    >
+                      <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-400" />
+                      <span>Export to CSV</span>
+                    </button>
+                    <button
+                      onClick={() => {
+                        handleExportJSON();
+                        setShowExportMenu(false);
+                      }}
+                      className="w-full px-3 py-1.5 hover:bg-[#161c2b] flex items-center gap-2 text-left"
+                    >
+                      <FileJson className="w-3.5 h-3.5 text-amber-400" />
+                      <span>Export to JSON</span>
+                    </button>
+                    <button
+                      onClick={() => {
+                        handleCopyTSV();
+                        setShowExportMenu(false);
+                      }}
+                      className="w-full px-3 py-1.5 hover:bg-[#161c2b] flex items-center gap-2 text-left"
+                    >
+                      <Copy className="w-3.5 h-3.5 text-sky-400" />
+                      <span>Copy TSV to Clipboard</span>
+                    </button>
+                    <div className="h-px bg-[#1b2333] my-1" />
+                    <button
+                      onClick={() => {
+                        setCopyColIdx(visibleColIndices[0] ?? 0);
+                        setCopyModalOpen(true);
+                        setShowExportMenu(false);
+                      }}
+                      className="w-full px-3 py-1.5 hover:bg-[#161c2b] flex items-center gap-2 text-left"
+                    >
+                      <Quote className="w-3.5 h-3.5 text-indigo-400" />
+                      <span>Copy Column SQL List</span>
+                    </button>
+                  </div>
+                )}
+              </div>
 
+              {/* Pin to Live KPI Dashboard */}
               <button
                 onClick={() => {
                   const activeQuery = useQueryStore.getState().activeQuery;
@@ -547,13 +575,13 @@ export const DataGridPanel: React.FC = () => {
                     chartType: 'kpi',
                     refreshIntervalSec: 10,
                   });
-                  showToast('کوئری به عنوان ویجت زنده به داشبورد افزوده شد!');
+                  showToast('Query added as live KPI widget to Dashboard!', 'success');
                 }}
                 className="flex items-center gap-1 h-6 px-2 text-[11px] text-emerald-300 hover:text-white bg-emerald-600/20 hover:bg-emerald-600/30 rounded border border-emerald-500/30 transition-colors"
                 title="Pin current query result to Live KPI Dashboard"
               >
                 <BarChart2 className="w-3 h-3 text-emerald-400" />
-                <span className="hidden lg:inline">Pin to Dashboard</span>
+                <span className="hidden lg:inline font-medium">Pin to Dashboard</span>
               </button>
 
 

@@ -19,7 +19,7 @@ export const TabBar: React.FC = () => {
   };
 
   return (
-    <div className="h-9 bg-[#0a0d16] border-b border-[#1b2333] flex items-center px-2 gap-1 overflow-x-auto select-none no-scrollbar shrink-0">
+    <div className="h-8.5 bg-[#090d16] border-b border-[#1a2336] flex items-center px-2 gap-1 overflow-x-auto select-none no-scrollbar shrink-0">
       <div className="flex items-center gap-1 min-w-0">
         {tabIds.map((id) => {
           const isActive = id === activeTabId;
@@ -40,19 +40,19 @@ export const TabBar: React.FC = () => {
                 }
               }}
               title={`${title} (${dialect})`}
-              className={`group flex items-center gap-2 h-7.5 px-2.5 rounded-t-md text-xs font-medium cursor-pointer transition-all border-b-2 max-w-[200px] min-w-[110px] ${
+              className={`group flex items-center gap-2 h-7 px-2.5 rounded-t-md text-xs font-medium cursor-pointer transition-all border-b-2 max-w-[210px] min-w-[120px] ${
                 isActive
-                  ? 'bg-[#0f1422] text-slate-100 border-indigo-500 shadow-sm'
+                  ? 'bg-[#0d121e] text-slate-100 border-indigo-500 shadow-sm font-semibold'
                   : 'bg-transparent text-slate-400 hover:text-slate-200 hover:bg-[#111726]/60 border-transparent'
               }`}
             >
               <span
-                className={`text-[9px] uppercase font-mono px-1 py-0.5 rounded border leading-none font-semibold ${badgeStyle}`}
+                className={`text-[9px] uppercase font-mono px-1 py-0.2 rounded border leading-none font-bold ${badgeStyle}`}
               >
                 {dialect === 'postgresql' ? 'PG' : dialect === 'mysql' ? 'MY' : dialect === 'sqlite' ? 'SQL' : 'MS'}
               </span>
 
-              <span className="truncate flex-1 text-[11px] font-medium">{title}</span>
+              <span className="truncate flex-1 text-[11px]">{title}</span>
 
               {showDirty ? (
                 <span className="w-2 h-2 rounded-full bg-amber-400 group-hover:hidden shrink-0" />
@@ -63,7 +63,7 @@ export const TabBar: React.FC = () => {
                   e.stopPropagation();
                   closeTab(id);
                 }}
-                className={`p-0.5 rounded hover:bg-slate-700/50 text-slate-400 hover:text-slate-100 ${
+                className={`p-0.5 rounded hover:bg-slate-700/50 text-slate-400 hover:text-slate-100 transition-colors ${
                   showDirty ? 'hidden group-hover:inline-flex' : 'opacity-0 group-hover:opacity-100'
                 }`}
                 title="Close Tab"
@@ -77,11 +77,10 @@ export const TabBar: React.FC = () => {
 
       <button
         onClick={() => createNewQuery()}
-        className="flex items-center gap-1 h-6.5 px-2 text-[11px] font-semibold text-emerald-300 hover:text-white bg-emerald-600/20 hover:bg-emerald-600/30 rounded border border-emerald-500/30 transition-colors ml-1 shrink-0"
+        className="p-1 text-slate-400 hover:text-indigo-300 hover:bg-[#131926] rounded transition-colors ml-0.5 shrink-0 border border-transparent hover:border-[#1e293b]"
         title="New Query Tab (Cmd+N)"
       >
-        <Plus className="w-3 h-3 text-emerald-400" />
-        <span>New Query</span>
+        <Plus className="w-4 h-4" />
       </button>
     </div>
   );

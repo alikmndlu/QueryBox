@@ -134,7 +134,7 @@ export const LeftSidebar: React.FC = () => {
   return (
     <div
       style={{ width: `${leftSidebarWidth}px` }}
-      className="h-full bg-[#0e121d] border-r border-[#1c2538] flex flex-col select-none text-slate-300 shrink-0 relative group/sidebar shadow-xl"
+      className="h-full bg-[#090d16] border-r border-[#1a2336] flex flex-col select-none text-slate-300 shrink-0 relative group/sidebar shadow-xl"
     >
       {/* Resizer Handle Bar */}
       <div
@@ -144,14 +144,14 @@ export const LeftSidebar: React.FC = () => {
         title="Drag to resize left panel (Double click to reset)"
       />
       {/* App Branding Header with QueryBox Logo */}
-      <div className="p-3.5 border-b border-[#1c2538] flex items-center justify-between bg-[#0b0e17]">
-        <QueryBoxLogo size={30} showText={true} />
+      <div className="p-3 border-b border-[#1a2336] flex items-center justify-between bg-[#0b0e17]">
+        <QueryBoxLogo size={28} showText={true} />
 
         <Button
           onClick={() => createNewQuery(selectedCollectionId)}
           size="iconSm"
           variant="subtle"
-          className="bg-indigo-600/10 hover:bg-indigo-600/25 text-indigo-300 border border-indigo-500/20"
+          className="bg-[#131926] hover:bg-[#182133] text-indigo-300 border border-[#1e293b] h-7 w-7"
           title="New Query (Cmd+N)"
         >
           <Plus className="w-4 h-4" />
@@ -159,29 +159,29 @@ export const LeftSidebar: React.FC = () => {
       </div>
 
       {/* Global Quick Search / Command Palette Trigger */}
-      <div className="p-3">
+      <div className="p-2.5">
         <button
           onClick={() => setCommandPaletteOpen(true)}
-          className="w-full h-8.5 px-3 rounded-lg bg-[#131926] hover:bg-[#182133] border border-[#1c2538] hover:border-indigo-500/30 text-slate-400 text-xs flex items-center justify-between transition-all group shadow-inner"
+          className="w-full h-8 px-2.5 rounded-lg bg-[#111726] hover:bg-[#161d2e] border border-[#1e293b] text-slate-400 text-xs flex items-center justify-between transition-all group shadow-inner"
         >
           <div className="flex items-center gap-2">
             <Search className="w-3.5 h-3.5 text-slate-500 group-hover:text-indigo-400 transition-colors" />
             <span className="group-hover:text-slate-200 transition-colors font-medium">Search & Commands...</span>
           </div>
-          <kbd className="px-1.5 py-0.5 rounded bg-[#1c2538] text-[10px] font-mono text-slate-400 border border-[#27344d]">
+          <kbd className="px-1.5 py-0.2 rounded bg-[#1c2538] text-[9px] font-mono text-slate-400 border border-[#27344d]">
             ⌘K
           </kbd>
         </button>
       </div>
 
       {/* Sidebar View Toggle: Queries vs Schema */}
-      <div className="px-3 pb-2 pt-0 flex items-center gap-1.5">
+      <div className="px-2.5 pb-2 pt-0 flex items-center gap-1.5">
         <button
           onClick={() => setSidebarTab('queries')}
-          className={`flex-1 flex items-center justify-center gap-1.5 h-7.5 rounded-lg text-xs font-semibold transition-all ${
+          className={`flex-1 flex items-center justify-center gap-1.5 h-7 rounded-lg text-xs font-semibold transition-all ${
             sidebarTab === 'queries'
-              ? 'bg-gradient-to-r from-indigo-600/25 to-purple-600/20 text-indigo-200 border border-indigo-500/40 shadow-sm shadow-indigo-500/20'
-              : 'text-slate-400 hover:text-slate-200 hover:bg-[#131926]'
+              ? 'bg-[#151c2d] text-indigo-200 border border-indigo-500/40 shadow-sm'
+              : 'text-slate-400 hover:text-slate-200 hover:bg-[#111726]'
           }`}
         >
           <Folder className="w-3.5 h-3.5 text-indigo-400" />
@@ -190,16 +190,16 @@ export const LeftSidebar: React.FC = () => {
 
         <button
           onClick={() => setSidebarTab('schema')}
-          className={`flex-1 flex items-center justify-center gap-1.5 h-7.5 rounded-lg text-xs font-semibold transition-all ${
+          className={`flex-1 flex items-center justify-center gap-1.5 h-7 rounded-lg text-xs font-semibold transition-all ${
             sidebarTab === 'schema'
-              ? 'bg-gradient-to-r from-indigo-600/25 to-purple-600/20 text-indigo-200 border border-indigo-500/40 shadow-sm shadow-indigo-500/20'
-              : 'text-slate-400 hover:text-slate-200 hover:bg-[#131926]'
+              ? 'bg-[#151c2d] text-emerald-200 border border-emerald-500/40 shadow-sm'
+              : 'text-slate-400 hover:text-slate-200 hover:bg-[#111726]'
           }`}
         >
           <Database className="w-3.5 h-3.5 text-emerald-400" />
           <span>Tables</span>
           {schemaTables.length > 0 && (
-            <span className="text-[10px] font-mono px-1.5 py-0.2 rounded-full bg-emerald-500/20 text-emerald-300 font-bold border border-emerald-500/30">
+            <span className="text-[9px] font-mono px-1.5 py-0.2 rounded-full bg-emerald-500/20 text-emerald-300 font-bold border border-emerald-500/30">
               {schemaTables.length}
             </span>
           )}
