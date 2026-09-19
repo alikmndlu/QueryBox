@@ -34,46 +34,131 @@ export const SettingsModal: React.FC = () => {
 
         {/* Modal Body */}
         <div className="p-5 max-h-[70vh] overflow-y-auto space-y-6 text-xs text-slate-300">
-          {/* Appearance Section */}
+          {/* Appearance & Theme Section */}
           <div className="space-y-3">
-            <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
-              <Sliders className="w-3.5 h-3.5 text-indigo-400" />
-              <span>Appearance & Theme</span>
+            <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider flex items-center justify-between">
+              <div className="flex items-center gap-1.5">
+                <Sliders className="w-3.5 h-3.5 text-indigo-400" />
+                <span>Theme Presets / تم‌های جذاب برنامه</span>
+              </div>
+              <span className="text-[10px] font-normal text-slate-500">8 Custom Color Themes</span>
             </div>
-            <div className="grid grid-cols-3 gap-2">
-              <button
-                onClick={() => updateSettings({ theme: 'dark' })}
-                className={`p-3 rounded-lg border flex flex-col items-center gap-2 transition-all cursor-pointer ${
-                  settings.theme === 'dark'
-                    ? 'bg-indigo-600/20 border-indigo-500 text-indigo-300 font-medium shadow-sm'
-                    : 'bg-[#111622] border-[#1b2333] hover:bg-[#161c2b] text-slate-400'
-                }`}
-              >
-                <Moon className="w-4 h-4" />
-                <span>Dark Mode</span>
-              </button>
-              <button
-                onClick={() => updateSettings({ theme: 'light' })}
-                className={`p-3 rounded-lg border flex flex-col items-center gap-2 transition-all cursor-pointer ${
-                  settings.theme === 'light'
-                    ? 'bg-indigo-600/20 border-indigo-500 text-indigo-300 font-medium shadow-sm'
-                    : 'bg-[#111622] border-[#1b2333] hover:bg-[#161c2b] text-slate-400'
-                }`}
-              >
-                <Sun className="w-4 h-4" />
-                <span>Light Mode</span>
-              </button>
-              <button
-                onClick={() => updateSettings({ theme: 'system' })}
-                className={`p-3 rounded-lg border flex flex-col items-center gap-2 transition-all cursor-pointer ${
-                  settings.theme === 'system'
-                    ? 'bg-indigo-600/20 border-indigo-500 text-indigo-300 font-medium shadow-sm'
-                    : 'bg-[#111622] border-[#1b2333] hover:bg-[#161c2b] text-slate-400'
-                }`}
-              >
-                <Laptop className="w-4 h-4" />
-                <span>System</span>
-              </button>
+
+            <div className="grid grid-cols-2 gap-2.5">
+              {[
+                {
+                  id: 'querybox-dark',
+                  name: 'کوئری‌باکس دارک',
+                  sub: 'Midnight Slate (پیش‌فرض)',
+                  badge: 'Slate',
+                  bg: '#080b11',
+                  border: '#6366f1',
+                  dots: ['#818cf8', '#fbbf24', '#f472b6'],
+                },
+                {
+                  id: 'onedark',
+                  name: 'کوانتوم ون‌دارک',
+                  sub: 'Atom / VS Code Pro',
+                  badge: 'One Dark',
+                  bg: '#1e222a',
+                  border: '#c678dd',
+                  dots: ['#c678dd', '#98c379', '#56b6c2'],
+                },
+                {
+                  id: 'dracula',
+                  name: 'دراکولا نیون',
+                  sub: 'Vibrant Neon Dark',
+                  badge: 'Dracula',
+                  bg: '#282a36',
+                  border: '#ff79c6',
+                  dots: ['#ff79c6', '#f1fa8c', '#bd93f9'],
+                },
+                {
+                  id: 'github-dark',
+                  name: 'گیتهاب نایت',
+                  sub: 'Official GitHub Dimmed',
+                  badge: 'GitHub',
+                  bg: '#22272e',
+                  border: '#6cb6ff',
+                  dots: ['#f47067', '#96d0ff', '#6cb6ff'],
+                },
+                {
+                  id: 'cyberpunk',
+                  name: 'سایبرپانک نیون',
+                  sub: 'Electric Glowing Neon',
+                  badge: 'Cyberpunk',
+                  bg: '#120e24',
+                  border: '#ff0055',
+                  dots: ['#ff0055', '#ffe600', '#00ff99'],
+                },
+                {
+                  id: 'monokai',
+                  name: 'مونوکای پرو',
+                  sub: 'Pro Contrast Gold',
+                  badge: 'Monokai',
+                  bg: '#2d2a2e',
+                  border: '#ff6188',
+                  dots: ['#ff6188', '#ffd866', '#78dce8'],
+                },
+                {
+                  id: 'nord',
+                  name: 'نورد آركتيك',
+                  sub: 'Cool Arctic Ice Blue',
+                  badge: 'Nord',
+                  bg: '#2e3440',
+                  border: '#88c0d0',
+                  dots: ['#81a1c1', '#a3be8c', '#b48ead'],
+                },
+                {
+                  id: 'light',
+                  name: 'دی‌لایت روشن',
+                  sub: 'Clean Light Vision',
+                  badge: 'Light',
+                  bg: '#f8fafc',
+                  border: '#6366f1',
+                  dots: ['#2563eb', '#d97706', '#dc2626'],
+                },
+              ].map((theme) => {
+                const currentTheme = settings.theme || 'querybox-dark';
+                const isSelected = currentTheme === theme.id || (currentTheme === 'dark' && theme.id === 'querybox-dark');
+
+                return (
+                  <button
+                    key={theme.id}
+                    onClick={() => updateSettings({ theme: theme.id as any })}
+                    className={`p-2.5 rounded-xl border text-left flex flex-col justify-between gap-2 transition-all cursor-pointer relative group ${
+                      isSelected
+                        ? 'bg-indigo-600/15 border-indigo-500 shadow-md shadow-indigo-500/10'
+                        : 'bg-[#111622] border-[#1b2333] hover:bg-[#161c2b] hover:border-slate-700'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between w-full">
+                      <span className="text-[10px] font-mono px-1.5 py-0.5 rounded-md bg-[#090d16] text-slate-300 border border-[#1c2538]">
+                        {theme.badge}
+                      </span>
+                      <div className="flex items-center gap-1">
+                        {theme.dots.map((color, idx) => (
+                          <span
+                            key={idx}
+                            className="w-2.5 h-2.5 rounded-full shadow-sm"
+                            style={{ backgroundColor: color }}
+                          />
+                        ))}
+                      </div>
+                    </div>
+
+                    <div>
+                      <div className="font-semibold text-slate-100 text-xs flex items-center justify-between">
+                        <span>{theme.name}</span>
+                        {isSelected && (
+                          <span className="w-2 h-2 rounded-full bg-indigo-400 shadow-sm shadow-indigo-400" />
+                        )}
+                      </div>
+                      <div className="text-[10px] text-slate-400 truncate mt-0.5">{theme.sub}</div>
+                    </div>
+                  </button>
+                );
+              })}
             </div>
           </div>
 
