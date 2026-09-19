@@ -22,6 +22,7 @@ func main() {
 		Height:            800,
 		MinWidth:          960,
 		MinHeight:         600,
+		WindowStartState:  options.Maximized,
 		DisableResize:     false,
 		Fullscreen:        false,
 		Frameless:         false,

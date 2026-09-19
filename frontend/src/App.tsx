@@ -14,6 +14,7 @@ import { UpdateModal } from './components/settings/UpdateModal';
 import { ERDDiagramModal } from './components/schema/ERDDiagramModal';
 import { ToastContainer } from './components/ui/ToastContainer';
 import { TooltipProvider } from './components/ui/tooltip';
+import { SplashScreen } from './components/ui/SplashScreen';
 
 import { useQueryStore } from './store/useQueryStore';
 import { useSettingsStore } from './store/useSettingsStore';
@@ -205,6 +206,7 @@ export const App: React.FC = () => {
         <UpdateModal />
         <ERDDiagramModal />
         <ToastContainer />
+        <SplashScreen />
       </div>
     </TooltipProvider>
   );
