@@ -37,10 +37,15 @@ func (r *QueryRepository) Create(q *models.Query) error {
 	}
 	defer tx.Rollback()
 
+	showDash := 0
+	if q.ShowInDashboard {
+		showDash = 1
+	}
+
 	_, err = tx.Exec(
-		`INSERT INTO queries (id, title, sql_content, description, collection_id, dialect, is_favorite, created_at, updated_at, last_used_at) 
-		 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-		q.ID, q.Title, q.SQLContent, q.Description, q.CollectionID, q.Dialect, q.IsFavorite, q.CreatedAt, q.UpdatedAt, q.LastUsedAt,
+		`INSERT INTO queries (id, title, sql_content, description, collection_id, dialect, is_favorite, show_in_dashboard, connection_profile_id, database_name, created_at, updated_at, last_used_at) 
+		 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		q.ID, q.Title, q.SQLContent, q.Description, q.CollectionID, q.Dialect, q.IsFavorite, showDash, q.ConnectionProfileID, q.DatabaseName, q.CreatedAt, q.UpdatedAt, q.LastUsedAt,
 	)
 	if err != nil {
 		return err
@@ -95,11 +100,16 @@ func (r *QueryRepository) Update(q *models.Query) error {
 		)
 	}
 
+	showDash := 0
+	if q.ShowInDashboard {
+		showDash = 1
+	}
+
 	_, err = tx.Exec(
 		`UPDATE queries 
-		 SET title = ?, sql_content = ?, description = ?, collection_id = ?, dialect = ?, is_favorite = ?, updated_at = ? 
+		 SET title = ?, sql_content = ?, description = ?, collection_id = ?, dialect = ?, is_favorite = ?, show_in_dashboard = ?, connection_profile_id = ?, database_name = ?, updated_at = ? 
 		 WHERE id = ?`,
-		q.Title, q.SQLContent, q.Description, q.CollectionID, q.Dialect, q.IsFavorite, q.UpdatedAt, q.ID,
+		q.Title, q.SQLContent, q.Description, q.CollectionID, q.Dialect, q.IsFavorite, showDash, q.ConnectionProfileID, q.DatabaseName, q.UpdatedAt, q.ID,
 	)
 	if err != nil {
 		return err
@@ -130,16 +140,17 @@ func (r *QueryRepository) Delete(id string) error {
 
 func (r *QueryRepository) GetByID(id string) (*models.Query, error) {
 	var q models.Query
-	var isFav int
+	var isFav, showDash int
 	err := r.DB.QueryRow(
-		`SELECT id, title, sql_content, description, collection_id, dialect, is_favorite, created_at, updated_at, last_used_at 
+		`SELECT id, title, sql_content, description, collection_id, dialect, is_favorite, show_in_dashboard, connection_profile_id, database_name, created_at, updated_at, last_used_at 
 		 FROM queries WHERE id = ?`,
 		id,
-	).Scan(&q.ID, &q.Title, &q.SQLContent, &q.Description, &q.CollectionID, &q.Dialect, &isFav, &q.CreatedAt, &q.UpdatedAt, &q.LastUsedAt)
+	).Scan(&q.ID, &q.Title, &q.SQLContent, &q.Description, &q.CollectionID, &q.Dialect, &isFav, &showDash, &q.ConnectionProfileID, &q.DatabaseName, &q.CreatedAt, &q.UpdatedAt, &q.LastUsedAt)
 	if err != nil {
 		return nil, err
 	}
 	q.IsFavorite = (isFav == 1)
+	q.ShowInDashboard = (showDash == 1)
 
 	// Fetch tags
 	q.Tags = r.getTagsForQuery(q.ID)
@@ -147,7 +158,7 @@ func (r *QueryRepository) GetByID(id string) (*models.Query, error) {
 }
 
 func (r *QueryRepository) List(filter models.SearchFilter) ([]models.Query, error) {
-	queryBuilder := `SELECT q.id, q.title, q.sql_content, q.description, q.collection_id, q.dialect, q.is_favorite, q.created_at, q.updated_at, q.last_used_at 
+	queryBuilder := `SELECT q.id, q.title, q.sql_content, q.description, q.collection_id, q.dialect, q.is_favorite, q.show_in_dashboard, q.connection_profile_id, q.database_name, q.created_at, q.updated_at, q.last_used_at 
 					 FROM queries q`
 	var conditions []string
 	var args []interface{}
@@ -211,12 +222,13 @@ func (r *QueryRepository) List(filter models.SearchFilter) ([]models.Query, erro
 	var results []models.Query
 	for rows.Next() {
 		var q models.Query
-		var isFav int
-		err := rows.Scan(&q.ID, &q.Title, &q.SQLContent, &q.Description, &q.CollectionID, &q.Dialect, &isFav, &q.CreatedAt, &q.UpdatedAt, &q.LastUsedAt)
+		var isFav, showDash int
+		err := rows.Scan(&q.ID, &q.Title, &q.SQLContent, &q.Description, &q.CollectionID, &q.Dialect, &isFav, &showDash, &q.ConnectionProfileID, &q.DatabaseName, &q.CreatedAt, &q.UpdatedAt, &q.LastUsedAt)
 		if err != nil {
 			return nil, err
 		}
 		q.IsFavorite = (isFav == 1)
+		q.ShowInDashboard = (showDash == 1)
 		q.Tags = r.getTagsForQuery(q.ID)
 		results = append(results, q)
 	}

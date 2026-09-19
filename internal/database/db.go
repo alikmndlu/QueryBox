@@ -29,6 +29,9 @@ CREATE TABLE IF NOT EXISTS queries (
     collection_id TEXT,
     dialect TEXT NOT NULL DEFAULT 'postgresql',
     is_favorite INTEGER NOT NULL DEFAULT 0,
+    show_in_dashboard INTEGER NOT NULL DEFAULT 0,
+    connection_profile_id TEXT NOT NULL DEFAULT '',
+    database_name TEXT NOT NULL DEFAULT '',
     created_at DATETIME NOT NULL,
     updated_at DATETIME NOT NULL,
     last_used_at DATETIME NOT NULL,
@@ -111,6 +114,11 @@ func InitDB(dbPath string) (*sql.DB, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	// Dynamic column migrations for backward compatibility
+	_, _ = db.Exec(`ALTER TABLE queries ADD COLUMN show_in_dashboard INTEGER NOT NULL DEFAULT 0;`)
+	_, _ = db.Exec(`ALTER TABLE queries ADD COLUMN connection_profile_id TEXT NOT NULL DEFAULT '';`)
+	_, _ = db.Exec(`ALTER TABLE queries ADD COLUMN database_name TEXT NOT NULL DEFAULT '';`)
 
 	// Run initial seed data if table is empty
 	if err := seedInitialData(db); err != nil {

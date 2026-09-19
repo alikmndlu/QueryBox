@@ -12,6 +12,9 @@ export interface DashboardWidget {
   sql: string;
   chartType: WidgetChartType;
   refreshIntervalSec: number; // 0 = manual, 5, 10, 30, 60
+  profileId?: string;
+  databaseName?: string;
+  savedQueryId?: string;
   lastResult?: QueryResult;
   lastRefreshedAt?: string;
   isRefreshing?: boolean;
@@ -82,12 +85,23 @@ export const useDashboardStore = create<DashboardState>()(
       refreshWidget: async (id) => {
         const { activeProfileId, activeDatabase } = useConnectionStore.getState();
         const widget = get().widgets.find((w) => w.id === id);
-        if (!widget || !activeProfileId) return;
+        if (!widget) return;
+
+        const targetProfileId = widget.profileId || activeProfileId;
+        const targetDatabase = widget.databaseName || activeDatabase || '';
+
+        if (!targetProfileId) {
+          get().updateWidget(id, {
+            isRefreshing: false,
+            error: 'No connection targeted. Select a connection profile.',
+          });
+          return;
+        }
 
         get().updateWidget(id, { isRefreshing: true, error: undefined });
 
         try {
-          const res = await API.executeQuery(activeProfileId, widget.sql, 200, activeDatabase || '');
+          const res = await API.executeQuery(targetProfileId, widget.sql, 200, targetDatabase);
           get().updateWidget(id, {
             isRefreshing: false,
             lastResult: {

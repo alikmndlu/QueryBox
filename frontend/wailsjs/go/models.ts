@@ -136,6 +136,9 @@ export namespace models {
 	    collectionId?: string;
 	    dialect: string;
 	    isFavorite: boolean;
+	    showInDashboard: boolean;
+	    connectionProfileId: string;
+	    databaseName: string;
 	    createdAt: string;
 	    updatedAt: string;
 	    lastUsedAt: string;
@@ -154,6 +157,9 @@ export namespace models {
 	        this.collectionId = source["collectionId"];
 	        this.dialect = source["dialect"];
 	        this.isFavorite = source["isFavorite"];
+	        this.showInDashboard = source["showInDashboard"];
+	        this.connectionProfileId = source["connectionProfileId"];
+	        this.databaseName = source["databaseName"];
 	        this.createdAt = source["createdAt"];
 	        this.updatedAt = source["updatedAt"];
 	        this.lastUsedAt = source["lastUsedAt"];

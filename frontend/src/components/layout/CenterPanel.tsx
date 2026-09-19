@@ -58,10 +58,14 @@ export const CenterPanel: React.FC = () => {
     draftSQL,
     draftDialect,
     draftCollectionId,
+    draftConnectionProfileId,
+    draftDatabaseName,
+    draftShowInDashboard,
     updateDraft,
     saveActiveQuery,
     formatActiveQuery,
     toggleFavorite,
+    toggleDashboardShow,
     duplicateQuery,
     deleteQuery,
     createNewQuery,
@@ -270,6 +274,21 @@ export const CenterPanel: React.FC = () => {
             <option value="sqlite">SQLite</option>
             <option value="sqlserver">MSSQL</option>
           </select>
+
+          {/* Show on Live Dashboard Toggle */}
+          <button
+            onClick={() => activeQuery && toggleDashboardShow(activeQuery.id)}
+            disabled={!activeQuery}
+            className={`h-7 px-2 rounded-md text-[10px] font-semibold flex items-center gap-1 border transition-all ${
+              draftShowInDashboard
+                ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 shadow-[0_0_8px_rgba(16,185,129,0.3)]'
+                : 'bg-[#131926] text-slate-400 hover:text-slate-200 border-[#1e293b]'
+            }`}
+            title={draftShowInDashboard ? "Query is active on Live Dashboard (Click to remove)" : "Pin query to Live Dashboard"}
+          >
+            <LayoutGrid className={`w-3 h-3 ${draftShowInDashboard ? 'text-emerald-400 animate-pulse' : 'text-slate-400'}`} />
+            <span className="hidden xl:inline">{draftShowInDashboard ? 'Live on Dashboard' : 'Pin to Dashboard'}</span>
+          </button>
         </div>
 
         {/* Center: View Switcher (SQL Editor vs Live Dashboard) */}
@@ -314,16 +333,18 @@ export const CenterPanel: React.FC = () => {
           {/* Connection & Run Primary Execution Group */}
           <div className="flex items-center bg-[#131926] border border-[#1e293b] rounded-lg p-0.5 gap-1 shadow-inner">
             <select
-              value={activeProfileId || ''}
+              value={draftConnectionProfileId || activeProfileId || ''}
               onChange={(e) => {
-                if (e.target.value === '__manage__') {
+                const val = e.target.value;
+                if (val === '__manage__') {
                   setConnectionModalOpen(true);
                 } else {
-                  setActiveProfileId(e.target.value || null);
+                  setActiveProfileId(val || null);
+                  updateDraft({ connectionProfileId: val });
                 }
               }}
               className="h-7 px-2 rounded-md bg-[#0a0e17] text-[11px] font-medium text-slate-200 focus:outline-none cursor-pointer max-w-[120px] truncate border border-transparent hover:border-[#1c2538]"
-              title="Target Database Connection"
+              title="Target Connection Profile for this Query"
             >
               <option value="" disabled>No DB</option>
               {profiles.map((p) => (
@@ -333,6 +354,27 @@ export const CenterPanel: React.FC = () => {
               ))}
               <option value="__manage__">+ Manage DBs...</option>
             </select>
+
+            {/* Target Database Selector */}
+            {activeProfileId && databases.length > 0 && (
+              <select
+                value={draftDatabaseName || activeDatabase || ''}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setActiveDatabase(val);
+                  updateDraft({ databaseName: val });
+                }}
+                className="h-7 px-2 rounded-md bg-[#0a0e17] text-[11px] font-medium text-slate-200 focus:outline-none cursor-pointer max-w-[110px] truncate border border-transparent hover:border-[#1c2538]"
+                title="Target Database Name"
+              >
+                <option value="">Default DB</option>
+                {databases.map((db) => (
+                  <option key={db} value={db}>
+                    {db}
+                  </option>
+                ))}
+              </select>
+            )}
 
             {/* Primary Action Button: RUN */}
             <Button

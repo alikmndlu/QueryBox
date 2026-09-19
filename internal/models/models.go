@@ -2,17 +2,20 @@ package models
 
 // Query represents a saved SQL query record
 type Query struct {
-	ID           string   `json:"id"`
-	Title        string   `json:"title"`
-	SQLContent   string   `json:"sqlContent"`
-	Description  string   `json:"description"`
-	CollectionID *string  `json:"collectionId"`
-	Dialect      string   `json:"dialect"` // postgresql, mysql, sqlite, sqlserver
-	IsFavorite   bool     `json:"isFavorite"`
-	CreatedAt    string   `json:"createdAt"`
-	UpdatedAt    string   `json:"updatedAt"`
-	LastUsedAt   string   `json:"lastUsedAt"`
-	Tags         []string `json:"tags"`
+	ID                  string   `json:"id"`
+	Title               string   `json:"title"`
+	SQLContent          string   `json:"sqlContent"`
+	Description         string   `json:"description"`
+	CollectionID        *string  `json:"collectionId"`
+	Dialect             string   `json:"dialect"` // postgresql, mysql, sqlite, sqlserver
+	IsFavorite          bool     `json:"isFavorite"`
+	ShowInDashboard     bool     `json:"showInDashboard"`
+	ConnectionProfileID string   `json:"connectionProfileId"`
+	DatabaseName        string   `json:"databaseName"`
+	CreatedAt           string   `json:"createdAt"`
+	UpdatedAt           string   `json:"updatedAt"`
+	LastUsedAt          string   `json:"lastUsedAt"`
+	Tags                []string `json:"tags"`
 }
 
 // Collection represents a folder/category for organizing queries

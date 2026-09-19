@@ -14,6 +14,9 @@ interface QueryState {
   draftTitle: string;
   draftCollectionId: string | null;
   draftDialect: SQLDialect;
+  draftConnectionProfileId: string;
+  draftDatabaseName: string;
+  draftShowInDashboard: boolean;
   isDirty: boolean;
   isSaving: boolean;
   saveStatus: 'saved' | 'saving' | 'dirty';
@@ -34,10 +37,14 @@ interface QueryState {
     sqlContent: string;
     collectionId: string | null;
     dialect: SQLDialect;
+    connectionProfileId: string;
+    databaseName: string;
+    showInDashboard: boolean;
   }>) => void;
   createNewQuery: (initialCollectionId?: string | null, initialData?: Partial<Query>) => Promise<Query>;
   saveActiveQuery: (overrideSQL?: string) => Promise<void>;
   toggleFavorite: (id: string) => Promise<void>;
+  toggleDashboardShow: (id: string) => Promise<void>;
   duplicateQuery: (id: string) => Promise<void>;
   deleteQuery: (id: string) => Promise<void>;
   formatActiveQuery: () => void;
@@ -53,6 +60,9 @@ export const useQueryStore = create<QueryState>((set, get) => ({
   draftTitle: '',
   draftCollectionId: null,
   draftDialect: 'postgresql',
+  draftConnectionProfileId: '',
+  draftDatabaseName: '',
+  draftShowInDashboard: false,
   isDirty: false,
   isSaving: false,
   saveStatus: 'saved',
@@ -126,9 +136,23 @@ export const useQueryStore = create<QueryState>((set, get) => ({
       draftTitle: query.title || '',
       draftCollectionId: query.collectionId,
       draftDialect: query.dialect || 'postgresql',
+      draftConnectionProfileId: query.connectionProfileId || '',
+      draftDatabaseName: query.databaseName || '',
+      draftShowInDashboard: query.showInDashboard || false,
       isDirty: false,
       saveStatus: 'saved',
     });
+
+    if (query.connectionProfileId || query.databaseName) {
+      import('./useConnectionStore').then(({ useConnectionStore }) => {
+        if (query.connectionProfileId) {
+          useConnectionStore.getState().setActiveProfileId(query.connectionProfileId);
+        }
+        if (query.databaseName) {
+          useConnectionStore.getState().setActiveDatabase(query.databaseName);
+        }
+      }).catch(() => {});
+    }
 
     if (!query.isTemporary) {
       // Touch query last_used timestamp asynchronously
@@ -163,6 +187,9 @@ export const useQueryStore = create<QueryState>((set, get) => ({
       draftTitle: scratchQuery.title,
       draftCollectionId: null,
       draftDialect: scratchQuery.dialect,
+      draftConnectionProfileId: '',
+      draftDatabaseName: '',
+      draftShowInDashboard: false,
       isDirty: false,
       saveStatus: 'saved',
     }));
@@ -194,6 +221,9 @@ export const useQueryStore = create<QueryState>((set, get) => ({
       draftSQL: fields.sqlContent !== undefined ? fields.sqlContent : state.draftSQL,
       draftCollectionId: fields.collectionId !== undefined ? fields.collectionId : state.draftCollectionId,
       draftDialect: fields.dialect !== undefined ? fields.dialect : state.draftDialect,
+      draftConnectionProfileId: fields.connectionProfileId !== undefined ? fields.connectionProfileId : state.draftConnectionProfileId,
+      draftDatabaseName: fields.databaseName !== undefined ? fields.databaseName : state.draftDatabaseName,
+      draftShowInDashboard: fields.showInDashboard !== undefined ? fields.showInDashboard : state.draftShowInDashboard,
       isDirty: true,
       saveStatus: 'dirty',
     }));
@@ -216,6 +246,9 @@ export const useQueryStore = create<QueryState>((set, get) => ({
       sqlContent: defaultSQL,
       collectionId: initialCollectionId || initialData?.collectionId || null,
       dialect: defaultDialect,
+      connectionProfileId: initialData?.connectionProfileId || '',
+      databaseName: initialData?.databaseName || '',
+      showInDashboard: initialData?.showInDashboard || false,
       isFavorite: false,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
@@ -232,6 +265,9 @@ export const useQueryStore = create<QueryState>((set, get) => ({
       draftTitle: scratchQuery.title,
       draftCollectionId: scratchQuery.collectionId,
       draftDialect: scratchQuery.dialect,
+      draftConnectionProfileId: scratchQuery.connectionProfileId || '',
+      draftDatabaseName: scratchQuery.databaseName || '',
+      draftShowInDashboard: scratchQuery.showInDashboard || false,
       isDirty: true,
       saveStatus: 'dirty',
     }));
@@ -242,7 +278,16 @@ export const useQueryStore = create<QueryState>((set, get) => ({
   },
 
   saveActiveQuery: async (overrideSQL?: string) => {
-    const { activeQuery, draftTitle, draftSQL, draftCollectionId, draftDialect } = get();
+    const {
+      activeQuery,
+      draftTitle,
+      draftSQL,
+      draftCollectionId,
+      draftDialect,
+      draftConnectionProfileId,
+      draftDatabaseName,
+      draftShowInDashboard,
+    } = get();
     if (!activeQuery) return;
 
     set({ isSaving: true, saveStatus: 'saving' });
@@ -269,6 +314,9 @@ export const useQueryStore = create<QueryState>((set, get) => ({
           sqlContent: finalSQL,
           collectionId: draftCollectionId,
           dialect: draftDialect,
+          connectionProfileId: draftConnectionProfileId,
+          databaseName: draftDatabaseName,
+          showInDashboard: draftShowInDashboard,
           isFavorite: false,
         };
 
@@ -285,6 +333,9 @@ export const useQueryStore = create<QueryState>((set, get) => ({
             draftSQL: created.sqlContent,
             draftCollectionId: created.collectionId,
             draftDialect: created.dialect,
+            draftConnectionProfileId: created.connectionProfileId || '',
+            draftDatabaseName: created.databaseName || '',
+            draftShowInDashboard: created.showInDashboard || false,
             isDirty: false,
             isSaving: false,
             saveStatus: 'saved',
@@ -305,6 +356,9 @@ export const useQueryStore = create<QueryState>((set, get) => ({
           sqlContent: finalSQL,
           collectionId: draftCollectionId,
           dialect: draftDialect,
+          connectionProfileId: draftConnectionProfileId,
+          databaseName: draftDatabaseName,
+          showInDashboard: draftShowInDashboard,
         };
 
         const saved = await API.updateQuery(updated);
@@ -314,6 +368,9 @@ export const useQueryStore = create<QueryState>((set, get) => ({
           draftSQL: saved.sqlContent,
           draftCollectionId: saved.collectionId,
           draftDialect: saved.dialect,
+          draftConnectionProfileId: saved.connectionProfileId || '',
+          draftDatabaseName: saved.databaseName || '',
+          draftShowInDashboard: saved.showInDashboard || false,
           isDirty: false,
           isSaving: false,
           saveStatus: 'saved',
@@ -341,6 +398,24 @@ export const useQueryStore = create<QueryState>((set, get) => ({
     }
     await get().fetchQueries();
     useUIStore.getState().showToast(isFav ? 'Added to favorites' : 'Removed from favorites');
+  },
+
+  toggleDashboardShow: async (id) => {
+    const { queries, activeQuery, draftShowInDashboard } = get();
+    const target = queries.find((q) => q.id === id);
+    if (activeQuery?.id === id) {
+      const nextVal = !draftShowInDashboard;
+      set({ draftShowInDashboard: nextVal, isDirty: true, saveStatus: 'dirty' });
+      if (!activeQuery.isTemporary) {
+        await get().saveActiveQuery();
+      }
+      useUIStore.getState().showToast(nextVal ? 'Added to Live Dashboard' : 'Removed from Live Dashboard');
+    } else if (target) {
+      const updated: Query = { ...target, showInDashboard: !target.showInDashboard };
+      await API.updateQuery(updated);
+      await get().fetchQueries();
+      useUIStore.getState().showToast(updated.showInDashboard ? 'Added to Live Dashboard' : 'Removed from Live Dashboard');
+    }
   },
 
   duplicateQuery: async (id) => {

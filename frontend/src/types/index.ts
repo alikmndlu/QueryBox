@@ -8,6 +8,9 @@ export interface Query {
   collectionId: string | null;
   dialect: SQLDialect;
   isFavorite: boolean;
+  showInDashboard?: boolean;
+  connectionProfileId?: string;
+  databaseName?: string;
   createdAt?: string;
   updatedAt?: string;
   lastUsedAt?: string;

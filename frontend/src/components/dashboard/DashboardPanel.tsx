@@ -12,10 +12,14 @@ import {
   LogOut,
   Tv,
   Zap,
+  Bookmark,
+  Database,
 } from 'lucide-react';
 import { useDashboardStore, WidgetChartType } from '../../store/useDashboardStore';
 import { WidgetCard } from './WidgetCard';
 import { useUIStore } from '../../store/useUIStore';
+import { useQueryStore } from '../../store/useQueryStore';
+import { useConnectionStore } from '../../store/useConnectionStore';
 
 export const DashboardPanel: React.FC = () => {
   const {
@@ -27,7 +31,10 @@ export const DashboardPanel: React.FC = () => {
     isAutoRefreshActive,
   } = useDashboardStore();
 
+  const { queries, toggleDashboardShow } = useQueryStore();
+  const { profiles } = useConnectionStore();
   const { setDashboardOpen, showToast } = useUIStore();
+
   const [isAddModalOpen, setAddModalOpen] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
 
@@ -35,6 +42,28 @@ export const DashboardPanel: React.FC = () => {
   const [newSql, setNewSql] = useState('SELECT COUNT(*) AS total_count FROM users;');
   const [newChartType, setNewChartType] = useState<WidgetChartType>('kpi');
   const [newRefreshSec, setNewRefreshSec] = useState(60);
+  const [selectedProfileId, setSelectedProfileId] = useState('');
+  const [selectedDatabase, setSelectedDatabase] = useState('');
+  const [selectedSavedQueryId, setSelectedSavedQueryId] = useState('');
+
+  // Automatically sync saved queries pinned to dashboard (q.showInDashboard === true)
+  useEffect(() => {
+    const pinnedQueries = queries.filter((q) => q.showInDashboard);
+    pinnedQueries.forEach((q) => {
+      const exists = widgets.some((w) => w.savedQueryId === q.id || w.title === q.title);
+      if (!exists) {
+        addWidget({
+          title: q.title,
+          sql: q.sqlContent,
+          chartType: 'kpi',
+          refreshIntervalSec: 30,
+          profileId: q.connectionProfileId,
+          databaseName: q.databaseName,
+          savedQueryId: q.id,
+        });
+      }
+    });
+  }, [queries]);
 
   // Auto-refresh interval timer
   useEffect(() => {
@@ -68,10 +97,16 @@ export const DashboardPanel: React.FC = () => {
       sql: newSql.trim(),
       chartType: newChartType,
       refreshIntervalSec: newRefreshSec,
+      profileId: selectedProfileId || undefined,
+      databaseName: selectedDatabase || undefined,
+      savedQueryId: selectedSavedQueryId || undefined,
     });
 
     setAddModalOpen(false);
     setNewTitle('');
+    setSelectedProfileId('');
+    setSelectedDatabase('');
+    setSelectedSavedQueryId('');
     showToast('New widget added to live dashboard');
   };
 
@@ -208,7 +243,7 @@ export const DashboardPanel: React.FC = () => {
             </div>
             <span className="text-base font-bold text-slate-200">Live Dashboard is empty</span>
             <span className="text-xs text-slate-400 mt-1 max-w-md leading-relaxed">
-              Build your live TV monitor dashboard by adding custom metric cards, bar charts, line graphs, or table summaries.
+              Pin saved queries from your library to the Live Dashboard or add custom metric cards.
             </span>
             <div className="flex items-center gap-3 mt-6">
               <button
@@ -251,6 +286,34 @@ export const DashboardPanel: React.FC = () => {
             </div>
 
             <form onSubmit={handleCreateWidget} className="space-y-3">
+              {/* Import from Saved Query dropdown */}
+              {queries.length > 0 && (
+                <div>
+                  <label className="block text-[11px] font-medium text-slate-400 mb-1">Import from Saved Query Library</label>
+                  <select
+                    onChange={(e) => {
+                      const qId = e.target.value;
+                      const q = queries.find((item) => item.id === qId);
+                      if (q) {
+                        setNewTitle(q.title);
+                        setNewSql(q.sqlContent);
+                        setSelectedProfileId(q.connectionProfileId || '');
+                        setSelectedDatabase(q.databaseName || '');
+                        setSelectedSavedQueryId(q.id);
+                      }
+                    }}
+                    className="w-full bg-[#111726] border border-[#232e48] rounded-lg px-2.5 py-2 text-xs text-indigo-300 font-medium focus:outline-none"
+                  >
+                    <option value="">-- Choose a Saved Query --</option>
+                    {queries.map((q) => (
+                      <option key={q.id} value={q.id}>
+                        {q.title} ({q.dialect})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
               <div>
                 <label className="block text-[11px] font-medium text-slate-400 mb-1">Widget Title</label>
                 <input
@@ -272,6 +335,35 @@ export const DashboardPanel: React.FC = () => {
                   required
                   className="w-full bg-[#111726] border border-[#232e48] rounded-lg px-3 py-2 text-xs text-emerald-300 font-mono focus:outline-none focus:border-indigo-500"
                 />
+              </div>
+
+              {/* Connection Profile & Database Selection */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[11px] font-medium text-slate-400 mb-1">Target Connection Profile</label>
+                  <select
+                    value={selectedProfileId}
+                    onChange={(e) => setSelectedProfileId(e.target.value)}
+                    className="w-full bg-[#111726] border border-[#232e48] rounded-lg px-2.5 py-2 text-xs text-slate-200 focus:outline-none"
+                  >
+                    <option value="">(Current Active Profile)</option>
+                    {profiles.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-[11px] font-medium text-slate-400 mb-1">Target Database Name</label>
+                  <input
+                    type="text"
+                    value={selectedDatabase}
+                    onChange={(e) => setSelectedDatabase(e.target.value)}
+                    placeholder="e.g. analytics_db"
+                    className="w-full bg-[#111726] border border-[#232e48] rounded-lg px-3 py-2 text-xs text-slate-100 focus:outline-none"
+                  />
+                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
