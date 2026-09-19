@@ -30,6 +30,7 @@ import { useUIStore } from '../../store/useUIStore';
 import { ChartVisualizer } from './ChartVisualizer';
 import { ColumnProfilerModal } from './ColumnProfilerModal';
 import { CopyColumnModal } from './CopyColumnModal';
+import { CellDetailModal } from './CellDetailModal';
 import { ContextMenu, ContextMenuItem } from '../ui/ContextMenu';
 
 export const DataGridPanel: React.FC = () => {
@@ -54,6 +55,59 @@ export const DataGridPanel: React.FC = () => {
 
   const [copiedCell, setCopiedCell] = useState<string | null>(null);
   const [isResizingHeight, setIsResizingHeight] = useState<boolean>(false);
+
+  // Column Width Resizing & Cell Detail Inspector State
+  const [colWidths, setColWidths] = useState<Record<number, number>>({});
+  const [cellDetailState, setCellDetailState] = useState<{
+    isOpen: boolean;
+    columnName: string;
+    rowIndex: number;
+    value: any;
+  }>({
+    isOpen: false,
+    columnName: '',
+    rowIndex: 0,
+    value: null,
+  });
+
+  const handleColResizeMouseDown = (colIdx: number, e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+    const startX = e.clientX;
+    const initialWidth = colWidths[colIdx] || 160;
+
+    const handleMouseMove = (moveEvent: MouseEvent) => {
+      const deltaX = moveEvent.clientX - startX;
+      const newWidth = Math.max(70, Math.min(1200, initialWidth + deltaX));
+      setColWidths((prev) => ({ ...prev, [colIdx]: newWidth }));
+    };
+
+    const handleMouseUp = () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    };
+
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+  };
+
+  const handleColResizeDoubleClick = (colIdx: number, colName: string) => {
+    if (!lastResult || !processedRows) return;
+    let maxLen = colName.length;
+    processedRows.forEach((row) => {
+      if (row && row[colIdx] !== null && row[colIdx] !== undefined) {
+        const s = typeof row[colIdx] === 'object' ? JSON.stringify(row[colIdx]) : String(row[colIdx]);
+        if (s.length > maxLen) maxLen = s.length;
+      }
+    });
+    const estimatedWidth = Math.max(100, Math.min(850, maxLen * 8 + 45));
+    setColWidths((prev) => ({ ...prev, [colIdx]: estimatedWidth }));
+    showToast(`Auto-fitted width for "${colName}" (${estimatedWidth}px)`, 'info');
+  };
 
   const handleHeightResizeMouseDown = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -840,11 +894,15 @@ export const DataGridPanel: React.FC = () => {
                         return (
                           <th
                             key={idx}
+                            style={{
+                              width: colWidths[idx] ? `${colWidths[idx]}px` : undefined,
+                              minWidth: '70px',
+                            }}
                             onContextMenu={(e) => {
                               e.preventDefault();
                               setContextMenuState({ x: e.clientX, y: e.clientY, colName: col, colIdx: idx });
                             }}
-                            className={`px-3 py-2 text-[11px] font-bold border-r border-[#1b2333]/50 select-none whitespace-nowrap group/th hover:bg-[#161e31] transition-colors ${
+                            className={`px-3 py-2 text-[11px] font-bold border-r border-[#1b2333]/50 select-none whitespace-nowrap group/th hover:bg-[#161e31] transition-colors relative ${
                               isSelectedCol
                                 ? 'bg-[#182138] text-indigo-200 border-b-2 border-indigo-400'
                                 : isPinned
@@ -930,6 +988,17 @@ export const DataGridPanel: React.FC = () => {
                                 </button>
                               </div>
                             </div>
+
+                            {/* Column Drag Resizer Handle */}
+                            <div
+                              onMouseDown={(e) => handleColResizeMouseDown(idx, e)}
+                              onDoubleClick={(e) => {
+                                e.stopPropagation();
+                                handleColResizeDoubleClick(idx, col);
+                              }}
+                              className="absolute right-0 top-0 bottom-0 w-2 cursor-col-resize hover:bg-indigo-500/80 active:bg-indigo-500 group-hover/th:opacity-100 opacity-0 transition-opacity z-20"
+                              title="Drag to resize column (Double-click to auto-fit width)"
+                            />
                           </th>
                         );
                       })}
@@ -958,8 +1027,22 @@ export const DataGridPanel: React.FC = () => {
                           return (
                             <td
                               key={colIdx}
+                              style={{
+                                width: colWidths[colIdx] ? `${colWidths[colIdx]}px` : undefined,
+                                minWidth: '70px',
+                                maxWidth: colWidths[colIdx] ? `${colWidths[colIdx]}px` : '360px',
+                              }}
                               onClick={() => handleCopyCell(cell, cellKey)}
-                              className={`px-3 py-1.5 border-r whitespace-nowrap max-w-xs truncate cursor-pointer relative group transition-colors ${
+                              onDoubleClick={(e) => {
+                                e.stopPropagation();
+                                setCellDetailState({
+                                  isOpen: true,
+                                  columnName: col,
+                                  rowIndex: rowIdx,
+                                  value: cell,
+                                });
+                              }}
+                              className={`px-3 py-1.5 border-r whitespace-nowrap truncate cursor-pointer relative group transition-colors ${
                                 isSelectedCol
                                   ? 'bg-indigo-500/15 text-indigo-100 font-semibold border-x border-indigo-500/30'
                                   : isPinned
@@ -968,7 +1051,7 @@ export const DataGridPanel: React.FC = () => {
                               } ${
                                 isNull ? 'text-slate-600 italic' : 'text-slate-200'
                               }`}
-                              title={isNull ? 'NULL (Click to copy)' : `${cellStr} (Click to copy)`}
+                              title={isNull ? 'NULL (Double click to view full detail, single click to copy)' : `${cellStr} (Double click to view full detail, single click to copy)`}
                             >
                               <span>{cellStr}</span>
                               {copiedCell === cellKey && (
@@ -1065,6 +1148,15 @@ export const DataGridPanel: React.FC = () => {
         columnName={profilingCol?.name || ''}
         columnIndex={profilingCol?.index ?? -1}
         rows={lastResult?.rows || []}
+      />
+
+      {/* Full Cell Value Inspector / JSON Detail Modal */}
+      <CellDetailModal
+        isOpen={cellDetailState.isOpen}
+        onClose={() => setCellDetailState((prev) => ({ ...prev, isOpen: false }))}
+        columnName={cellDetailState.columnName}
+        rowIndex={cellDetailState.rowIndex}
+        value={cellDetailState.value}
       />
     </div>
   );
