@@ -1,9 +1,13 @@
-import React, { useRef, useEffect, useMemo } from 'react';
-import Editor, { OnMount, BeforeMount } from '@monaco-editor/react';
+import React, { useRef, useEffect, useMemo, useState } from 'react';
+import Editor, { OnMount, BeforeMount, loader } from '@monaco-editor/react';
+import * as monaco from 'monaco-editor';
 import { useSettingsStore } from '../../store/useSettingsStore';
 import { useQueryStore } from '../../store/useQueryStore';
 import { useConnectionStore } from '../../store/useConnectionStore';
 import { formatSQL } from '../../lib/formatter';
+
+// Pre-configure Monaco to load from bundled local npm package (100% offline, zero CDN calls)
+loader.config({ monaco });
 
 interface SQLEditorProps {
   value: string;
@@ -53,7 +57,6 @@ const registerMonacoThemes = (monaco: any) => {
     { token: 'delimiter.single', foreground: 'fbbf24' },
   ];
 
-  // 1. Midnight Slate (QueryBox Dark Default) - High Contrast Light Slate Text
   monaco.editor.defineTheme('querybox-dark', {
     base: 'vs-dark',
     inherit: true,
@@ -80,7 +83,6 @@ const registerMonacoThemes = (monaco: any) => {
     },
   });
 
-  // 2. One Dark Pro
   monaco.editor.defineTheme('onedark', {
     base: 'vs-dark',
     inherit: true,
@@ -105,7 +107,6 @@ const registerMonacoThemes = (monaco: any) => {
     },
   });
 
-  // 3. Dracula Neon Dark
   monaco.editor.defineTheme('dracula', {
     base: 'vs-dark',
     inherit: true,
@@ -130,7 +131,6 @@ const registerMonacoThemes = (monaco: any) => {
     },
   });
 
-  // 4. GitHub Dark Dimmed
   monaco.editor.defineTheme('github-dark', {
     base: 'vs-dark',
     inherit: true,
@@ -155,7 +155,6 @@ const registerMonacoThemes = (monaco: any) => {
     },
   });
 
-  // 5. Monokai Pro
   monaco.editor.defineTheme('monokai', {
     base: 'vs-dark',
     inherit: true,
@@ -180,7 +179,6 @@ const registerMonacoThemes = (monaco: any) => {
     },
   });
 
-  // 6. Cyberpunk Neon Glow
   monaco.editor.defineTheme('cyberpunk', {
     base: 'vs-dark',
     inherit: true,
@@ -205,7 +203,6 @@ const registerMonacoThemes = (monaco: any) => {
     },
   });
 
-  // 7. Nord Oceanic
   monaco.editor.defineTheme('nord', {
     base: 'vs-dark',
     inherit: true,
@@ -231,6 +228,55 @@ const registerMonacoThemes = (monaco: any) => {
   });
 };
 
+const NativeEditorFallback: React.FC<{
+  value: string;
+  onChange: (val: string) => void;
+  onExecute?: (selectedSQL?: string) => void;
+  onSave?: (currentVal?: string) => void;
+}> = ({ value, onChange, onExecute, onSave }) => {
+  const lineCount = (value || '').split('\n').length;
+  const lineNumbers = Array.from({ length: Math.max(lineCount, 20) }, (_, i) => i + 1);
+
+  return (
+    <div className="w-full h-full flex bg-[#080b11] text-slate-100 font-mono text-xs overflow-hidden select-text relative">
+      {/* Line Numbers Bar */}
+      <div className="w-12 py-3 bg-[#06080e] border-r border-[#1a2336] text-slate-600 text-right pr-3 select-none shrink-0 leading-relaxed font-mono">
+        {lineNumbers.map((num) => (
+          <div key={num}>{num}</div>
+        ))}
+      </div>
+      {/* Native High-Performance Textarea */}
+      <textarea
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === 'Tab') {
+            e.preventDefault();
+            const target = e.target as HTMLTextAreaElement;
+            const start = target.selectionStart;
+            const end = target.selectionEnd;
+            const newValue = value.substring(0, start) + '  ' + value.substring(end);
+            onChange(newValue);
+            setTimeout(() => {
+              target.selectionStart = target.selectionEnd = start + 2;
+            }, 0);
+          }
+          if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+            e.preventDefault();
+            if (onExecute) onExecute(value);
+          }
+          if ((e.metaKey || e.ctrlKey) && e.key === 's') {
+            e.preventDefault();
+            if (onSave) onSave(value);
+          }
+        }}
+        placeholder="-- Type your SQL query statement here..."
+        className="flex-1 w-full h-full p-3 bg-transparent text-slate-100 placeholder-slate-600 focus:outline-none resize-none font-mono text-xs leading-relaxed selection:bg-indigo-500/40"
+      />
+    </div>
+  );
+};
+
 export const SQLEditor: React.FC<SQLEditorProps> = ({
   value,
   onChange,
@@ -245,10 +291,23 @@ export const SQLEditor: React.FC<SQLEditorProps> = ({
   const selectionRafRef = useRef<number | null>(null);
   const isProgrammaticUpdateRef = useRef<boolean>(false);
 
+  const [isMonacoMounted, setIsMonacoMounted] = useState(false);
+  const [useFallback, setUseFallback] = useState(false);
+
   const settings = useSettingsStore((state) => state.settings);
   const draftDialect = useQueryStore((state) => state.draftDialect);
   const formatActiveQuery = useQueryStore((state) => state.formatActiveQuery);
   const schemaTables = useConnectionStore((state) => state.schemaTables);
+
+  // Safety fallback timer if Monaco takes > 1.5s to initialize
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (!editorRef.current) {
+        setUseFallback(true);
+      }
+    }, 1500);
+    return () => clearTimeout(timer);
+  }, []);
 
   const cachedCompletions = useMemo(() => {
     const tableItems: any[] = [];
@@ -297,16 +356,24 @@ export const SQLEditor: React.FC<SQLEditorProps> = ({
   const handleEditorDidMount: OnMount = (editor, monaco) => {
     editorRef.current = editor;
     monacoRef.current = monaco;
+    setIsMonacoMounted(true);
 
     registerMonacoThemes(monaco);
+    editor.layout();
 
     if (typeof document !== 'undefined' && (document as any).fonts) {
       (document as any).fonts.ready.then(() => {
         monaco.editor.remeasureFonts();
       });
     }
-    setTimeout(() => monaco.editor.remeasureFonts(), 150);
-    setTimeout(() => monaco.editor.remeasureFonts(), 600);
+    setTimeout(() => {
+      monaco.editor.remeasureFonts();
+      editor.layout();
+    }, 100);
+    setTimeout(() => {
+      monaco.editor.remeasureFonts();
+      editor.layout();
+    }, 400);
 
     const getThemeName = (key?: string) => {
       if (!key || key === 'dark' || key === 'system') return 'querybox-dark';
@@ -504,6 +571,17 @@ export const SQLEditor: React.FC<SQLEditorProps> = ({
     }
   }, [value]);
 
+  if (useFallback) {
+    return (
+      <NativeEditorFallback
+        value={value}
+        onChange={onChange}
+        onExecute={onExecute}
+        onSave={onSave}
+      />
+    );
+  }
+
   return (
     <div ref={containerRef} className="w-full h-full relative overflow-hidden bg-[#080b11]">
       <Editor
@@ -527,7 +605,7 @@ export const SQLEditor: React.FC<SQLEditorProps> = ({
           minimap: { enabled: settings.showMinimap },
           lineNumbers: settings.lineNumbers === 'on' ? 'on' : 'off',
           scrollBeyondLastLine: false,
-          automaticLayout: false,
+          automaticLayout: true,
           cursorBlinking: 'smooth',
           cursorSmoothCaretAnimation: 'on',
           renderLineHighlight: 'all',

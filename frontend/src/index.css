@@ -98,3 +98,47 @@
   transform: translateY(-1px);
 }
 
+/* Ultra-Modern Apple & Cyberpunk Keyframe Animations */
+@keyframes shimmerScan {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(200%); }
+}
+
+@keyframes reverseSpin {
+  0% { transform: rotate(360deg); }
+  100% { transform: rotate(0deg); }
+}
+
+@keyframes floatPulse {
+  0%, 100% { transform: translateY(0px) scale(1); opacity: 0.8; }
+  50% { transform: translateY(-12px) scale(1.05); opacity: 1; }
+}
+
+@keyframes glassShine {
+  0% { opacity: 0.2; transform: rotate(25deg) translateY(-100%); }
+  50% { opacity: 0.6; }
+  100% { opacity: 0.2; transform: rotate(25deg) translateY(200%); }
+}
+
+@keyframes laserPulse {
+  0%, 100% { opacity: 0.3; filter: drop-shadow(0 0 4px rgba(99, 102, 241, 0.6)); }
+  50% { opacity: 1; filter: drop-shadow(0 0 16px rgba(56, 189, 248, 0.95)); }
+}
+
+.animate-shimmer-scan {
+  animation: shimmerScan 3.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.animate-reverse-spin {
+  animation: reverseSpin 9s linear infinite;
+}
+
+.animate-float-pulse {
+  animation: floatPulse 5s ease-in-out infinite;
+}
+
+.animate-laser-pulse {
+  animation: laserPulse 2.5s ease-in-out infinite;
+}
+
+

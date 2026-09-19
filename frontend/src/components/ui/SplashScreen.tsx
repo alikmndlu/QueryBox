@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { QueryBoxLogo } from './QueryBoxLogo';
-import { Sparkles, ShieldCheck, Database, Cpu, Zap, Lock, Gauge } from 'lucide-react';
+import { Sparkles, ShieldCheck, Database, Cpu, Zap, Lock, Gauge, CheckCircle2, HardDrive, Terminal } from 'lucide-react';
 
 interface SplashScreenProps {
   onComplete?: () => void;
@@ -12,6 +12,7 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({ onComplete }) => {
   const [typedText, setTypedText] = useState('');
   const [progress, setProgress] = useState(0);
   const [statusText, setStatusText] = useState('Initializing Go Native Engine...');
+  const [activeStep, setActiveStep] = useState(0);
   const [isFadingOut, setIsFadingOut] = useState(false);
   const [isVisible, setIsVisible] = useState(true);
 
@@ -25,7 +26,7 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({ onComplete }) => {
       } else {
         clearInterval(typingInterval);
       }
-    }, 45);
+    }, 40);
 
     return () => clearInterval(typingInterval);
   }, []);
@@ -33,33 +34,37 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({ onComplete }) => {
   // Boot telemetry and progress step timing
   useEffect(() => {
     const t1 = setTimeout(() => {
-      setProgress(25);
-      setStatusText('Initializing Go Native Engine...');
-    }, 250);
+      setProgress(28);
+      setActiveStep(1);
+      setStatusText('Initializing Go Native Engine & SQLite Kernel...');
+    }, 300);
 
     const t2 = setTimeout(() => {
-      setProgress(55);
-      setStatusText('Loading Encrypted Local SQLite Storage...');
-    }, 1000);
+      setProgress(58);
+      setActiveStep(2);
+      setStatusText('Loading Encrypted Storage & Schema Cache...');
+    }, 1100);
 
     const t3 = setTimeout(() => {
-      setProgress(85);
-      setStatusText('Mounting Monaco SQL Compiler & Visualizer...');
-    }, 2000);
+      setProgress(88);
+      setActiveStep(3);
+      setStatusText('Mounting Offline Monaco SQL Engine...');
+    }, 2200);
 
     const t4 = setTimeout(() => {
       setProgress(100);
+      setActiveStep(4);
       setStatusText('System Ready. Welcome to QueryBox.');
-    }, 3000);
+    }, 3200);
 
     const t5 = setTimeout(() => {
       setIsFadingOut(true);
-    }, 3800);
+    }, 4200);
 
     const t6 = setTimeout(() => {
       setIsVisible(false);
       onComplete?.();
-    }, 4500);
+    }, 4900);
 
     return () => {
       clearTimeout(t1);
@@ -75,64 +80,92 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({ onComplete }) => {
 
   return (
     <div
-      className={`fixed inset-0 z-[99999] flex flex-col items-center justify-center bg-[#04060d] select-none transition-all duration-700 ease-out ${
-        isFadingOut ? 'opacity-0 scale-105 pointer-events-none' : 'opacity-100 scale-100'
+      className={`fixed inset-0 z-[99999] flex flex-col items-center justify-center bg-[#03050a] select-none transition-all duration-700 ease-in-out ${
+        isFadingOut ? 'opacity-0 scale-105 blur-sm pointer-events-none' : 'opacity-100 scale-100'
       }`}
     >
-      {/* High-Tech Holographic Ambient Background Energy Fields */}
-      <div className="absolute w-[650px] h-[650px] rounded-full bg-gradient-to-tr from-indigo-600/30 via-sky-500/20 to-purple-600/30 blur-[160px] pointer-events-none animate-pulse" />
-      <div className="absolute w-[400px] h-[400px] rounded-full bg-emerald-500/15 blur-[120px] pointer-events-none" />
+      {/* High-Tech Holographic Ambient Background Energy Orbs */}
+      <div className="absolute w-[700px] h-[700px] rounded-full bg-gradient-to-tr from-indigo-600/35 via-sky-500/25 to-purple-600/35 blur-[170px] pointer-events-none animate-float-pulse" />
+      <div className="absolute w-[450px] h-[450px] rounded-full bg-emerald-500/20 blur-[130px] pointer-events-none animate-pulse" />
 
       {/* Main Apple-Style Glassmorphic Floating Hologram Card */}
-      <div className="relative flex flex-col items-center justify-center p-9 rounded-3xl bg-[#090d18]/90 border border-[#1e2b4a] backdrop-blur-3xl shadow-[0_0_90px_rgba(99,102,241,0.3)] max-w-md w-full mx-4 text-center animate-in fade-in zoom-in-95 duration-500 overflow-hidden">
+      <div className="relative flex flex-col items-center justify-center p-9 rounded-3xl bg-[#080c18]/95 border border-[#1e2d4f] backdrop-blur-3xl shadow-[0_0_100px_rgba(99,102,241,0.35)] max-w-md w-full mx-4 text-center animate-in fade-in zoom-in-95 duration-500 overflow-hidden">
         
-        {/* Apple Glass Highlight Top Specular Reflective Line */}
-        <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-indigo-400/40 to-transparent" />
+        {/* Laser Shimmer Scanline Moving Horizontal Sweep */}
+        <div className="absolute inset-y-0 w-32 bg-gradient-to-r from-transparent via-sky-400/10 to-transparent animate-shimmer-scan pointer-events-none" />
 
-        {/* Orbiting Neon Pulse Ring surrounding 3D Logo */}
+        {/* Apple Glass Highlight Top Specular Reflective Line */}
+        <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-indigo-400/60 to-transparent" />
+
+        {/* Orbiting Neon Pulse Rings surrounding 3D Logo */}
         <div className="relative mb-7 flex items-center justify-center group">
-          {/* Rotating Gradient Orbit Ring */}
-          <div className="absolute -inset-4 rounded-full border-2 border-transparent border-t-indigo-500 border-r-sky-400 border-b-emerald-400 animate-[spin_7s_linear_infinite] opacity-75 blur-[1px]" />
-          <div className="absolute inset-0 rounded-full bg-indigo-500/30 blur-2xl group-hover:bg-indigo-500/50 transition-all duration-500 animate-pulse" />
+          {/* Outer Clockwise Rotating Gradient Orbit Ring */}
+          <div className="absolute -inset-6 rounded-full border-2 border-transparent border-t-indigo-500 border-r-sky-400 border-b-emerald-400 animate-[spin_6s_linear_infinite] opacity-80 blur-[1px]" />
+          
+          {/* Inner Counter-Clockwise Rotating Orbit Ring */}
+          <div className="absolute -inset-3 rounded-full border border-transparent border-l-purple-500 border-t-pink-400 animate-reverse-spin opacity-60" />
+
+          {/* Core Pulsing Glow */}
+          <div className="absolute inset-0 rounded-full bg-indigo-500/35 blur-2xl group-hover:bg-indigo-500/60 transition-all duration-500 animate-pulse" />
           
           <QueryBoxLogo
-            size={76}
+            size={80}
             showText={false}
-            className="relative z-10 drop-shadow-[0_14px_35px_rgba(99,102,241,0.65)] transition-transform duration-500 hover:scale-110"
+            className="relative z-10 drop-shadow-[0_16px_40px_rgba(99,102,241,0.75)] transition-transform duration-500 hover:scale-110"
           />
         </div>
 
         {/* Shimmering Metallic Brand Header */}
-        <div className="space-y-1 mb-5">
-          <h1 className="text-3xl font-extrabold tracking-tight text-white flex items-center justify-center gap-1.5 font-sans">
+        <div className="space-y-1.5 mb-5">
+          <h1 className="text-3.5xl font-extrabold tracking-tight text-white flex items-center justify-center gap-1.5 font-sans">
             <span>Query</span>
-            <span className="bg-gradient-to-r from-indigo-400 via-sky-300 to-teal-300 bg-clip-text text-transparent">Box</span>
+            <span className="bg-gradient-to-r from-indigo-400 via-sky-300 to-teal-300 bg-clip-text text-transparent drop-shadow-sm">Box</span>
           </h1>
           <div className="flex items-center justify-center gap-2">
             <span className="text-[10px] font-mono tracking-widest text-slate-400 uppercase font-bold">
-              SQL Workbench • Pro Edition
+              SQL WORKBENCH • PRO EDITION
             </span>
-            <span className="text-[9px] font-mono px-1.5 py-0.2 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-bold uppercase">
-              v1.4.0
+            <span className="text-[9px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/35 font-bold uppercase tracking-wider animate-laser-pulse">
+              v1.5.0
             </span>
           </div>
         </div>
 
         {/* Catchy Typewriter Tagline Block */}
-        <div className="w-full bg-[#070a14]/90 border border-[#1d2844] rounded-2xl p-4 mb-6 text-center shadow-inner relative overflow-hidden group">
-          <div className="text-xs font-semibold text-slate-200 tracking-wide min-h-[36px] flex items-center justify-center leading-relaxed">
+        <div className="w-full bg-[#060913]/90 border border-[#1b2642] rounded-2xl p-4 mb-6 text-center shadow-inner relative overflow-hidden group">
+          <div className="text-xs font-semibold text-slate-200 tracking-wide min-h-[38px] flex items-center justify-center leading-relaxed">
             <span className="bg-gradient-to-r from-slate-100 via-sky-200 to-indigo-200 bg-clip-text text-transparent font-sans">
               {typedText}
             </span>
-            <span className="inline-block w-2 h-4 bg-indigo-400 ml-1.5 animate-pulse rounded-sm" />
+            <span className="inline-block w-2 h-4 bg-indigo-400 ml-1.5 animate-pulse rounded-sm shadow-[0_0_8px_#818cf8]" />
+          </div>
+        </div>
+
+        {/* Step-by-Step Hardware Capability Badges */}
+        <div className="grid grid-cols-4 gap-1.5 w-full mb-5">
+          <div className={`p-2 rounded-xl border flex flex-col items-center justify-center transition-all duration-300 ${activeStep >= 1 ? 'bg-indigo-500/15 border-indigo-500/40 text-indigo-300 shadow-[0_0_12px_rgba(99,102,241,0.2)]' : 'bg-[#090d18] border-[#151f36] text-slate-600'}`}>
+            <Cpu className="w-3.5 h-3.5 mb-1" />
+            <span className="text-[9px] font-mono font-bold">Go Core</span>
+          </div>
+          <div className={`p-2 rounded-xl border flex flex-col items-center justify-center transition-all duration-300 ${activeStep >= 2 ? 'bg-sky-500/15 border-sky-500/40 text-sky-300 shadow-[0_0_12px_rgba(56,189,248,0.2)]' : 'bg-[#090d18] border-[#151f36] text-slate-600'}`}>
+            <HardDrive className="w-3.5 h-3.5 mb-1" />
+            <span className="text-[9px] font-mono font-bold">SQLite</span>
+          </div>
+          <div className={`p-2 rounded-xl border flex flex-col items-center justify-center transition-all duration-300 ${activeStep >= 3 ? 'bg-purple-500/15 border-purple-500/40 text-purple-300 shadow-[0_0_12px_rgba(168,85,247,0.2)]' : 'bg-[#090d18] border-[#151f36] text-slate-600'}`}>
+            <Terminal className="w-3.5 h-3.5 mb-1" />
+            <span className="text-[9px] font-mono font-bold">Monaco</span>
+          </div>
+          <div className={`p-2 rounded-xl border flex flex-col items-center justify-center transition-all duration-300 ${activeStep >= 4 ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-300 shadow-[0_0_12px_rgba(16,185,129,0.2)]' : 'bg-[#090d18] border-[#151f36] text-slate-600'}`}>
+            <Zap className="w-3.5 h-3.5 mb-1" />
+            <span className="text-[9px] font-mono font-bold">0ms Latency</span>
           </div>
         </div>
 
         {/* Apple-Style Minimalist Progress Bar Track */}
-        <div className="w-full h-1.5 rounded-full bg-[#111726] border border-[#1f2b48] overflow-hidden mb-3.5 p-0.5">
+        <div className="w-full h-1.5 rounded-full bg-[#0d1322] border border-[#1b2742] overflow-hidden mb-3.5 p-0.5">
           <div
             style={{ width: `${progress}%` }}
-            className="h-full rounded-full bg-gradient-to-r from-indigo-500 via-sky-400 to-emerald-400 transition-all duration-700 ease-out shadow-[0_0_15px_rgba(56,189,248,0.8)]"
+            className="h-full rounded-full bg-gradient-to-r from-indigo-500 via-sky-400 to-emerald-400 transition-all duration-700 ease-out shadow-[0_0_18px_rgba(56,189,248,0.95)]"
           />
         </div>
 
@@ -143,22 +176,22 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({ onComplete }) => {
           ) : progress < 60 ? (
             <Database className="w-3.5 h-3.5 text-sky-400 animate-pulse" />
           ) : progress < 95 ? (
-            <Zap className="w-3.5 h-3.5 text-amber-400 animate-bounce" />
+            <Terminal className="w-3.5 h-3.5 text-purple-400 animate-bounce" />
           ) : (
-            <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 animate-pulse" />
           )}
           <span className="truncate max-w-[260px] text-slate-300 font-medium">{statusText}</span>
         </div>
 
         {/* Footer Hardware & Security Badges */}
-        <div className="mt-5 pt-3 border-t border-[#17223c]/80 w-full flex items-center justify-between text-[10px] font-mono text-slate-500">
-          <span className="flex items-center gap-1">
+        <div className="mt-5 pt-3.5 border-t border-[#16213b]/80 w-full flex items-center justify-between text-[10px] font-mono text-slate-500">
+          <span className="flex items-center gap-1.5">
             <Lock className="w-3 h-3 text-indigo-400" />
-            <span>100% Local Privacy</span>
+            <span className="text-slate-400 font-medium">100% Local Offline Privacy</span>
           </span>
-          <span className="flex items-center gap-1 text-slate-400 font-semibold">
+          <span className="flex items-center gap-1.5 text-slate-400 font-semibold">
             <Gauge className="w-3 h-3 text-emerald-400" />
-            <span>Go Engine</span>
+            <span className="text-emerald-300">Wails + Go Engine</span>
           </span>
         </div>
 
