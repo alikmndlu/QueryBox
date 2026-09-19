@@ -26,6 +26,9 @@ import {
 import { useConnectionStore } from '../../store/useConnectionStore';
 import { useQueryStore } from '../../store/useQueryStore';
 import { useUIStore } from '../../store/useUIStore';
+import { useDashboardStore } from '../../store/useDashboardStore';
+import { useAIStore } from '../../store/useAIStore';
+import { Sparkles } from 'lucide-react';
 import { ChartVisualizer } from './ChartVisualizer';
 import { ColumnProfilerModal } from './ColumnProfilerModal';
 import { CopyColumnModal } from './CopyColumnModal';
@@ -531,6 +534,26 @@ export const DataGridPanel: React.FC = () => {
               >
                 <Quote className="w-3 h-3 text-indigo-400" />
                 <span className="hidden md:inline">Copy Column</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  const activeQuery = useQueryStore.getState().activeQuery;
+                  const title = activeQuery?.title || 'Query Widget';
+                  const sql = activeQuery?.sqlContent || 'SELECT * FROM table;';
+                  useDashboardStore.getState().addWidget({
+                    title,
+                    sql,
+                    chartType: 'kpi',
+                    refreshIntervalSec: 10,
+                  });
+                  showToast('کوئری به عنوان ویجت زنده به داشبورد افزوده شد!');
+                }}
+                className="flex items-center gap-1 h-6 px-2 text-[11px] text-emerald-300 hover:text-white bg-emerald-600/20 hover:bg-emerald-600/30 rounded border border-emerald-500/30 transition-colors"
+                title="Pin current query result to Live KPI Dashboard"
+              >
+                <BarChart2 className="w-3 h-3 text-emerald-400" />
+                <span className="hidden lg:inline">Pin to Dashboard</span>
               </button>
 
 

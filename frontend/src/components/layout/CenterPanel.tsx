@@ -14,17 +14,24 @@ import {
   Code2,
   Timer,
   Folder,
+  BarChart3,
+  Users,
+  LayoutGrid,
 } from 'lucide-react';
 import { useQueryStore } from '../../store/useQueryStore';
 import { useCollectionStore } from '../../store/useCollectionStore';
 import { useConnectionStore } from '../../store/useConnectionStore';
 import { useUIStore } from '../../store/useUIStore';
 import { useTabStore } from '../../store/useTabStore';
+import { useAIStore } from '../../store/useAIStore';
 import { SQLEditor } from '../editor/SQLEditor';
 import { TabBar } from './TabBar';
 import { ParameterBar } from '../editor/ParameterBar';
 import { SnippetMenu } from '../editor/SnippetMenu';
 import { DataGridPanel } from '../datagrid/DataGridPanel';
+import { AICopilotDrawer } from '../ai/AICopilotDrawer';
+import { DashboardPanel } from '../dashboard/DashboardPanel';
+import { SharedWorkspaceModal } from '../team/SharedWorkspaceModal';
 import { ErrorBoundary } from '../ui/ErrorBoundary';
 import { substituteParameters } from '../../lib/paramExtractor';
 import { checkQueryMutation, QueryMutationCheck } from '../../lib/queryClassifier';
@@ -83,7 +90,13 @@ export const CenterPanel: React.FC = () => {
     toggleLeftSidebar,
     showToast,
     setCopyAsCodeModalOpen,
+    dashboardOpen,
+    setDashboardOpen,
+    teamWorkspaceModalOpen,
+    setTeamWorkspaceModalOpen,
   } = useUIStore();
+
+  const { toggleOpen: toggleAICopilotOpen } = useAIStore();
 
   const { tabIds } = useTabStore();
 
@@ -282,6 +295,46 @@ export const CenterPanel: React.FC = () => {
 
         {/* Right: Actions Group */}
         <div className="flex items-center gap-1.5 shrink-0">
+          {/* AI Copilot Button */}
+          <Button
+            onClick={toggleAICopilotOpen}
+            variant="ghost"
+            size="sm"
+            className="h-7 text-xs px-2 text-indigo-300 bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/30 gap-1 font-medium shadow-sm"
+            title="Open QueryBox AI Copilot (Text-to-SQL & Query Optimizer)"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-indigo-400 animate-pulse" />
+            <span className="hidden lg:inline">AI Copilot</span>
+          </Button>
+
+          {/* Live KPI Dashboard Button */}
+          <Button
+            onClick={() => setDashboardOpen(!dashboardOpen)}
+            variant="ghost"
+            size="sm"
+            className={`h-7 text-xs px-2 border gap-1 font-medium transition-colors ${
+              dashboardOpen
+                ? 'bg-emerald-600/20 text-emerald-300 border-emerald-500/40'
+                : 'text-slate-300 bg-[#131926] hover:bg-[#182133] border-[#1c2538]'
+            }`}
+            title="Toggle Live KPI Dashboard View"
+          >
+            <BarChart3 className="w-3.5 h-3.5 text-emerald-400" />
+            <span className="hidden lg:inline">Dashboard</span>
+          </Button>
+
+          {/* Team Workspaces Button */}
+          <Button
+            onClick={() => setTeamWorkspaceModalOpen(true)}
+            variant="ghost"
+            size="sm"
+            className="h-7 text-xs px-2 text-slate-300 bg-[#131926] hover:bg-[#182133] border border-[#1c2538] gap-1"
+            title="Shared Team Workspaces & Query Bundles"
+          >
+            <Users className="w-3.5 h-3.5 text-sky-400" />
+            <span className="hidden xl:inline">Team</span>
+          </Button>
+
           {/* Format SQL */}
           <Button
             onClick={formatActiveQuery}
@@ -458,32 +511,47 @@ export const CenterPanel: React.FC = () => {
         onClearParams={() => setParamValues({})}
       />
 
-      {/* Editor Main Content */}
+      {/* Editor or Dashboard Main Content */}
       <div className="flex-1 relative overflow-hidden bg-[#090d16]">
-        <SQLEditor
-          value={draftSQL}
-          onChange={handleSQLEditorChange}
-          onSelectionChange={setSelectedSQL}
-          onSave={(currentVal) => {
-            if (draftDebounceRef.current) clearTimeout(draftDebounceRef.current);
-            if (currentVal !== undefined) updateDraft({ sqlContent: currentVal });
-            saveActiveQuery(currentVal);
-          }}
-          onFormat={formatActiveQuery}
-          onExecute={(overrideSQL) => {
-            if (draftDebounceRef.current) clearTimeout(draftDebounceRef.current);
-            if (overrideSQL !== undefined && !selectedSQL.trim()) {
-              updateDraft({ sqlContent: overrideSQL });
-            }
-            handleExecute(overrideSQL);
-          }}
-        />
+        {dashboardOpen ? (
+          <DashboardPanel />
+        ) : (
+          <SQLEditor
+            value={draftSQL}
+            onChange={handleSQLEditorChange}
+            onSelectionChange={setSelectedSQL}
+            onSave={(currentVal) => {
+              if (draftDebounceRef.current) clearTimeout(draftDebounceRef.current);
+              if (currentVal !== undefined) updateDraft({ sqlContent: currentVal });
+              saveActiveQuery(currentVal);
+            }}
+            onFormat={formatActiveQuery}
+            onExecute={(overrideSQL) => {
+              if (draftDebounceRef.current) clearTimeout(draftDebounceRef.current);
+              if (overrideSQL !== undefined && !selectedSQL.trim()) {
+                updateDraft({ sqlContent: overrideSQL });
+              }
+              handleExecute(overrideSQL);
+            }}
+          />
+        )}
       </div>
 
       {/* Data Grid Results & Explain Panel */}
-      <ErrorBoundary fallbackTitle="Results Grid encountered an error">
-        <DataGridPanel />
-      </ErrorBoundary>
+      {!dashboardOpen && (
+        <ErrorBoundary fallbackTitle="Results Grid encountered an error">
+          <DataGridPanel />
+        </ErrorBoundary>
+      )}
+
+      {/* QueryBox AI Copilot Drawer */}
+      <AICopilotDrawer />
+
+      {/* Shared Team Workspace Modal */}
+      <SharedWorkspaceModal
+        isOpen={teamWorkspaceModalOpen}
+        onClose={() => setTeamWorkspaceModalOpen(false)}
+      />
 
       {/* Bottom Status Bar */}
       <div className="h-6.5 px-4 bg-[#0c101a] border-t border-[#1b2333] flex items-center justify-between text-[11px] font-mono text-slate-400 select-none shrink-0">

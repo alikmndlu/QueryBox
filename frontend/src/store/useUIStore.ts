@@ -23,6 +23,8 @@ interface UIState {
   updateModalOpen: boolean;
   erdModalOpen: boolean;
   erdDatabaseName: string | null;
+  dashboardOpen: boolean;
+  teamWorkspaceModalOpen: boolean;
   sidebarTab: 'queries' | 'schema';
   toasts: ToastNotice[];
   toggleLeftSidebar: () => void;
@@ -40,6 +42,8 @@ interface UIState {
   setShortcutsModalOpen: (open: boolean) => void;
   setUpdateModalOpen: (open: boolean) => void;
   setErdModalOpen: (open: boolean, dbName?: string | null) => void;
+  setDashboardOpen: (open: boolean) => void;
+  setTeamWorkspaceModalOpen: (open: boolean) => void;
   showToast: (message: string, type?: 'success' | 'info' | 'error') => void;
   removeToast: (id: string) => void;
 }
@@ -74,6 +78,8 @@ export const useUIStore = create<UIState>((set, get) => ({
   updateModalOpen: false,
   erdModalOpen: false,
   erdDatabaseName: null,
+  dashboardOpen: false,
+  teamWorkspaceModalOpen: false,
   toasts: [],
 
   toggleLeftSidebar: () => set((state) => ({ leftSidebarOpen: !state.leftSidebarOpen })),
@@ -110,6 +116,8 @@ export const useUIStore = create<UIState>((set, get) => ({
   setShortcutsModalOpen: (open) => set({ shortcutsModalOpen: open }),
   setUpdateModalOpen: (open) => set({ updateModalOpen: open }),
   setErdModalOpen: (open, dbName = null) => set({ erdModalOpen: open, erdDatabaseName: dbName }),
+  setDashboardOpen: (open) => set({ dashboardOpen: open }),
+  setTeamWorkspaceModalOpen: (open) => set({ teamWorkspaceModalOpen: open }),
 
   showToast: (message, type = 'success') => {
     const id = Math.random().toString(36).substring(2, 9);
