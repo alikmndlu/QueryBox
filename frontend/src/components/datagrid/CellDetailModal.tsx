@@ -37,6 +37,18 @@ export const CellDetailModal: React.FC<CellDetailModalProps> = ({
   const [isPrettified, setIsPrettified] = useState(true);
   const [wordWrap, setWordWrap] = useState(true);
 
+  React.useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
+
   const isNull = value === null || value === undefined;
 
   // Determine value type and attempt JSON parsing

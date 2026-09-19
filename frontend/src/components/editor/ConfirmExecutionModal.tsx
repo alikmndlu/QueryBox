@@ -32,6 +32,18 @@ export const ConfirmExecutionModal: React.FC<ConfirmExecutionModalProps> = ({
   connectionName,
   databaseName,
 }) => {
+  React.useEffect(() => {
+    if (!open) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [open, onClose]);
+
   if (!mutationCheck) return null;
 
   const isDanger = mutationCheck.severity === 'danger' || !mutationCheck.hasWhereClause;

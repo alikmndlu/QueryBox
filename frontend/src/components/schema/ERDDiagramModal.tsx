@@ -58,6 +58,19 @@ export const ERDDiagramModal: React.FC = () => {
     }
   }, [erdModalOpen, targetDb]);
 
+  // Escape key handler to close ERD modal
+  useEffect(() => {
+    if (!erdModalOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        setErdModalOpen(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [erdModalOpen, setErdModalOpen]);
+
   // Compute relationships between tables
   const relationships = useMemo(() => {
     const rels: Relationship[] = [];

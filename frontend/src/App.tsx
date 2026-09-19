@@ -112,6 +112,68 @@ export const App: React.FC = () => {
         e.preventDefault();
         setShortcutsModalOpen(true);
       }
+
+      // Global Escape Key Modal Handler
+      if (e.key === 'Escape') {
+        const uiState = useUIStore.getState();
+        const connState = useConnectionStore.getState();
+
+        if (uiState.commandPaletteOpen) {
+          e.preventDefault();
+          uiState.setCommandPaletteOpen(false);
+          return;
+        }
+        if (connState.connectionModalOpen) {
+          e.preventDefault();
+          connState.setConnectionModalOpen(false);
+          return;
+        }
+        if (uiState.erdModalOpen) {
+          e.preventDefault();
+          uiState.setErdModalOpen(false);
+          return;
+        }
+        if (uiState.settingsModalOpen) {
+          e.preventDefault();
+          uiState.setSettingsModalOpen(false);
+          return;
+        }
+        if (uiState.importExportModalOpen) {
+          e.preventDefault();
+          uiState.setImportExportModalOpen(false);
+          return;
+        }
+        if (uiState.copyAsCodeModalOpen) {
+          e.preventDefault();
+          uiState.setCopyAsCodeModalOpen(false);
+          return;
+        }
+        if (uiState.teamWorkspaceModalOpen) {
+          e.preventDefault();
+          uiState.setTeamWorkspaceModalOpen(false);
+          return;
+        }
+        if (uiState.diffModalOpen) {
+          e.preventDefault();
+          uiState.setDiffModalOpen(false);
+          return;
+        }
+        if (uiState.gitSyncModalOpen) {
+          e.preventDefault();
+          uiState.setGitSyncModalOpen(false);
+          return;
+        }
+        if (uiState.shortcutsModalOpen) {
+          e.preventDefault();
+          uiState.setShortcutsModalOpen(false);
+          return;
+        }
+        if (uiState.updateModalOpen) {
+          e.preventDefault();
+          uiState.setUpdateModalOpen(false);
+          return;
+        }
+      }
     };
 
     window.addEventListener('keydown', handleGlobalKeyDown);

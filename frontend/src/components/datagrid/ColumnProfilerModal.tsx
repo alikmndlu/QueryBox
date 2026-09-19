@@ -17,6 +17,17 @@ export const ColumnProfilerModal: React.FC<ColumnProfilerModalProps> = ({
   columnIndex,
   rows,
 }) => {
+  React.useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
   const stats = useMemo(() => {
     if (!rows || rows.length === 0 || columnIndex < 0) {
       return null;

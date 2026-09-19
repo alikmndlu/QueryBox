@@ -27,6 +27,18 @@ export const WidgetCard: React.FC<WidgetCardProps> = ({ widget }) => {
   const [chartType, setChartType] = useState<WidgetChartType>(widget.chartType);
   const [refreshIntervalSec, setRefreshIntervalSec] = useState(widget.refreshIntervalSec);
 
+  React.useEffect(() => {
+    if (!isEditing) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        setIsEditing(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isEditing]);
+
   const columns = widget.lastResult?.columns || [];
   const rows = widget.lastResult?.rows || [];
   const rowCount = widget.lastResult?.rowCount ?? rows.length;

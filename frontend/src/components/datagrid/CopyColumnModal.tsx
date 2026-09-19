@@ -44,6 +44,18 @@ export const CopyColumnModal: React.FC<CopyColumnModalProps> = ({
   const [trimValues, setTrimValues] = useState<boolean>(true);
   const [copied, setCopied] = useState<boolean>(false);
 
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
+
   // Sync default column index when modal opens
   useEffect(() => {
     if (isOpen) {
