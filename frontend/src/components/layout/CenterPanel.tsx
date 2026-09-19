@@ -93,6 +93,18 @@ export const CenterPanel: React.FC = () => {
   const [paramValues, setParamValues] = useState<Record<string, string>>({});
   const [selectedSQL, setSelectedSQL] = useState('');
 
+  // Debounce draft updates while typing in Monaco to eliminate React re-render typing lag
+  const draftDebounceRef = React.useRef<any>(null);
+
+  const handleSQLEditorChange = (val: string) => {
+    if (draftDebounceRef.current) {
+      clearTimeout(draftDebounceRef.current);
+    }
+    draftDebounceRef.current = setTimeout(() => {
+      updateDraft({ sqlContent: val });
+    }, 180);
+  };
+
   // Execution Confirmation Guard State
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [pendingSQL, setPendingSQL] = useState('');
@@ -450,11 +462,21 @@ export const CenterPanel: React.FC = () => {
       <div className="flex-1 relative overflow-hidden bg-[#090d16]">
         <SQLEditor
           value={draftSQL}
-          onChange={(val) => updateDraft({ sqlContent: val })}
+          onChange={handleSQLEditorChange}
           onSelectionChange={setSelectedSQL}
-          onSave={(currentVal) => saveActiveQuery(currentVal)}
+          onSave={(currentVal) => {
+            if (draftDebounceRef.current) clearTimeout(draftDebounceRef.current);
+            if (currentVal !== undefined) updateDraft({ sqlContent: currentVal });
+            saveActiveQuery(currentVal);
+          }}
           onFormat={formatActiveQuery}
-          onExecute={handleExecute}
+          onExecute={(overrideSQL) => {
+            if (draftDebounceRef.current) clearTimeout(draftDebounceRef.current);
+            if (overrideSQL !== undefined && !selectedSQL.trim()) {
+              updateDraft({ sqlContent: overrideSQL });
+            }
+            handleExecute(overrideSQL);
+          }}
         />
       </div>
 

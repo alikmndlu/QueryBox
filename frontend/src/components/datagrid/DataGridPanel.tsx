@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   X,
   Copy,
@@ -257,6 +257,26 @@ export const DataGridPanel: React.FC = () => {
 
     return rows;
   }, [lastResult, filterText, sortColIdx, sortDirection]);
+
+  // High Performance Pagination Engine to guarantee 60 FPS rendering
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [pageSize, setPageSize] = useState<number>(50);
+
+  // Reset pagination when result, filter, or sorting changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [lastResult, filterText, sortColIdx, sortDirection]);
+
+  const totalPages = useMemo(() => {
+    if (pageSize === 0) return 1;
+    return Math.max(1, Math.ceil(processedRows.length / pageSize));
+  }, [processedRows.length, pageSize]);
+
+  const paginatedRows = useMemo(() => {
+    if (pageSize === 0) return processedRows;
+    const start = (currentPage - 1) * pageSize;
+    return processedRows.slice(start, start + pageSize);
+  }, [processedRows, currentPage, pageSize]);
 
   if (!isDataGridOpen) {
     return null;
@@ -879,195 +899,254 @@ export const DataGridPanel: React.FC = () => {
                 </div>
               </div>
             ) : lastResult && lastResult.columns && lastResult.columns.length > 0 ? (
-              <div className="relative min-w-full inline-block align-middle select-text">
-                <table className="min-w-full text-left text-xs font-mono border-collapse">
-                  <thead className="sticky top-0 bg-[#0e1422] border-b border-[#1b2333] z-10 shadow-sm">
-                    <tr>
-                      <th className="px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-slate-500 border-r border-[#1b2333]/50 w-12 text-center select-none">
-                        #
-                      </th>
-                      {visibleColIndices.map((idx) => {
-                        const col = lastResult.columns[idx];
-                        const isPinned = !!pinnedCols[col];
-                        const isSelectedCol = selectedColumnIdx === idx;
-
-                        return (
-                          <th
-                            key={idx}
-                            style={{
-                              width: colWidths[idx] ? `${colWidths[idx]}px` : undefined,
-                              minWidth: '70px',
-                            }}
-                            onContextMenu={(e) => {
-                              e.preventDefault();
-                              setContextMenuState({ x: e.clientX, y: e.clientY, colName: col, colIdx: idx });
-                            }}
-                            className={`px-3 py-2 text-[11px] font-bold border-r border-[#1b2333]/50 select-none whitespace-nowrap group/th hover:bg-[#161e31] transition-colors relative ${
-                              isSelectedCol
-                                ? 'bg-[#182138] text-indigo-200 border-b-2 border-indigo-400'
-                                : isPinned
-                                ? 'bg-[#12192c] text-sky-300 border-r-2 border-indigo-500/40'
-                                : 'text-indigo-300'
-                            }`}
-                          >
-                            <div className="flex items-center justify-between gap-2">
-                              <div
-                                onClick={() => handleHeaderClick(idx, col)}
-                                className="flex items-center gap-1.5 cursor-pointer flex-1 min-w-0"
-                                title={
-                                  headerClickMode === 'copy'
-                                    ? `Click to select & copy all values in "${col}" (Right-click for options)`
-                                    : `Click to sort column "${col}" (Right-click for options)`
-                                }
-                              >
-                                {isPinned && (
-                                  <span className="w-1.5 h-1.5 rounded-full bg-sky-400 shrink-0" />
-                                )}
-                                <span className="truncate">{col}</span>
-                              </div>
-
-                              <div className="flex items-center gap-1 shrink-0">
-                                {/* Dedicated Sort Button */}
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleSort(idx);
-                                  }}
-                                  className={`p-0.5 rounded transition-all ${
-                                    sortColIdx === idx
-                                      ? 'text-emerald-400 opacity-100'
-                                      : 'opacity-0 group-hover/th:opacity-100 text-slate-500 hover:text-indigo-300'
-                                  }`}
-                                  title="Sort Column (Ascending / Descending)"
-                                >
-                                  {sortColIdx === idx ? (
-                                    <span className="text-[10px] font-bold">
-                                      {sortDirection === 'asc' ? '▲' : '▼'}
-                                    </span>
-                                  ) : (
-                                    <ArrowUpDown className="w-2.5 h-2.5" />
-                                  )}
-                                </button>
-
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setSelectedColumnIdx(idx);
-                                    handleQuickCopyColumnSQLIn(idx, col);
-                                  }}
-                                  className="opacity-0 group-hover/th:opacity-100 p-0.5 rounded hover:bg-indigo-500/20 text-slate-500 hover:text-indigo-300 transition-all"
-                                  title="Copy column as SQL IN list ('val1', 'val2')"
-                                >
-                                  <Quote className="w-3 h-3" />
-                                </button>
-
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    togglePinCol(col);
-                                  }}
-                                  className={`p-0.5 rounded transition-all ${
-                                    isPinned
-                                      ? 'text-sky-400 hover:text-sky-200'
-                                      : 'opacity-0 group-hover/th:opacity-100 text-slate-500 hover:text-indigo-300'
-                                  }`}
-                                  title={isPinned ? 'Unpin column' : 'Pin column to front'}
-                                >
-                                  <Pin className={`w-3 h-3 ${isPinned ? 'fill-sky-400' : ''}`} />
-                                </button>
-
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setProfilingCol({ name: col, index: idx });
-                                  }}
-                                  className="opacity-0 group-hover/th:opacity-100 p-0.5 rounded hover:bg-indigo-500/20 text-slate-500 hover:text-indigo-300 transition-all"
-                                  title="Inspect Column Distribution & Stats"
-                                >
-                                  <BarChart2 className="w-3 h-3" />
-                                </button>
-                              </div>
-                            </div>
-
-                            {/* Column Drag Resizer Handle */}
-                            <div
-                              onMouseDown={(e) => handleColResizeMouseDown(idx, e)}
-                              onDoubleClick={(e) => {
-                                e.stopPropagation();
-                                handleColResizeDoubleClick(idx, col);
-                              }}
-                              className="absolute right-0 top-0 bottom-0 w-2 cursor-col-resize hover:bg-indigo-500/80 active:bg-indigo-500 group-hover/th:opacity-100 opacity-0 transition-opacity z-20"
-                              title="Drag to resize column (Double-click to auto-fit width)"
-                            />
-                          </th>
-                        );
-                      })}
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-[#1b2333]/40">
-                    {processedRows.map((row, rowIdx) => (
-                      <tr
-                        key={rowIdx}
-                        className={`hover:bg-[#151f33]/80 transition-colors ${
-                          rowIdx % 2 === 0 ? 'bg-[#090d15]' : 'bg-[#0c111c]'
-                        }`}
-                      >
-                        <td className="px-3 py-1.5 text-[10px] text-slate-600 border-r border-[#1b2333]/40 text-center select-none font-mono">
-                          {rowIdx + 1}
-                        </td>
-                        {visibleColIndices.map((colIdx) => {
-                          const cell = row ? row[colIdx] : null;
-                          const col = lastResult?.columns?.[colIdx] || '';
+              <div className="flex flex-col h-full overflow-hidden">
+                <div className="flex-1 overflow-auto min-w-full inline-block align-middle select-text">
+                  <table className="min-w-full text-left text-xs font-mono border-collapse">
+                    <thead className="sticky top-0 bg-[#0e1422] border-b border-[#1b2333] z-10 shadow-sm">
+                      <tr>
+                        <th className="px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-slate-500 border-r border-[#1b2333]/50 w-12 text-center select-none">
+                          #
+                        </th>
+                        {visibleColIndices.map((idx) => {
+                          const col = lastResult.columns[idx];
                           const isPinned = !!pinnedCols[col];
-                          const isSelectedCol = selectedColumnIdx === colIdx;
-                          const cellKey = `${rowIdx}-${colIdx}`;
-                          const isNull = cell === null || cell === undefined;
-                          const cellStr = isNull ? 'NULL' : typeof cell === 'object' ? JSON.stringify(cell) : String(cell);
+                          const isSelectedCol = selectedColumnIdx === idx;
 
                           return (
-                            <td
-                              key={colIdx}
+                            <th
+                              key={idx}
                               style={{
-                                width: colWidths[colIdx] ? `${colWidths[colIdx]}px` : undefined,
+                                width: colWidths[idx] ? `${colWidths[idx]}px` : undefined,
                                 minWidth: '70px',
-                                maxWidth: colWidths[colIdx] ? `${colWidths[colIdx]}px` : '360px',
                               }}
-                              onClick={() => handleCopyCell(cell, cellKey)}
-                              onDoubleClick={(e) => {
-                                e.stopPropagation();
-                                setCellDetailState({
-                                  isOpen: true,
-                                  columnName: col,
-                                  rowIndex: rowIdx,
-                                  value: cell,
-                                });
+                              onContextMenu={(e) => {
+                                e.preventDefault();
+                                setContextMenuState({ x: e.clientX, y: e.clientY, colName: col, colIdx: idx });
                               }}
-                              className={`px-3 py-1.5 border-r whitespace-nowrap truncate cursor-pointer relative group transition-colors ${
+                              className={`px-3 py-2 text-[11px] font-bold border-r border-[#1b2333]/50 select-none whitespace-nowrap group/th hover:bg-[#161e31] transition-colors relative ${
                                 isSelectedCol
-                                  ? 'bg-indigo-500/15 text-indigo-100 font-semibold border-x border-indigo-500/30'
+                                  ? 'bg-[#182138] text-indigo-200 border-b-2 border-indigo-400'
                                   : isPinned
-                                  ? 'bg-[#0f1422]/90 border-[#1b253b] border-r-2 border-indigo-500/30'
-                                  : 'border-[#1b2333]/40'
-                              } ${
-                                isNull ? 'text-slate-600 italic' : 'text-slate-200'
+                                  ? 'bg-[#12192c] text-sky-300 border-r-2 border-indigo-500/40'
+                                  : 'text-indigo-300'
                               }`}
-                              title={isNull ? 'NULL (Double click to view full detail, single click to copy)' : `${cellStr} (Double click to view full detail, single click to copy)`}
                             >
-                              <span>{cellStr}</span>
-                              {copiedCell === cellKey && (
-                                <span className="absolute right-1 top-1 bg-emerald-500 text-slate-950 font-bold px-1 py-0.2 rounded text-[9px] shadow">
-                                  Copied
-                                </span>
-                              )}
-                            </td>
+                              <div className="flex items-center justify-between gap-2">
+                                <div
+                                  onClick={() => handleHeaderClick(idx, col)}
+                                  className="flex items-center gap-1.5 cursor-pointer flex-1 min-w-0"
+                                  title={
+                                    headerClickMode === 'copy'
+                                      ? `Click to select & copy all values in "${col}" (Right-click for options)`
+                                      : `Click to sort column "${col}" (Right-click for options)`
+                                  }
+                                >
+                                  {isPinned && (
+                                    <span className="w-1.5 h-1.5 rounded-full bg-sky-400 shrink-0" />
+                                  )}
+                                  <span className="truncate">{col}</span>
+                                </div>
+
+                                <div className="flex items-center gap-1 shrink-0">
+                                  {/* Dedicated Sort Button */}
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleSort(idx);
+                                    }}
+                                    className={`p-0.5 rounded transition-all ${
+                                      sortColIdx === idx
+                                        ? 'text-emerald-400 opacity-100'
+                                        : 'opacity-0 group-hover/th:opacity-100 text-slate-500 hover:text-indigo-300'
+                                    }`}
+                                    title="Sort Column (Ascending / Descending)"
+                                  >
+                                    {sortColIdx === idx ? (
+                                      <span className="text-[10px] font-bold">
+                                        {sortDirection === 'asc' ? '▲' : '▼'}
+                                      </span>
+                                    ) : (
+                                      <ArrowUpDown className="w-2.5 h-2.5" />
+                                    )}
+                                  </button>
+
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setSelectedColumnIdx(idx);
+                                      handleQuickCopyColumnSQLIn(idx, col);
+                                    }}
+                                    className="opacity-0 group-hover/th:opacity-100 p-0.5 rounded hover:bg-indigo-500/20 text-slate-500 hover:text-indigo-300 transition-all"
+                                    title="Copy column as SQL IN list ('val1', 'val2')"
+                                  >
+                                    <Quote className="w-3 h-3" />
+                                  </button>
+
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      togglePinCol(col);
+                                    }}
+                                    className={`p-0.5 rounded transition-all ${
+                                      isPinned
+                                        ? 'text-sky-400 hover:text-sky-200'
+                                        : 'opacity-0 group-hover/th:opacity-100 text-slate-500 hover:text-indigo-300'
+                                    }`}
+                                    title={isPinned ? 'Unpin column' : 'Pin column to front'}
+                                  >
+                                    <Pin className={`w-3 h-3 ${isPinned ? 'fill-sky-400' : ''}`} />
+                                  </button>
+
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setProfilingCol({ name: col, index: idx });
+                                    }}
+                                    className="opacity-0 group-hover/th:opacity-100 p-0.5 rounded hover:bg-indigo-500/20 text-slate-500 hover:text-indigo-300 transition-all"
+                                    title="Inspect Column Distribution & Stats"
+                                  >
+                                    <BarChart2 className="w-3 h-3" />
+                                  </button>
+                                </div>
+                              </div>
+
+                              {/* Column Drag Resizer Handle */}
+                              <div
+                                onMouseDown={(e) => handleColResizeMouseDown(idx, e)}
+                                onDoubleClick={(e) => {
+                                  e.stopPropagation();
+                                  handleColResizeDoubleClick(idx, col);
+                                }}
+                                className="absolute right-0 top-0 bottom-0 w-2 cursor-col-resize hover:bg-indigo-500/80 active:bg-indigo-500 group-hover/th:opacity-100 opacity-0 transition-opacity z-20"
+                                title="Drag to resize column (Double-click to auto-fit width)"
+                              />
+                            </th>
                           );
                         })}
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            ) : lastResult && lastResult.rowCount === 0 ? (
+                    </thead>
+                    <tbody className="divide-y divide-[#1b2333]/40">
+                      {paginatedRows.map((row, idx) => {
+                        const actualRowIdx = pageSize > 0 ? (currentPage - 1) * pageSize + idx : idx;
+                        return (
+                          <tr
+                            key={actualRowIdx}
+                            className={`hover:bg-[#151f33]/80 transition-colors ${
+                              actualRowIdx % 2 === 0 ? 'bg-[#090d15]' : 'bg-[#0c111c]'
+                            }`}
+                          >
+                            <td className="px-3 py-1.5 text-[10px] text-slate-600 border-r border-[#1b2333]/40 text-center select-none font-mono">
+                              {actualRowIdx + 1}
+                            </td>
+                            {visibleColIndices.map((colIdx) => {
+                              const cell = row ? row[colIdx] : null;
+                              const col = lastResult?.columns?.[colIdx] || '';
+                              const isPinned = !!pinnedCols[col];
+                              const isSelectedCol = selectedColumnIdx === colIdx;
+                              const cellKey = `${actualRowIdx}-${colIdx}`;
+                              const isNull = cell === null || cell === undefined;
+                              const cellStr = isNull ? 'NULL' : typeof cell === 'object' ? JSON.stringify(cell) : String(cell);
+
+                              return (
+                                <td
+                                  key={colIdx}
+                                  style={{
+                                    width: colWidths[colIdx] ? `${colWidths[colIdx]}px` : undefined,
+                                    minWidth: '70px',
+                                    maxWidth: colWidths[colIdx] ? `${colWidths[colIdx]}px` : '360px',
+                                  }}
+                                  onClick={() => handleCopyCell(cell, cellKey)}
+                                  onDoubleClick={(e) => {
+                                    e.stopPropagation();
+                                    setCellDetailState({
+                                      isOpen: true,
+                                      columnName: col,
+                                      rowIndex: actualRowIdx,
+                                      value: cell,
+                                    });
+                                  }}
+                                  className={`px-3 py-1.5 border-r whitespace-nowrap truncate cursor-pointer relative group transition-colors ${
+                                    isSelectedCol
+                                      ? 'bg-indigo-500/15 text-indigo-100 font-semibold border-x border-indigo-500/30'
+                                      : isPinned
+                                      ? 'bg-[#0f1422]/90 border-[#1b253b] border-r-2 border-indigo-500/30'
+                                      : 'border-[#1b2333]/40'
+                                  } ${
+                                    isNull ? 'text-slate-600 italic' : 'text-slate-200'
+                                  }`}
+                                  title={isNull ? 'NULL (Double click to view full detail, single click to copy)' : `${cellStr} (Double click to view full detail, single click to copy)`}
+                                >
+                                  <span>{cellStr}</span>
+                                  {copiedCell === cellKey && (
+                                    <span className="absolute right-1 top-1 bg-emerald-500 text-slate-950 font-bold px-1 py-0.2 rounded text-[9px] shadow">
+                                      Copied
+                                    </span>
+                                  )}
+                                </td>
+                              );
+                            })}
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* DataGrip Style High-Performance Pagination Footer */}
+                {lastResult && lastResult.rowCount > 0 && (
+                  <div className="h-8 px-4 bg-[#090d16] border-t border-[#1b2333] flex items-center justify-between text-xs font-mono text-slate-400 select-none shrink-0">
+                    <div className="flex items-center gap-3">
+                      <span>
+                        Showing {pageSize > 0 ? `${(currentPage - 1) * pageSize + 1}-${Math.min(currentPage * pageSize, processedRows.length)}` : `1-${processedRows.length}`} of {processedRows.length} rows
+                      </span>
+                      {filterText && <span className="text-amber-400 text-[11px]">(Filtered from {lastResult.rowCount})</span>}
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                      {/* Rows per page selector */}
+                      <div className="flex items-center gap-1">
+                        <span className="text-slate-500 text-[11px]">Rows:</span>
+                        <select
+                          value={pageSize}
+                          onChange={(e) => {
+                            setPageSize(Number(e.target.value));
+                            setCurrentPage(1);
+                          }}
+                          className="bg-[#111622] border border-[#1b2333] text-slate-200 text-xs rounded px-1.5 py-0.5 focus:outline-none cursor-pointer font-mono"
+                        >
+                          <option value={25}>25</option>
+                          <option value={50}>50</option>
+                          <option value={100}>100</option>
+                          <option value={250}>250</option>
+                          <option value={0}>All</option>
+                        </select>
+                      </div>
+
+                      {pageSize > 0 && totalPages > 1 && (
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                            disabled={currentPage === 1}
+                            className="px-2 py-0.5 rounded bg-[#131926] hover:bg-[#1c2538] border border-[#1c2538] disabled:opacity-40 disabled:pointer-events-none text-slate-300 text-[11px] transition-colors"
+                          >
+                            ‹ Prev
+                          </button>
+                          <span className="px-2 text-indigo-300 text-xs font-bold font-mono">
+                            {currentPage} / {totalPages}
+                          </span>
+                          <button
+                            onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                            disabled={currentPage === totalPages}
+                            className="px-2 py-0.5 rounded bg-[#131926] hover:bg-[#1c2538] border border-[#1c2538] disabled:opacity-40 disabled:pointer-events-none text-slate-300 text-[11px] transition-colors"
+                          >
+                            Next ›
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>            ) : lastResult && lastResult.rowCount === 0 ? (
               <div className="h-full flex flex-col items-center justify-center p-8 text-slate-500 select-none">
                 <TableIcon className="w-6 h-6 text-emerald-500 mb-2" />
                 <span className="text-xs text-slate-300 font-medium">Query executed successfully</span>

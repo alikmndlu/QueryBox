@@ -280,6 +280,8 @@ export const SQLEditor: React.FC<SQLEditorProps> = ({
     editor.addCommand(
       monaco.KeyMod.CtrlCmd | monaco.KeyMod.Shift | monaco.KeyCode.KeyF,
       () => {
+        const currentVal = editor.getValue();
+        onChange(currentVal);
         if (onFormat) {
           onFormat();
         } else {
@@ -295,7 +297,9 @@ export const SQLEditor: React.FC<SQLEditorProps> = ({
       if (model && selection && !selection.isEmpty()) {
         selectedText = model.getValueInRange(selection).trim();
       }
-      if (onExecute) onExecute(selectedText || undefined);
+      const currentVal = editor.getValue();
+      onChange(currentVal);
+      if (onExecute) onExecute(selectedText || currentVal);
     });
   };
 
@@ -306,7 +310,7 @@ export const SQLEditor: React.FC<SQLEditorProps> = ({
     }
   }, [cachedCompletions]);
 
-  // Handle Container Resizing (e.g. sidebar open/close) to keep editor canvas & cursor aligned
+  // Handle Container Resizing (e.g. sidebar open/close, panel drag) via efficient ResizeObserver
   useEffect(() => {
     if (!containerRef.current) return;
     const observer = new ResizeObserver(() => {
@@ -345,7 +349,7 @@ export const SQLEditor: React.FC<SQLEditorProps> = ({
           minimap: { enabled: settings.showMinimap },
           lineNumbers: settings.lineNumbers === 'on' ? 'on' : 'off',
           scrollBeyondLastLine: false,
-          automaticLayout: true,
+          automaticLayout: false, // Turned off background polling in favor of ResizeObserver
           cursorBlinking: 'smooth',
           cursorSmoothCaretAnimation: 'on',
           renderLineHighlight: 'all',
