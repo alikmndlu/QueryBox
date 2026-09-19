@@ -5,10 +5,13 @@ import {
   RotateCcw,
   Clock,
   Sparkles,
-  Layers,
   X,
-  Play,
+  Maximize2,
+  Minimize2,
   Grid,
+  LogOut,
+  Tv,
+  Zap,
 } from 'lucide-react';
 import { useDashboardStore, WidgetChartType } from '../../store/useDashboardStore';
 import { WidgetCard } from './WidgetCard';
@@ -24,8 +27,10 @@ export const DashboardPanel: React.FC = () => {
     isAutoRefreshActive,
   } = useDashboardStore();
 
-  const { showToast } = useUIStore();
+  const { setDashboardOpen, showToast } = useUIStore();
   const [isAddModalOpen, setAddModalOpen] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
   const [newTitle, setNewTitle] = useState('');
   const [newSql, setNewSql] = useState('SELECT COUNT(*) AS total_count FROM users;');
   const [newChartType, setNewChartType] = useState<WidgetChartType>('kpi');
@@ -41,6 +46,19 @@ export const DashboardPanel: React.FC = () => {
     return () => clearInterval(interval);
   }, [globalRefreshSec, isAutoRefreshActive]);
 
+  // Handle Escape key to exit fullscreen or exit dashboard
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        if (isFullscreen) {
+          setIsFullscreen(false);
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isFullscreen]);
+
   const handleCreateWidget = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newTitle.trim() || !newSql.trim()) return;
@@ -54,31 +72,73 @@ export const DashboardPanel: React.FC = () => {
 
     setAddModalOpen(false);
     setNewTitle('');
-    showToast('New widget added to dashboard');
+    showToast('New widget added to live dashboard');
+  };
+
+  const handleLoadDemoLayout = () => {
+    addWidget({
+      title: 'Total Active Users',
+      sql: 'SELECT COUNT(*) AS total_users FROM users;',
+      chartType: 'kpi',
+      refreshIntervalSec: 10,
+    });
+    addWidget({
+      title: 'Hourly Execution Volume',
+      sql: 'SELECT strftime("%H", createdAt) AS hour, COUNT(*) AS volume FROM history GROUP BY hour LIMIT 8;',
+      chartType: 'bar',
+      refreshIntervalSec: 30,
+    });
+    addWidget({
+      title: 'Average Latency (ms)',
+      sql: 'SELECT executionTimeMs FROM history ORDER BY id DESC LIMIT 10;',
+      chartType: 'line',
+      refreshIntervalSec: 15,
+    });
+    addWidget({
+      title: 'Database Tables Summary',
+      sql: 'SELECT table_name, table_rows FROM information_schema.tables LIMIT 5;',
+      chartType: 'table',
+      refreshIntervalSec: 60,
+    });
+    showToast('Loaded demo KPI dashboard layout');
   };
 
   return (
-    <div className="h-full flex flex-col bg-[#0b0f19] text-slate-100 select-none overflow-hidden">
-      {/* Dashboard Top Bar */}
-      <div className="h-12 px-4 bg-[#090d16] border-b border-[#1c263c] flex items-center justify-between shrink-0">
-        <div className="flex items-center gap-2.5">
-          <div className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-            <BarChart3 className="w-4 h-4" />
+    <div
+      className={`flex flex-col bg-[#070a12] text-slate-100 select-none overflow-hidden transition-all ${
+        isFullscreen
+          ? 'fixed inset-0 z-50 p-6 bg-[#060910]'
+          : 'h-full w-full relative'
+      }`}
+    >
+      {/* Dashboard Top Header Bar */}
+      <div className="h-13 px-4 bg-[#0a0e17] border-b border-[#1c263c] flex items-center justify-between shrink-0 shadow-lg">
+        <div className="flex items-center gap-3">
+          <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 shadow-sm">
+            <BarChart3 className="w-4 h-4" strokeWidth={2} />
           </div>
-          <div>
-            <h2 className="text-xs font-bold text-white flex items-center gap-2">
-              <span>Live KPI Dashboard</span>
-              <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                {widgets.length} Widgets
-              </span>
-            </h2>
+          <div className="flex items-center gap-3">
+            <div>
+              <h2 className="text-xs font-bold text-white flex items-center gap-2">
+                <span>Live KPI Dashboard</span>
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-bold">
+                  {widgets.length} Widgets
+                </span>
+              </h2>
+            </div>
+
+            {/* Live Pulsing Connection Status Badge */}
+            <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-[10px] font-mono font-bold tracking-wider uppercase">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
+              <span>LIVE MONITOR</span>
+            </div>
           </div>
         </div>
 
         {/* Action Controls */}
         <div className="flex items-center gap-2">
           {/* Global Auto-Refresh selector */}
-          <div className="flex items-center bg-[#101625] border border-[#1e2942] rounded-lg px-2 py-1 text-xs">
+          <div className="flex items-center bg-[#111726] border border-[#1e2942] rounded-lg px-2.5 py-1 text-xs">
             <Clock className="w-3.5 h-3.5 text-indigo-400 mr-1.5" />
             <span className="text-slate-400 text-[11px] mr-1 hidden sm:inline">Auto-refresh:</span>
             <select
@@ -99,7 +159,7 @@ export const DashboardPanel: React.FC = () => {
 
           <button
             onClick={() => refreshAllWidgets()}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-300 hover:text-white bg-[#161f33] hover:bg-[#202c48] rounded-lg border border-[#232e48] transition-colors"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-300 hover:text-white bg-[#141c2e] hover:bg-[#1f2b45] rounded-lg border border-[#232e48] transition-colors"
             title="Refresh All Widgets"
           >
             <RotateCcw className="w-3.5 h-3.5 text-sky-400" />
@@ -108,10 +168,33 @@ export const DashboardPanel: React.FC = () => {
 
           <button
             onClick={() => setAddModalOpen(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 rounded-lg shadow-md shadow-emerald-950/40 transition-all font-semibold"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 rounded-lg shadow-md transition-all"
           >
             <Plus className="w-3.5 h-3.5" />
             <span>Add Widget</span>
+          </button>
+
+          {/* Fullscreen TV Monitor Display Toggle */}
+          <button
+            onClick={() => setIsFullscreen(!isFullscreen)}
+            className={`p-1.5 rounded-lg border text-xs font-medium transition-colors ${
+              isFullscreen
+                ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
+                : 'bg-[#141c2e] text-slate-300 hover:text-white border-[#232e48]'
+            }`}
+            title={isFullscreen ? "Exit Fullscreen TV View (Esc)" : "Fullscreen TV Display Mode"}
+          >
+            {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+          </button>
+
+          {/* Prominent Exit Dashboard Button */}
+          <button
+            onClick={() => setDashboardOpen(false)}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-rose-300 hover:text-rose-200 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 rounded-lg transition-colors ml-1"
+            title="Exit Live Dashboard and return to SQL Editor"
+          >
+            <LogOut className="w-3.5 h-3.5 text-rose-400" />
+            <span>Exit Dashboard</span>
           </button>
         </div>
       </div>
@@ -119,22 +202,33 @@ export const DashboardPanel: React.FC = () => {
       {/* Main Grid Workspace */}
       <div className="flex-1 p-5 overflow-y-auto">
         {widgets.length === 0 ? (
-          <div className="h-64 flex flex-col items-center justify-center text-slate-500 text-center">
-            <Grid className="w-10 h-10 text-slate-600 mb-3" />
-            <span className="text-sm font-semibold text-slate-300">Live Dashboard is empty</span>
-            <span className="text-xs text-slate-500 mt-1 max-w-sm">
-              Click "Add Widget" or pin any SQL query result from the Data Grid to build your live KPI dashboard.
+          <div className="h-80 flex flex-col items-center justify-center text-slate-500 text-center">
+            <div className="p-4 rounded-2xl bg-[#0e1422] border border-[#1d273c] mb-4">
+              <Tv className="w-12 h-12 text-emerald-400 opacity-80" />
+            </div>
+            <span className="text-base font-bold text-slate-200">Live Dashboard is empty</span>
+            <span className="text-xs text-slate-400 mt-1 max-w-md leading-relaxed">
+              Build your live TV monitor dashboard by adding custom metric cards, bar charts, line graphs, or table summaries.
             </span>
-            <button
-              onClick={() => setAddModalOpen(true)}
-              className="mt-4 px-4 py-2 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-500 rounded-lg shadow-md flex items-center gap-1.5"
-            >
-              <Plus className="w-4 h-4" />
-              <span>Create First Dashboard Widget</span>
-            </button>
+            <div className="flex items-center gap-3 mt-6">
+              <button
+                onClick={() => setAddModalOpen(true)}
+                className="px-4 py-2 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-500 rounded-lg shadow-md flex items-center gap-1.5 transition-all"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Add First Widget</span>
+              </button>
+              <button
+                onClick={handleLoadDemoLayout}
+                className="px-4 py-2 text-xs font-semibold text-indigo-300 hover:text-white bg-[#131a2a] hover:bg-[#1a2338] border border-[#232e48] rounded-lg shadow-md flex items-center gap-1.5 transition-all"
+              >
+                <Zap className="w-4 h-4 text-indigo-400" />
+                <span>Load Demo KPI Layout</span>
+              </button>
+            </div>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {widgets.map((w) => (
               <WidgetCard key={w.id} widget={w} />
             ))}
@@ -144,7 +238,7 @@ export const DashboardPanel: React.FC = () => {
 
       {/* Add Widget Modal */}
       {isAddModalOpen && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="w-full max-w-md bg-[#0d121c] border border-[#1c263c] rounded-xl shadow-2xl p-5 text-xs text-slate-200 space-y-4 animate-in zoom-in-95 duration-150">
             <div className="flex items-center justify-between pb-3 border-b border-[#1c263c]">
               <div className="flex items-center gap-2 font-bold text-sm text-white">

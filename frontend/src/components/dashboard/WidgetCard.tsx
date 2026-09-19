@@ -149,6 +149,46 @@ export const WidgetCard: React.FC<WidgetCardProps> = ({ widget }) => {
               );
             })}
           </div>
+        ) : widget.chartType === 'line' ? (
+          /* Mini SVG Line Chart */
+          <div className="h-32 w-full pt-4 pb-1 relative flex items-center justify-center">
+            {rows.length > 0 ? (
+              <svg viewBox="0 0 300 100" className="w-full h-full overflow-visible">
+                <defs>
+                  <linearGradient id={`grad_line_${widget.id}`} x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#38bdf8" stopOpacity="0.4" />
+                    <stop offset="100%" stopColor="#38bdf8" stopOpacity="0.0" />
+                  </linearGradient>
+                </defs>
+                {(() => {
+                  const vals = rows.slice(0, 10).map((r) => Number(r[1] ?? r[0]) || 0);
+                  const maxV = Math.max(...vals, 1);
+                  const minV = Math.min(...vals, 0);
+                  const range = maxV - minV || 1;
+                  const pts = vals.map((v, i) => {
+                    const x = (i / Math.max(vals.length - 1, 1)) * 280 + 10;
+                    const y = 90 - ((v - minV) / range) * 75;
+                    return `${x},${y}`;
+                  });
+                  const pathStr = `M ${pts.join(' L ')}`;
+                  const areaStr = `${pathStr} L ${pts[pts.length - 1].split(',')[0]},95 L ${pts[0].split(',')[0]},95 Z`;
+
+                  return (
+                    <>
+                      <path d={areaStr} fill={`url(#grad_line_${widget.id})`} />
+                      <path d={pathStr} fill="none" stroke="#38bdf8" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                      {pts.map((pt, idx) => {
+                        const [px, py] = pt.split(',').map(Number);
+                        return <circle key={idx} cx={px} cy={py} r="3" fill="#0f172a" stroke="#38bdf8" strokeWidth="2" />;
+                      })}
+                    </>
+                  );
+                })()}
+              </svg>
+            ) : (
+              <span className="text-xs text-slate-500 font-mono">No data rows</span>
+            )}
+          </div>
         ) : (
           /* Mini Table Summary */
           <div className="max-h-32 overflow-y-auto font-mono text-[11px] text-slate-300">

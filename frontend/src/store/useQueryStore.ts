@@ -117,6 +117,9 @@ export const useQueryStore = create<QueryState>((set, get) => ({
       return;
     }
 
+    // Always reveal SQL Editor view when opening a query
+    useUIStore.getState().setDashboardOpen(false);
+
     set({
       activeQuery: query,
       draftSQL: query.sqlContent || '',
@@ -138,6 +141,7 @@ export const useQueryStore = create<QueryState>((set, get) => ({
   },
 
   openScratchpad: (data) => {
+    useUIStore.getState().setDashboardOpen(false);
     const scratchId = `temp_${Date.now()}`;
     const scratchQuery: Query = {
       id: scratchId,

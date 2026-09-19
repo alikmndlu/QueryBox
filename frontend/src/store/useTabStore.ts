@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { useQueryStore } from './useQueryStore';
+import { useUIStore } from './useUIStore';
 
 interface TabState {
   tabIds: string[];
@@ -17,6 +18,7 @@ export const useTabStore = create<TabState>((set, get) => ({
   activeTabId: null,
 
   openTab: (queryId: string) => {
+    useUIStore.getState().setDashboardOpen(false);
     const { tabIds } = get();
     if (!tabIds.includes(queryId)) {
       set({
