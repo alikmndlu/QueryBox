@@ -161,9 +161,12 @@ export const useConnectionStore = create<ConnectionState>((set, get) => ({
         expandedDatabases: initialDb ? { ...state.expandedDatabases, [initialDb]: true } : state.expandedDatabases,
       }));
 
-      if (initialDb && !get().databaseTables[initialDb]) {
-        get().fetchDatabaseSchema(initialDb, targetProfileId);
-      }
+      // Introspect all databases for full multi-database autocomplete and schema explorer
+      dbs.forEach((dbName) => {
+        if (!get().databaseTables[dbName]) {
+          get().fetchDatabaseSchema(dbName, targetProfileId);
+        }
+      });
       return dbs;
     } catch (err) {
       console.warn('Failed to fetch databases:', err);
@@ -178,16 +181,20 @@ export const useConnectionStore = create<ConnectionState>((set, get) => ({
     set({ isLoadingSchema: true });
     try {
       const tables = await API.introspectDatabase(targetProfileId, dbName);
+      const normalizedTables = (tables || []).map((t) => ({
+        ...t,
+        database: t.database || dbName,
+      }));
       set((state) => {
-        const updatedMap = { ...state.databaseTables, [dbName]: tables };
+        const updatedMap = { ...state.databaseTables, [dbName]: normalizedTables };
         const isActive = state.activeDatabase === dbName;
         return {
           databaseTables: updatedMap,
-          schemaTables: isActive ? tables : state.schemaTables,
+          schemaTables: isActive ? normalizedTables : state.schemaTables,
           isLoadingSchema: false,
         };
       });
-      return tables;
+      return normalizedTables;
     } catch (err) {
       console.warn(`Failed to introspect database ${dbName}:`, err);
       set({ isLoadingSchema: false });

@@ -94,6 +94,8 @@ func TestCheckSafeExecution(t *testing.T) {
 		"-- comment\nSELECT 1;",
 		"/* multi\nline\ncomment */ SELECT * FROM products;",
 		"PRAGMA table_info('users');",
+		"USE bnpl_sales; SELECT * FROM purchases;",
+		"USE `analytics`; SELECT count(*) FROM events;",
 	}
 
 	for _, q := range allowedQueries {
@@ -129,6 +131,23 @@ func TestCheckSafeExecution(t *testing.T) {
 		if err == nil {
 			t.Errorf("expected mutating query %q to be blocked, but it passed!", q)
 		}
+	}
+}
+
+func TestResolveQueryAndDB(t *testing.T) {
+	svc := NewExecutorService(nil)
+	prof := &models.ConnectionProfile{
+		Driver:   "mysql",
+		Database: "default_db",
+	}
+
+	// Test USE statement stripping
+	targetDB, cleanSQL := svc.resolveQueryAndDB(prof, "default_db", "USE bnpl_sales; SELECT * FROM purchases;")
+	if targetDB != "bnpl_sales" {
+		t.Errorf("got targetDB %q, want %q", targetDB, "bnpl_sales")
+	}
+	if cleanSQL != "SELECT * FROM purchases;" {
+		t.Errorf("got cleanSQL %q, want %q", cleanSQL, "SELECT * FROM purchases;")
 	}
 }
 

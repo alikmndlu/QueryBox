@@ -59,42 +59,53 @@ export const SchemaExplorer: React.FC = () => {
     }));
   };
 
-  const formatTableIdentifier = (driver: string, table: TableInfo) => {
+  const formatTableIdentifier = (driver: string, table: TableInfo, dbName?: string) => {
     const d = (driver || '').toLowerCase();
     const tableName = table.name;
     const schema = table.schema;
 
+    let dbPrefix = '';
+    if (dbName && dbName !== activeProfile?.database && !d.includes('sqlite')) {
+      if (d.includes('my')) {
+        dbPrefix = `\`${dbName}\`.`;
+      } else if (d.includes('sqlserver') || d.includes('mssql')) {
+        dbPrefix = `[${dbName}].`;
+      } else {
+        dbPrefix = `"${dbName}".`;
+      }
+    }
+
     if (d.includes('my')) {
-      return schema ? `\`${schema}\`.\`${tableName}\`` : `\`${tableName}\``;
+      return schema ? `${dbPrefix}\`${schema}\`.\`${tableName}\`` : `${dbPrefix}\`${tableName}\``;
     } else if (d.includes('sqlserver') || d.includes('mssql')) {
-      return schema ? `[${schema}].[${tableName}]` : `[${tableName}]`;
+      return schema ? `${dbPrefix}[${schema}].[${tableName}]` : `${dbPrefix}[${tableName}]`;
     } else {
       // PostgreSQL, SQLite
       if (schema && schema !== 'public' && schema !== 'main') {
-        return `"${schema}"."${tableName}"`;
+        return `${dbPrefix}"${schema}"."${tableName}"`;
       }
-      return `"${tableName}"`;
+      return `${dbPrefix}"${tableName}"`;
     }
   };
 
-  const getSelectQuery = (driver: string, table: TableInfo, limit: number = 100) => {
+  const getSelectQuery = (driver: string, table: TableInfo, dbName?: string, limit: number = 100) => {
     const d = (driver || '').toLowerCase();
-    const tableId = formatTableIdentifier(driver, table);
+    const tableId = formatTableIdentifier(driver, table, dbName);
     if (d.includes('sqlserver') || d.includes('mssql')) {
       return `SELECT TOP ${limit}\n    *\nFROM ${tableId};`;
     }
     return `SELECT\n    *\nFROM ${tableId}\nLIMIT ${limit};`;
   };
 
-  const getCountQuery = (driver: string, table: TableInfo) => {
-    const tableId = formatTableIdentifier(driver, table);
+  const getCountQuery = (driver: string, table: TableInfo, dbName?: string) => {
+    const tableId = formatTableIdentifier(driver, table, dbName);
     return `SELECT COUNT(*) AS total_rows\nFROM ${tableId};`;
   };
 
   const handleQueryTable = (dbName: string, table: TableInfo) => {
     setActiveDatabase(dbName);
     const driver = (activeProfile?.driver || 'postgresql').toLowerCase();
-    const defaultSQL = getSelectQuery(driver, table, 100);
+    const defaultSQL = getSelectQuery(driver, table, dbName, 100);
     const title = `${dbName}.${table.name}`;
     const dialect = driver.includes('my')
       ? 'mysql'
@@ -115,7 +126,7 @@ export const SchemaExplorer: React.FC = () => {
   const handleQueryCount = (dbName: string, table: TableInfo) => {
     setActiveDatabase(dbName);
     const driver = (activeProfile?.driver || 'postgresql').toLowerCase();
-    const countSQL = getCountQuery(driver, table);
+    const countSQL = getCountQuery(driver, table, dbName);
     const title = `Count: ${table.name}`;
     const dialect = driver.includes('my')
       ? 'mysql'
@@ -423,6 +434,20 @@ export const SchemaExplorer: React.FC = () => {
                               </div>
 
                               <div className="flex items-center gap-1">
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    const driver = (activeProfile?.driver || 'postgresql').toLowerCase();
+                                    const tableId = formatTableIdentifier(driver, table, dbName);
+                                    navigator.clipboard.writeText(tableId);
+                                    showToast(`Copied "${tableId}" to clipboard`);
+                                  }}
+                                  className="opacity-0 group-hover/tbl:opacity-100 p-1 rounded hover:bg-indigo-500/20 text-slate-400 hover:text-indigo-300 transition-all"
+                                  title={`Copy table identifier (${dbName}.${table.name})`}
+                                >
+                                  <Copy className="w-3 h-3" />
+                                </button>
+
                                 {/* SELECT Action */}
                                 <button
                                   onClick={(e) => {

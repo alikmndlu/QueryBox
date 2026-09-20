@@ -5,6 +5,7 @@ import { useSettingsStore } from '../../store/useSettingsStore';
 import { useQueryStore } from '../../store/useQueryStore';
 import { useConnectionStore } from '../../store/useConnectionStore';
 import { formatSQL } from '../../lib/formatter';
+import { TableInfo } from '../../types';
 
 // Pre-configure Monaco to load from bundled local npm package (100% offline, zero CDN calls)
 loader.config({ monaco });
@@ -298,6 +299,8 @@ export const SQLEditor: React.FC<SQLEditorProps> = ({
   const draftDialect = useQueryStore((state) => state.draftDialect);
   const formatActiveQuery = useQueryStore((state) => state.formatActiveQuery);
   const schemaTables = useConnectionStore((state) => state.schemaTables);
+  const databaseTables = useConnectionStore((state) => state.databaseTables);
+  const databases = useConnectionStore((state) => state.databases);
 
   // Safety fallback timer if Monaco takes > 1.5s to initialize
   useEffect(() => {
@@ -312,42 +315,88 @@ export const SQLEditor: React.FC<SQLEditorProps> = ({
   const cachedCompletions = useMemo(() => {
     const tableItems: any[] = [];
     const columnItems: any[] = [];
+    const dbItems: any[] = [];
     const tableColumnMap: Record<string, any[]> = {};
+    const dbTablesMap: Record<string, any[]> = {};
 
-    (schemaTables || []).forEach((tbl) => {
-      tableItems.push({
-        label: tbl.name,
-        kind: 5,
-        detail: tbl.schema ? `[Table] ${tbl.schema}.${tbl.name}` : `[Table] ${tbl.name}`,
-        documentation: `Table (${tbl.columns?.length || 0} columns)`,
-        insertText: tbl.name,
+    (databases || []).forEach((dbName) => {
+      dbItems.push({
+        label: dbName,
+        kind: monaco.languages.CompletionItemKind.Folder,
+        detail: `[Database] ${dbName}`,
+        documentation: `Database: ${dbName}`,
+        insertText: dbName,
       });
-
-      const colsForTable: any[] = [];
-      tbl.columns?.forEach((col) => {
-        const colItem = {
-          label: col.name,
-          kind: 3,
-          detail: `[Column] ${tbl.name}.${col.name} : ${col.dataType}`,
-          documentation: `${tbl.name}.${col.name} (${col.dataType}${col.isPrimaryKey ? ' - PK' : ''}${col.isNullable ? ' - Nullable' : ''})`,
-          insertText: col.name,
-        };
-        colsForTable.push(colItem);
-        columnItems.push(colItem);
-
-        columnItems.push({
-          label: `${tbl.name}.${col.name}`,
-          kind: 9,
-          detail: `[Qualified] ${col.dataType}`,
-          insertText: `${tbl.name}.${col.name}`,
-        });
-      });
-
-      tableColumnMap[tbl.name.toLowerCase()] = colsForTable;
     });
 
-    return { tableItems, columnItems, tableColumnMap };
-  }, [schemaTables]);
+    const allTablesByDb: Record<string, TableInfo[]> = { ...databaseTables };
+    if (schemaTables && schemaTables.length > 0) {
+      const activeDb = schemaTables[0]?.database || 'active';
+      if (!allTablesByDb[activeDb]) {
+        allTablesByDb[activeDb] = schemaTables;
+      }
+    }
+
+    Object.entries(allTablesByDb).forEach(([dbName, tables]) => {
+      const tablesForThisDb: any[] = [];
+
+      (tables || []).forEach((tbl) => {
+        const fullQualified = `${dbName}.${tbl.name}`;
+
+        tableItems.push({
+          label: fullQualified,
+          kind: monaco.languages.CompletionItemKind.Class,
+          detail: `[Table] ${fullQualified} (${tbl.columns?.length || 0} cols)`,
+          documentation: `Database: ${dbName}\nTable: ${tbl.name}`,
+          insertText: fullQualified,
+        });
+
+        const shortTableItem = {
+          label: tbl.name,
+          kind: monaco.languages.CompletionItemKind.Class,
+          detail: `[Table] ${dbName}.${tbl.name}`,
+          documentation: `Database: ${dbName}\nTable: ${tbl.name}`,
+          insertText: tbl.name,
+        };
+        tableItems.push(shortTableItem);
+        tablesForThisDb.push(shortTableItem);
+
+        const colsForTable: any[] = [];
+        tbl.columns?.forEach((col: any) => {
+          const colItem = {
+            label: col.name,
+            kind: monaco.languages.CompletionItemKind.Field,
+            detail: `[Column] ${fullQualified}.${col.name} : ${col.dataType}`,
+            documentation: `${fullQualified}.${col.name} (${col.dataType}${col.isPrimaryKey ? ' - PK' : ''}${col.isNullable ? ' - Nullable' : ''})`,
+            insertText: col.name,
+          };
+          colsForTable.push(colItem);
+          columnItems.push(colItem);
+
+          columnItems.push({
+            label: `${tbl.name}.${col.name}`,
+            kind: monaco.languages.CompletionItemKind.Field,
+            detail: `[Qualified] ${fullQualified}.${col.name} : ${col.dataType}`,
+            insertText: `${tbl.name}.${col.name}`,
+          });
+
+          columnItems.push({
+            label: `${fullQualified}.${col.name}`,
+            kind: monaco.languages.CompletionItemKind.Field,
+            detail: `[Full Qualified] ${col.dataType}`,
+            insertText: `${fullQualified}.${col.name}`,
+          });
+        });
+
+        tableColumnMap[tbl.name.toLowerCase()] = colsForTable;
+        tableColumnMap[fullQualified.toLowerCase()] = colsForTable;
+      });
+
+      dbTablesMap[dbName.toLowerCase()] = tablesForThisDb;
+    });
+
+    return { tableItems, columnItems, dbItems, tableColumnMap, dbTablesMap };
+  }, [schemaTables, databaseTables, databases]);
 
   const handleBeforeMount: BeforeMount = (monaco) => {
     registerMonacoThemes(monaco);
@@ -403,16 +452,52 @@ export const SQLEditor: React.FC<SQLEditorProps> = ({
           };
 
           const suggestions: any[] = [];
-          const { tableItems, columnItems, tableColumnMap } = (editorRef.current as any)?._cachedCompletions || {
-            tableItems: [],
-            columnItems: [],
-            tableColumnMap: {},
-          };
+          const { tableItems, columnItems, dbItems, tableColumnMap, dbTablesMap } =
+            (editorRef.current as any)?._cachedCompletions || {
+              tableItems: [],
+              columnItems: [],
+              dbItems: [],
+              tableColumnMap: {},
+              dbTablesMap: {},
+            };
 
+          // 1. Two dots: dbname.tablename. -> suggest columns
+          const twoDotMatch = lineUntilPosition.match(/([\w]+)\.([\w]+)\.$/);
+          if (twoDotMatch) {
+            const fullKey = `${twoDotMatch[1]}.${twoDotMatch[2]}`.toLowerCase();
+            const cols = tableColumnMap[fullKey] || tableColumnMap[twoDotMatch[2].toLowerCase()];
+            if (cols) {
+              cols.forEach((col: any, idx: number) => {
+                suggestions.push({
+                  ...col,
+                  sortText: `0_${idx}`,
+                  range,
+                });
+              });
+              return { suggestions };
+            }
+          }
+
+          // 2. Single dot: identifier. -> could be dbname. or tablename.
           const dotMatch = lineUntilPosition.match(/([\w]+)\.$/);
           if (dotMatch) {
-            const tableName = dotMatch[1].toLowerCase();
-            const cols = tableColumnMap[tableName];
+            const identifier = dotMatch[1].toLowerCase();
+
+            // Check if identifier is a database name
+            const dbTables = dbTablesMap[identifier];
+            if (dbTables && dbTables.length > 0) {
+              dbTables.forEach((tbl: any, idx: number) => {
+                suggestions.push({
+                  ...tbl,
+                  sortText: `0_${idx}`,
+                  range,
+                });
+              });
+              return { suggestions };
+            }
+
+            // Check if identifier is a table name
+            const cols = tableColumnMap[identifier];
             if (cols) {
               cols.forEach((col: any, idx: number) => {
                 suggestions.push({
@@ -426,6 +511,14 @@ export const SQLEditor: React.FC<SQLEditorProps> = ({
           }
 
           const isTableContext = /\b(FROM|JOIN|INTO|UPDATE|TABLE|TRUNCATE)\s+[\w\.]*$/i.test(lineUntilPosition);
+
+          dbItems.forEach((item: any) => {
+            suggestions.push({
+              ...item,
+              sortText: isTableContext ? `0_db_${item.label}` : `1_db_${item.label}`,
+              range,
+            });
+          });
 
           tableItems.forEach((item: any) => {
             suggestions.push({

@@ -270,8 +270,12 @@ func (s *ExecutorService) CheckSafeExecution(sqlQuery string, readOnly bool) (bo
 
 	upper := strings.ToUpper(strings.TrimSpace(sqlWithoutStrings))
 
+	// Strip optional leading USE statement if present: USE `dbname`; or USE dbname;
+	useRe := regexp.MustCompile("(?i)^USE\\s+[\"`\\[]?([a-zA-Z0-9_\\-]+)[\"`\\]]?\\s*;?\\s*")
+	upperNoUse := useRe.ReplaceAllString(upper, "")
+
 	// Must begin with permitted read-only statements
-	isAllowedStart := regexp.MustCompile(`^(SELECT|WITH|EXPLAIN|SHOW|DESC|DESCRIBE|PRAGMA)\b`).MatchString(upper)
+	isAllowedStart := regexp.MustCompile(`^(SELECT|WITH|EXPLAIN|SHOW|DESC|DESCRIBE|PRAGMA)\b`).MatchString(upperNoUse)
 	if !isAllowedStart {
 		return true, fmt.Errorf("query execution blocked: QueryBox is in strict Read-Only mode. Only data retrieval queries (SELECT, EXPLAIN, SHOW, DESCRIBE) are allowed")
 	}
@@ -301,15 +305,62 @@ func (s *ExecutorService) CheckSafeExecution(sqlQuery string, readOnly bool) (bo
 	return false, nil
 }
 
+// resolveQueryAndDB resolves any leading USE <dbname>; statements or dbname.tablename references
+func (s *ExecutorService) resolveQueryAndDB(p *models.ConnectionProfile, currentDB string, rawSQL string) (string, string) {
+	trimmed := strings.TrimSpace(rawSQL)
+	targetDB := strings.TrimSpace(currentDB)
+	if targetDB == "" {
+		targetDB = strings.TrimSpace(p.Database)
+	}
+
+	// 1. Check for USE statement at start: e.g., USE bnpl_sales; or USE `bnpl_sales`;
+	useRe := regexp.MustCompile("(?i)^USE\\s+[\"`\\[]?([a-zA-Z0-9_\\-]+)[\"`\\]]?\\s*;?\\s*")
+	if match := useRe.FindStringSubmatch(trimmed); len(match) > 1 {
+		targetDB = match[1]
+		trimmed = strings.TrimSpace(useRe.ReplaceAllString(trimmed, ""))
+	}
+
+	// 2. Cross-database table reference resolution for drivers (especially PostgreSQL)
+	driver := strings.ToLower(strings.TrimSpace(p.Driver))
+	if (driver == "postgresql" || driver == "postgres") && trimmed != "" {
+		dbTableRe := regexp.MustCompile("(?i)\\b(?:FROM|JOIN|INTO|UPDATE)\\s+[\"`\\[]?([a-zA-Z0-9_\\-]+)[\"`\\]]?\\.[\"`\\[]?([a-zA-Z0-9_\\-]+)[\"`\\]]?")
+		matches := dbTableRe.FindAllStringSubmatch(trimmed, -1)
+		if len(matches) > 0 {
+			dbs, err := s.ListDatabases(p)
+			if err == nil && len(dbs) > 0 {
+				dbSet := make(map[string]bool)
+				for _, d := range dbs {
+					dbSet[strings.ToLower(d)] = true
+				}
+				for _, m := range matches {
+					prefixDB := m[1]
+					if dbSet[strings.ToLower(prefixDB)] {
+						targetDB = prefixDB
+						dbConn, connErr := s.GetConnectionForDB(p, targetDB)
+						if connErr == nil {
+							var schemaExists int
+							_ = dbConn.QueryRow(`SELECT 1 FROM information_schema.schemata WHERE schema_name = $1`, prefixDB).Scan(&schemaExists)
+							if schemaExists == 0 {
+								replacePattern := regexp.MustCompile("(?i)\\b[\"`\\[]?" + regexp.QuoteMeta(prefixDB) + "[\"`\\]]?\\.([\"`\\[]?[a-zA-Z0-9_\\-]+[\"`\\]]?)")
+								trimmed = replacePattern.ReplaceAllString(trimmed, "$1")
+							}
+						}
+						break
+					}
+				}
+			}
+		}
+	}
+
+	return targetDB, trimmed
+}
+
 // ExecuteQuery executes query against specified database and returns structured result set.
 // Strictly enforces read-only data retrieval operations.
 func (s *ExecutorService) ExecuteQuery(p *models.ConnectionProfile, dbName string, rawSQL string, limit int) (res *models.QueryResult, err error) {
 	start := time.Now()
 
-	dbName = strings.TrimSpace(dbName)
-	if dbName == "" {
-		dbName = strings.TrimSpace(p.Database)
-	}
+	dbName, rawSQL = s.resolveQueryAndDB(p, dbName, rawSQL)
 
 	defer func() {
 		if s.historyRepo != nil {
@@ -423,13 +474,10 @@ func (s *ExecutorService) ExecuteQuery(p *models.ConnectionProfile, dbName strin
 
 // ExplainQuery executes EXPLAIN on target database
 func (s *ExecutorService) ExplainQuery(p *models.ConnectionProfile, dbName string, rawSQL string) (string, error) {
+	dbName, rawSQL = s.resolveQueryAndDB(p, dbName, rawSQL)
+
 	if _, err := s.CheckSafeExecution(rawSQL, true); err != nil {
 		return "", err
-	}
-
-	dbName = strings.TrimSpace(dbName)
-	if dbName == "" {
-		dbName = strings.TrimSpace(p.Database)
 	}
 
 	db, err := s.GetConnectionForDB(p, dbName)
@@ -795,20 +843,10 @@ func (s *ExecutorService) IntrospectSchema(p *models.ConnectionProfile) ([]model
 
 // BenchmarkQuery executes the query multiple times to measure latency metrics
 func (s *ExecutorService) BenchmarkQuery(p *models.ConnectionProfile, dbName string, rawSQL string, iterations int) (*models.BenchmarkResult, error) {
+	dbName, rawSQL = s.resolveQueryAndDB(p, dbName, rawSQL)
+
 	if _, err := s.CheckSafeExecution(rawSQL, true); err != nil {
 		return nil, err
-	}
-
-	if iterations <= 0 {
-		iterations = 5
-	}
-	if iterations > 20 {
-		iterations = 20
-	}
-
-	dbName = strings.TrimSpace(dbName)
-	if dbName == "" {
-		dbName = strings.TrimSpace(p.Database)
 	}
 
 	db, err := s.GetConnectionForDB(p, dbName)
